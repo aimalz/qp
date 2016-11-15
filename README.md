@@ -1,5 +1,7 @@
 # qp
-Quantile Parametrization for probability distribution functions module
+Quantile Parametrization for probability distribution functions
+
+[![Build Status](https://travis-ci.org/aimalz/qp.svg?branch=master)](https://travis-ci.org/aimalz/qp)
 
 ##Motivation
 This repository exists for two reasons.
