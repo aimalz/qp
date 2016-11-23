@@ -57,9 +57,6 @@ class PDF(object):
         points = np.linspace(0.0+quantum, 1.0-quantum, number)
         print("Calculating quantiles: ", points)
         self.quantiles = self.truth.ppf(points)
-        self.difs = self.quantiles[1:]-self.quantiles[:-1]
-        self.mids = (self.quantiles[1:]+self.quantiles[:-1])/2.
-        self.quantvals = quantum/self.difs
         print("Result: ", self.quantiles)
         return self.quantiles
 
@@ -87,6 +84,9 @@ class PDF(object):
 
             if self.quantiles is None:
                 self.quantiles = self.quantize()
+            self.difs = self.quantiles[1:]-self.quantiles[:-1]
+            self.mids = (self.quantiles[1:]+self.quantiles[:-1])/2.
+            self.quantvals = (1.0/(len(self.quantiles)+1))/self.difs
 
             print("Creating interpolator")
             self.interpolator = spi.interp1d(self.mids, self.quantvals)
