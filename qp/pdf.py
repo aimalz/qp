@@ -106,6 +106,8 @@ class PDF(object):
         ----------
         limits : tuple, float
             Range over which to plot the PDF
+        number: int
+            Number of points over which to interpolate
 
         Notes
         -----
