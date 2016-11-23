@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.interpolate as spi
 import matplotlib.pyplot as plt
 
 class PDF(object):
@@ -6,6 +7,10 @@ class PDF(object):
     def __init__(self, truth=None):
         self.truth = truth
         self.quantiles = None
+        self.difs = None
+        self.mids = None
+        self.quantvals = None
+        self.interpolator = None
 
     def evaluate(self, loc):
 
@@ -15,7 +20,7 @@ class PDF(object):
 
         return
 
-    def quantize(self, percent=10.0, number=None):
+    def quantize(self, percent=1., number=None):
         """
         Computes an array of evenly-spaced quantiles.
 
@@ -52,14 +57,48 @@ class PDF(object):
         points = np.linspace(0.0+quantum, 1.0-quantum, number)
         print("Calculating quantiles: ", points)
         self.quantiles = self.truth.ppf(points)
+        self.difs = self.quantiles[1:]-self.quantiles[:-1]
+        self.mids = (self.quantiles[1:]+self.quantiles[:-1])/2.
+        self.quantvals = quantum/self.difs
         print("Result: ", self.quantiles)
         return self.quantiles
 
-    def interpolate(self):
+    def interpolate(self, number=100):
+        """
+        Interpolates the quantiles.
 
-        return
+        Parameters
+        ----------
+        number: int
+            The number of points over which to interpolate, bounded by the quantile value endpoints
 
-    def plot(self, limits):
+        Returns
+        -------
+        grid: ndarray, float
+            The input grid upon which to interpolate
+        interpolated : ndarray, float
+            The interpolated points.
+
+        Notes
+        -----
+
+        """
+        if self.interpolator is None:
+
+            if self.quantiles is None:
+                self.quantiles = self.quantize()
+
+            print("Creating interpolator")
+            self.interpolator = spi.interp1d(self.mids, self.quantvals)
+
+        grid = np.linspace(min(self.mids), max(self.mids), number)
+        print("Grid: ", grid)
+        interpolated = self.interpolator(grid)
+        print("Result: ", interpolated)
+
+        return (grid, interpolated)
+
+    def plot(self, limits, number=None):
         """
         Plot the PDF, in various ways.
 
@@ -80,6 +119,10 @@ class PDF(object):
         if self.quantiles is not None:
             y = [0., 1.]
             plt.vlines(self.quantiles, y[0], y[1], color='k', linestyle='--', lw=1.0, alpha=1., label='Quantiles')
+
+        if number is not None:
+            (grid, interpolated) = self.interpolate(number)
+            plt.plot(grid, interpolated, color='r', linestyle=':', lw=2.0, alpha=1.0, label='Interpolated PDF')
 
         plt.legend()
         plt.xlabel('x')
