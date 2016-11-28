@@ -60,7 +60,7 @@ class PDF(object):
         print("Result: ", self.quantiles)
         return self.quantiles
 
-    def interpolate(self, number=100):
+    def interpolate(self, number=100, grid=None):
         """
         Interpolates the quantiles.
 
@@ -68,6 +68,8 @@ class PDF(object):
         ----------
         number: int
             The number of points over which to interpolate, bounded by the quantile value endpoints
+        grid: ndarray
+            The value(s) at which to evaluate the interpolated function
 
         Returns
         -------
@@ -76,9 +78,15 @@ class PDF(object):
         interpolated : ndarray, float
             The interpolated points.
 
+        Comments
+        --------
+        Extrapolation is linear until values are outside [0., 1.]; outside this range, extrapolation returns 0.
+
         Notes
         -----
-
+        Example:
+        > x, y = p.interpolate(number=200)
+        > x, y = p.interpolate(grid=np.linspace(-1., 1., 100))
         """
         if self.interpolator is None:
 
@@ -89,16 +97,18 @@ class PDF(object):
             self.quantvals = (1.0/(len(self.quantiles)+1))/self.difs
 
             print("Creating interpolator")
-            self.interpolator = spi.interp1d(self.mids, self.quantvals)
+            self.interpolator = spi.interp1d(self.mids, self.quantvals, fill_value="extrapolate")
 
-        grid = np.linspace(min(self.mids), max(self.mids), number)
+        if grid is None:
+            grid = np.linspace(min(self.mids), max(self.mids), number)
         print("Grid: ", grid)
         interpolated = self.interpolator(grid)
+        interpolated[interpolated<0.] = 0.
         print("Result: ", interpolated)
 
         return (grid, interpolated)
 
-    def plot(self, limits, number=None):
+    def plot(self, limits, number=100, grid=None):
         """
         Plot the PDF, in various ways.
 
@@ -108,6 +118,8 @@ class PDF(object):
             Range over which to plot the PDF
         number: int
             Number of points over which to interpolate
+        grid: ndarray
+            The value(s) at which to evaluate the interpolator
 
         Notes
         -----
@@ -122,9 +134,11 @@ class PDF(object):
             y = [0., 1.]
             plt.vlines(self.quantiles, y[0], y[1], color='k', linestyle='--', lw=1.0, alpha=1., label='Quantiles')
 
-        if number is not None:
-            (grid, interpolated) = self.interpolate(number)
-            plt.plot(grid, interpolated, color='r', linestyle=':', lw=2.0, alpha=1.0, label='Interpolated PDF')
+        if grid is not None:
+            (grid, interpolated) = self.interpolate(grid=grid)
+        else:
+            (grid, interpolated) = self.interpolate(number=number)
+        plt.plot(grid, interpolated, color='r', linestyle=':', lw=2.0, alpha=1.0, label='Interpolated PDF')
 
         plt.legend()
         plt.xlabel('x')
