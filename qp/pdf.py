@@ -60,7 +60,37 @@ class PDF(object):
         print("Result: ", self.quantiles)
         return self.quantiles
 
-    def interpolate(self, number=100, grid=None):
+    def interpolate(self):#, number=100, grid=None):
+        """
+        Returns interpolator based on quantiles.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        self.interpolator: interpolator
+            The interpolating function
+        """
+#         if self.interpolator is None:
+
+        if self.quantiles is None:
+            self.quantiles = self.quantize()
+        self.difs = self.quantiles[1:]-self.quantiles[:-1]
+        self.mids = (self.quantiles[1:]+self.quantiles[:-1])/2.
+        self.quantvals = (1.0/(len(self.quantiles)+1))/self.difs
+
+        print("Creating interpolator")
+        self.interpolator = spi.interp1d(self.mids, self.quantvals, fill_value="extrapolate")
+
+#         if grid is None:
+#             grid = np.linspace(min(self.mids), max(self.mids), number)
+
+        return self.interpolator
+
+    def approximate(self, points):
+
         """
         Interpolates the quantiles.
 
@@ -85,30 +115,19 @@ class PDF(object):
         Notes
         -----
         Example:
-        > x, y = p.interpolate(number=200)
-        > x, y = p.interpolate(grid=np.linspace(-1., 1., 100))
+        > x, y = p.approximate(np.linspace(-1., 1., 100))
         """
+
         if self.interpolator is None:
-
-            if self.quantiles is None:
-                self.quantiles = self.quantize()
-            self.difs = self.quantiles[1:]-self.quantiles[:-1]
-            self.mids = (self.quantiles[1:]+self.quantiles[:-1])/2.
-            self.quantvals = (1.0/(len(self.quantiles)+1))/self.difs
-
-            print("Creating interpolator")
-            self.interpolator = spi.interp1d(self.mids, self.quantvals, fill_value="extrapolate")
-
-        if grid is None:
-            grid = np.linspace(min(self.mids), max(self.mids), number)
-        print("Grid: ", grid)
-        interpolated = self.interpolator(grid)
+            self.interpolator = self.interpolate()
+        #print("Grid: ", x)
+        interpolated = self.interpolator(points)
         interpolated[interpolated<0.] = 0.
-        print("Result: ", interpolated)
+        #print("Result: ", interpolated)
 
-        return (grid, interpolated)
+        return (points, interpolated)
 
-    def plot(self, limits, number=100, grid=None):
+    def plot(self, limits, points=None):
         """
         Plot the PDF, in various ways.
 
@@ -116,9 +135,7 @@ class PDF(object):
         ----------
         limits : tuple, float
             Range over which to plot the PDF
-        number: int
-            Number of points over which to interpolate
-        grid: ndarray
+        points: ndarray
             The value(s) at which to evaluate the interpolator
 
         Notes
@@ -134,11 +151,9 @@ class PDF(object):
             y = [0., 1.]
             plt.vlines(self.quantiles, y[0], y[1], color='k', linestyle='--', lw=1.0, alpha=1., label='Quantiles')
 
-        if grid is not None:
-            (grid, interpolated) = self.interpolate(grid=grid)
-        else:
-            (grid, interpolated) = self.interpolate(number=number)
-        plt.plot(grid, interpolated, color='r', linestyle=':', lw=2.0, alpha=1.0, label='Interpolated PDF')
+        if points is not None:
+            (grid, interpolated) = self.approximate(points)
+            plt.plot(grid, interpolated, color='r', linestyle=':', lw=2.0, alpha=1.0, label='Interpolated PDF')
 
         plt.legend()
         plt.xlabel('x')
