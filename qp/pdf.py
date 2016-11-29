@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.interpolate as spi
 import matplotlib.pyplot as plt
 
 class PDF(object):
@@ -6,6 +7,10 @@ class PDF(object):
     def __init__(self, truth=None):
         self.truth = truth
         self.quantiles = None
+        self.difs = None
+        self.mids = None
+        self.quantvals = None
+        self.interpolator = None
 
     def evaluate(self, loc):
 
@@ -15,7 +20,7 @@ class PDF(object):
 
         return
 
-    def quantize(self, percent=10.0, number=None):
+    def quantize(self, percent=1., number=None):
         """
         Computes an array of evenly-spaced quantiles.
 
@@ -55,11 +60,77 @@ class PDF(object):
         print("Result: ", self.quantiles)
         return self.quantiles
 
-    def interpolate(self):
+    def interpolate(self):#, number=100, grid=None):
+        """
+        Constructs an `interpolator` function based on the quantiles.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        
+        Notes
+        -----
+        The `self.interpolator` object is a function, that is used by the `approximate` method.
+        """
+        # First find the quantiles if none exist:
+        if self.quantiles is None:
+            self.quantiles = self.quantize()
+        
+        self.difs = self.quantiles[1:]-self.quantiles[:-1]
+        self.mids = (self.quantiles[1:]+self.quantiles[:-1])/2.
+        self.quantvals = (1.0/(len(self.quantiles)+1))/self.difs
+
+        print("Creating interpolator")
+        self.interpolator = spi.interp1d(self.mids, self.quantvals, fill_value="extrapolate")
+
+#         if grid is None:
+#             grid = np.linspace(min(self.mids), max(self.mids), number)
 
         return
 
-    def plot(self, limits):
+    def approximate(self, points):
+        """
+        Interpolates between the quantiles to get an approximation to the density.
+
+        Parameters
+        ----------
+        number: int
+            The number of points over which to interpolate, bounded by the quantile value endpoints
+        points: ndarray
+            The value(s) at which to evaluate the interpolated function
+
+        Returns
+        -------
+        points: ndarray, float
+            The input grid upon which to interpolate
+        interpolated : ndarray, float
+            The interpolated points.
+
+        Comments
+        --------
+        Extrapolation is linear while values are positive; otherwise, extrapolation returns 0.
+
+        Notes
+        -----
+        Example:
+            x, y = p.approximate(np.linspace(-1., 1., 100))
+        """
+
+        # First construct interpolator function if it does not already exist.
+        if self.interpolator is None:
+            self.interpolator = self.interpolate()
+        #print("Grid: ", x)
+        interpolated = self.interpolator(points)
+        interpolated[interpolated<0.] = 0.
+        #print("Result: ", interpolated)
+
+        return (points, interpolated)
+
+    def plot(self, limits, points=None):
         """
         Plot the PDF, in various ways.
 
@@ -67,6 +138,8 @@ class PDF(object):
         ----------
         limits : tuple, float
             Range over which to plot the PDF
+        points: ndarray
+            The value(s) at which to evaluate the interpolator
 
         Notes
         -----
@@ -80,6 +153,10 @@ class PDF(object):
         if self.quantiles is not None:
             y = [0., 1.]
             plt.vlines(self.quantiles, y[0], y[1], color='k', linestyle='--', lw=1.0, alpha=1., label='Quantiles')
+
+        if points is not None:
+            (grid, interpolated) = self.approximate(points)
+            plt.plot(grid, interpolated, color='r', linestyle=':', lw=2.0, alpha=1.0, label='Interpolated PDF')
 
         plt.legend()
         plt.xlabel('x')
