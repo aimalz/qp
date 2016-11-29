@@ -98,19 +98,19 @@ class PDF(object):
         ----------
         number: int
             The number of points over which to interpolate, bounded by the quantile value endpoints
-        grid: ndarray
+        points: ndarray
             The value(s) at which to evaluate the interpolated function
 
         Returns
         -------
-        grid: ndarray, float
+        points: ndarray, float
             The input grid upon which to interpolate
         interpolated : ndarray, float
             The interpolated points.
 
         Comments
         --------
-        Extrapolation is linear until values are outside [0., 1.]; outside this range, extrapolation returns 0.
+        Extrapolation is linear while values are positive; otherwise, extrapolation returns 0.
 
         Notes
         -----
