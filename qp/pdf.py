@@ -2,6 +2,8 @@ import numpy as np
 import scipy.interpolate as spi
 import matplotlib.pyplot as plt
 
+import utils
+
 class PDF(object):
 
     def __init__(self, truth=None):
@@ -60,7 +62,7 @@ class PDF(object):
         print("Result: ", self.quantiles)
         return self.quantiles
 
-    def interpolate(self):#, number=100, grid=None):
+    def interpolate(self):
         """
         Constructs an `interpolator` function based on the quantiles.
 
@@ -71,7 +73,7 @@ class PDF(object):
         Returns
         -------
         None
-        
+
         Notes
         -----
         The `self.interpolator` object is a function, that is used by the `approximate` method.
@@ -79,7 +81,7 @@ class PDF(object):
         # First find the quantiles if none exist:
         if self.quantiles is None:
             self.quantiles = self.quantize()
-        
+
         self.difs = self.quantiles[1:]-self.quantiles[:-1]
         self.mids = (self.quantiles[1:]+self.quantiles[:-1])/2.
         self.quantvals = (1.0/(len(self.quantiles)+1))/self.difs
@@ -145,6 +147,7 @@ class PDF(object):
         -----
         What this method plots depends on what information about the PDF is stored in it: the more properties the PDF has, the more exciting the plot!
         """
+
         x = np.linspace(limits[0], limits[1], 100)
 
         if self.truth is not None:
@@ -164,3 +167,32 @@ class PDF(object):
         plt.savefig('plot.png')
 
         return
+
+    def kld(self, grid):
+        """
+        Calculates Kullback-Leibler divergence of quantile approximation from truth.
+
+        Parameters
+        ----------
+        grid: ndarray
+            Grid upon which to evaluate discrete distribution
+
+        Returns
+        -------
+        KL: float
+            Value of Kullback-Leibler divergence from approximation to truth if truth is available; otherwise nothing.
+
+        Notes
+        -----
+        Example:
+            d = p.kld(np.linspace(-1., 1., 100))
+        """
+
+        if self.truth is None:
+            print('Truth not available for comparison.')
+            return
+        else:
+            true_on_grid = self.truth.pdf(grid)
+            approx_on_grid = self.approximate(grid)
+            KL = utils.calckl(true_on_grid, approx_on_grid)
+            return(KL)
