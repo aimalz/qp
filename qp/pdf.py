@@ -70,8 +70,7 @@ class PDF(object):
 
         Returns
         -------
-        self.interpolator: interpolator
-            The interpolating function
+        None
         """
 #         if self.interpolator is None:
 
