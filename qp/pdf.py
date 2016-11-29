@@ -2,7 +2,7 @@ import numpy as np
 import scipy.interpolate as spi
 import matplotlib.pyplot as plt
 
-import utils
+import qp
 
 class PDF(object):
 
@@ -124,11 +124,9 @@ class PDF(object):
 
         # First construct interpolator function if it does not already exist.
         if self.interpolator is None:
-            self.interpolator = self.interpolate()
-        #print("Grid: ", x)
+            self.interpolate()
         interpolated = self.interpolator(points)
         interpolated[interpolated<0.] = 0.
-        #print("Result: ", interpolated)
 
         return (points, interpolated)
 
@@ -192,7 +190,5 @@ class PDF(object):
             print('Truth not available for comparison.')
             return
         else:
-            true_on_grid = self.truth.pdf(grid)
-            approx_on_grid = self.approximate(grid)
-            KL = utils.calckl(true_on_grid, approx_on_grid)
+            KL = qp.utils.calculate_kl_divergence(self.truth.pdf, self.approximate, grid)
             return(KL)
