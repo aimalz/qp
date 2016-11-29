@@ -87,7 +87,7 @@ class PDF(object):
 #         if grid is None:
 #             grid = np.linspace(min(self.mids), max(self.mids), number)
 
-        return self.interpolator
+        return
 
     def approximate(self, points):
 
