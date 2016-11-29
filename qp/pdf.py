@@ -62,7 +62,7 @@ class PDF(object):
 
     def interpolate(self):#, number=100, grid=None):
         """
-        Returns interpolator based on quantiles.
+        Constructs an `interpolator` function based on the quantiles.
 
         Parameters
         ----------
@@ -71,11 +71,15 @@ class PDF(object):
         Returns
         -------
         None
+        
+        Notes
+        -----
+        The `self.interpolator` object is a function, that is used by the `approximate` method.
         """
-#         if self.interpolator is None:
-
+        # First find the quantiles if none exist:
         if self.quantiles is None:
             self.quantiles = self.quantize()
+        
         self.difs = self.quantiles[1:]-self.quantiles[:-1]
         self.mids = (self.quantiles[1:]+self.quantiles[:-1])/2.
         self.quantvals = (1.0/(len(self.quantiles)+1))/self.difs
@@ -89,9 +93,8 @@ class PDF(object):
         return
 
     def approximate(self, points):
-
         """
-        Interpolates the quantiles.
+        Interpolates between the quantiles to get an approximation to the density.
 
         Parameters
         ----------
@@ -114,9 +117,10 @@ class PDF(object):
         Notes
         -----
         Example:
-        > x, y = p.approximate(np.linspace(-1., 1., 100))
+            x, y = p.approximate(np.linspace(-1., 1., 100))
         """
 
+        # First construct interpolator function if it does not already exist.
         if self.interpolator is None:
             self.interpolator = self.interpolate()
         #print("Grid: ", x)
