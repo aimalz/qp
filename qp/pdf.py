@@ -6,15 +6,34 @@ import qp
 
 class PDF(object):
 
-    def __init__(self, truth=None):
+    def __init__(self, truth=None, quantiles=None):
         self.truth = truth
-        self.quantiles = None
+        self.quantiles = quantiles
         self.difs = None
         self.mids = None
         self.quantvals = None
         self.interpolator = None
 
     def evaluate(self, loc):
+        """
+        Evaluates the truth at given location(s).
+
+        Parameters
+        ----------
+        loc: float or ndarray
+            Location(s) at which to evaluate the pdf of the truth
+
+        Returns
+        -------
+        val: float or ndarray
+            Value of the truth function at given location(s)
+        """
+        if self.truth is None:
+            print('True PDF evaluation unavailable.')
+            return
+        else:
+            val = self.truth.pdf(loc)
+            return(val)
 
         return
 
@@ -166,14 +185,16 @@ class PDF(object):
 
         return
 
-    def kld(self, grid):
+    def kld(self, limits=(0., 1.), dx=0.01):
         """
         Calculates Kullback-Leibler divergence of quantile approximation from truth.
 
         Parameters
         ----------
-        grid: ndarray
-            Grid upon which to evaluate discrete distribution
+        limits: tuple of floats
+            Endpoints of integration interval in which to calculate KLD
+        dx: float
+            resolution of integration grid
 
         Returns
         -------
@@ -183,12 +204,41 @@ class PDF(object):
         Notes
         -----
         Example:
-            d = p.kld(np.linspace(-1., 1., 100))
+            d = p.kld(limits=(-1., 1.), dx=1./100))
         """
 
         if self.truth is None:
             print('Truth not available for comparison.')
             return
         else:
-            KL = qp.utils.calculate_kl_divergence(self.truth.pdf, self.approximate, grid)
+            KL = qp.utils.calculate_kl_divergence(self, self, limits=limits, dx=dx)
             return(KL)
+
+    def rms(self, limits=(0., 1.), dx=0.01):
+        """
+        Calculates root mean square difference between quantile approximation and truth.
+
+        Parameters
+        ----------
+        limits: tuple of floats
+            Endpoints of integration interval in which to calculate KLD
+        dx: float
+            resolution of integration grid
+
+        Returns
+        -------
+        RMS: float
+            Value of root mean square difference between approximation and truth if truth is available; otherwise nothing.
+
+        Notes
+        -----
+        Example:
+            d = p.rms(limits=(-1., 1.), dx=1./100))
+        """
+
+        if self.truth is None:
+            print('Truth not available for comparison.')
+            return
+        else:
+            RMS = qp.utils.calculate_rms(self, self, limits=limits, dx=dx)
+            return(RMS)
