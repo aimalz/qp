@@ -46,7 +46,7 @@ def calculate_kl_divergence(pf, qf, limits=(-10.,10.), dx=0.01):
     grid = np.linspace(limits[0], limits[1], int((limits[1]-limits[0])/dx))
     #Evaluate the functions on the grid
     pe = pf.approximate(grid)
-    qe = qf.truth.pdf(grid)
+    qe = qf.evaluate(grid)
     #Normalize the evaluations
     pn = pe/np.sum(pe)
     qn = qe/np.sum(qe)
@@ -59,7 +59,7 @@ def calculate_kl_divergence(pf, qf, limits=(-10.,10.), dx=0.01):
 
 def calculate_rms(pf, qf, limits=(-10.,10.), dx=0.01):
     """
-    Calculates Root Mean Square Difference
+    Calculates Root Mean Square Error
 
     Parameters
     ----------
@@ -75,7 +75,7 @@ def calculate_rms(pf, qf, limits=(-10.,10.), dx=0.01):
     Returns
     -------
     rms: float
-        Value of the root mean square difference between the approximation of qf and the truth of pf
+        Value of the root mean square error between the approximation of qf and the truth of pf
     """
     #Make a grid from the limits and resolution
     npoints = int((limits[1]-limits[0])/dx)
