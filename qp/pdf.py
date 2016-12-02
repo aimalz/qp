@@ -228,7 +228,7 @@ class PDF(object):
         Returns
         -------
         RMS: float
-            Value of root mean square difference between approximation and truth if truth is available; otherwise nothing.
+            Value of root mean square difference between approximation of truth if truth is available; otherwise nothing.
 
         Notes
         -----
