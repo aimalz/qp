@@ -7,8 +7,22 @@ import qp
 class PDF(object):
 
     def __init__(self, truth=None, quantiles=None):
+        """
+        Initializes the PDF object with some representation of a distribution.
+
+        Parameters
+        ----------
+        truth: scipy.stats.rv_continuous object, optional
+            Continuous, parametric form of the PDF
+        quantiles: ndarray, optional
+            Array of quantile values separated by
+        """
         self.truth = truth
         self.quantiles = quantiles
+        # Should make this a proper exception rather than just printing an advisory notice
+        if self.truth is None and self.quantiles is None:
+            print('It is unwise to initialize a PDF object without inputs!')
+            return
         self.difs = None
         self.mids = None
         self.quantvals = None
@@ -21,21 +35,27 @@ class PDF(object):
         Parameters
         ----------
         loc: float or ndarray
-            Location(s) at which to evaluate the pdf of the truth
+            Location(s) at which to evaluate the pdf
 
         Returns
         -------
         val: float or ndarray
             Value of the truth function at given location(s)
-        """
-        if self.truth is None:
-            print('True PDF evaluation unavailable.')
-            return
-        else:
-            val = self.truth.pdf(loc)
-            return(val)
 
-        return
+        Comments
+        --------
+        This function evaluates the truth function if it is available and the interpolated quantile approximation otherwise.
+        """
+        if self.truth is not None:
+            print('Evaluating the true distribution.')
+            val = self.truth.pdf(loc)
+        elif self.quantiles is not None:
+            print('Evaluating an interpolation of the quantile distribution.')
+            val = self.approximate(loc)[1]
+        else:
+            print('No representation provided for evaluation.')
+
+        return(val)
 
     def integrate(self, limits):
 
@@ -59,8 +79,8 @@ class PDF(object):
 
         Comments
         --------
-        Quantiles of a PDF could be a useful approximate way to store it. This method computes the quantiles, and stores them in the
-        `self.quantiles` attribute.
+        Quantiles of a PDF could be a useful approximate way to store it. This method computes the quantiles from a truth distribution (other representations forthcoming)
+        and stores them in the `self.quantiles` attribute.
 
         Uses the `.ppf` method of the `rvs_continuous` distribution
         object stored in `self.truth`. This calculates the inverse CDF.
@@ -77,7 +97,10 @@ class PDF(object):
 
         points = np.linspace(0.0+quantum, 1.0-quantum, number)
         print("Calculating quantiles: ", points)
-        self.quantiles = self.truth.ppf(points)
+        if self.truth is not None:
+            self.quantiles = self.truth.ppf(points)
+        else:
+            print('New quantiles can only be computed from a truth distribution in this version.')
         print("Result: ", self.quantiles)
         return self.quantiles
 
@@ -107,9 +130,6 @@ class PDF(object):
 
         print("Creating interpolator")
         self.interpolator = spi.interp1d(self.mids, self.quantvals, fill_value="extrapolate")
-
-#         if grid is None:
-#             grid = np.linspace(min(self.mids), max(self.mids), number)
 
         return
 

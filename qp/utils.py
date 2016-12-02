@@ -29,9 +29,9 @@ def calculate_kl_divergence(pf, qf, limits=(-10.,10.), dx=0.01):
     Parameters
     ----------
     pf: PDF object
-        Probability distribution function whose distance of its approximation _from_ the truth of qf will be calculated.
+        Probability distribution function whose distance _from_ qf will be calculated.
     qf: PDF object
-        Probability distribution function whose distance of its truth _to_ the approximation of pf will be calculated.
+        Probability distribution function whose distance _to_ pf will be calculated.
     limits: tuple of floats
         Endpoints of integration interval in which to calculate KLD
     dx: float
@@ -40,12 +40,12 @@ def calculate_kl_divergence(pf, qf, limits=(-10.,10.), dx=0.01):
     Returns
     -------
     klpq: float
-        Value of the Kullback-Leibler Divergence from the approximation of qf to the truth of pf
+        Value of the Kullback-Leibler Divergence from qf to pf
     """
     #Make a grid from the limits and resolution
     grid = np.linspace(limits[0], limits[1], int((limits[1]-limits[0])/dx))
     #Evaluate the functions on the grid
-    pe = pf.approximate(grid)
+    pe = pf.evaluate(grid)
     qe = qf.evaluate(grid)
     #Normalize the evaluations
     pn = pe/np.sum(pe)
@@ -82,7 +82,7 @@ def calculate_rms(pf, qf, limits=(-10.,10.), dx=0.01):
     grid = np.linspace(limits[0], limits[1], npoints)
     #Evaluate the functions on the grid
     pe = pf.evaluate(grid)
-    qe = qf.approximate(grid)
+    qe = qf.evaluate(grid)
     #Calculate the RMS between p and q
     rms = np.sqrt(np.sum((pe-qe)**2)/npoints)
     return(rms)
