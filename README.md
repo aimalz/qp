@@ -18,7 +18,7 @@ This repository exists for two reasons.
 
 -->
 
-* [Simple demo](https://github.com/aimalz/qp/blob/master/demo.ipynb)
+* [Simple demo](https://github.com/aimalz/qp/blob/master/docs/notebooks/demo.ipynb)
 
 ## People
 
@@ -27,6 +27,4 @@ This repository exists for two reasons.
 
 ## License, Contributing etc
 
-The code in this repo is available for re-use under the MIT license, which means that you can do whatever you like with it, just don't blame us. If you end up using any of the code or ideas you find here in your academic research, please cite us as `Malz et al, in preparation\footnote{\texttt{https://github.com/aimalz/qp}}`. If you are interested in this project, please do drop us a line via the hyperlinked contact names above, or by [writing us an issue](https://github.com/aimalz/qp/issues/new). To get started contributing to the `qp` project, just fork the repo - pull requests are always welcome! 
-
-
+The code in this repo is available for re-use under the MIT license, which means that you can do whatever you like with it, just don't blame us. If you end up using any of the code or ideas you find here in your academic research, please cite us as `Malz et al, in preparation\footnote{\texttt{https://github.com/aimalz/qp}}`. If you are interested in this project, please do drop us a line via the hyperlinked contact names above, or by [writing us an issue](https://github.com/aimalz/qp/issues/new). To get started contributing to the `qp` project, just fork the repo - pull requests are always welcome!
