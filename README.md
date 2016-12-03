@@ -12,7 +12,7 @@ This repository exists for two reasons.
 
 ## Examples
 
-Run the `qp` IPython notebooks live over the web at [Binder](http://mybinder.org):
+You can run the `qp` IPython notebooks live over the web at [Binder](http://mybinder.org):
 
 [![Binder](http://mybinder.org/badge.svg)](http://mybinder.org/repo/aimalz/qp)
 
