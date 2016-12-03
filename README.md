@@ -16,9 +16,12 @@ Run the `qp` IPython notebooks live over the web at [Binder](http://mybinder.org
 
 [![Binder](http://mybinder.org/badge.svg)](http://mybinder.org/repo/aimalz/qp)
 
-You can also browse them here:
+To make sure you are running the latest version, you can rebuild the Binder `qp` installation [here](http://mybinder.org/status/aimalz/qp).
+
+You can also browse the (un-executed) notebooks here in this repo:
 
 * [Simple demo](https://github.com/aimalz/qp/blob/master/demo.ipynb)
+
 
 ## People
 
