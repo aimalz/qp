@@ -12,11 +12,11 @@ This repository exists for two reasons.
 
 ## Examples
 
-<!-- Run the qp IPython notebooks with [Binder](http://mybinder.org):
+Run the `qp` IPython notebooks live over the web at [Binder](http://mybinder.org):
 
 [![Binder](http://mybinder.org/badge.svg)](http://mybinder.org/repo/aimalz/qp)
 
--->
+You can also browse them here:
 
 * [Simple demo](https://github.com/aimalz/qp/blob/master/demo.ipynb)
 
