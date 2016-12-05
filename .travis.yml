@@ -20,7 +20,19 @@ install:
 script:
   # Run the unit tests:
   # - nosetests
-  # Run the demo notebook:
-  - jupyter nbconvert --ExecutePreprocessor.kernel_name=python --ExecutePreprocessor.timeout=600 --to notebook --execute docs/notebooks/demo.ipynb
+  # Run the demo notebook, to make demo.html:
+  - jupyter nbconvert --ExecutePreprocessor.kernel_name=python --ExecutePreprocessor.timeout=600 --to html --execute docs/notebooks/demo.ipynb ; cp docs/notebooks/demo.html .
   # Build the docs:
   - sphinx-build -b html -d _build/doctrees docs _build/html
+
+# Finally, if it's the master branch being updated, force-push the
+# notebook html pages to an otherwise empty "html" branch:
+#    if [ -n "$GITHUB_API_KEY" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ "$TRAVIS_BRANCH" == "master" ]; then
+after_success: |
+    if [ -n "$GITHUB_API_KEY" ]; then
+        git checkout --orphan html
+        git rm -rf .
+        git add -f demo.html
+        git -c user.name='travis' -c user.email='travis' commit -m init
+        git push -q -f https://drphilmarshall:$GITHUB_API_KEY@github.com/aimalz/qp html
+    fi
