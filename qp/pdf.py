@@ -30,7 +30,7 @@ class PDF(object):
 
     def evaluate(self, loc):
         """
-        Evaluates the truth at given location(s).
+        Evaluates the PDF (either the true version, or an approximation of it) at given location(s).
 
         Parameters
         ----------
