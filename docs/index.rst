@@ -14,6 +14,9 @@ parameterization" from which the package gets its name.
 API
 ---
 
-.. automodule:: qp.pdf
 
-.. automodule:: qp.utils
+.. autoclass:: pdf.PDF
+    :members:
+
+.. automodule:: utils
+

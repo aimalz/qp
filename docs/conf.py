@@ -6,7 +6,7 @@ import sphinx_rtd_theme
 sys.path.insert(0, os.path.abspath('../qp'))
 # Avoid imports that may be unsatisfied when running sphinx, see:
 # http://stackoverflow.com/questions/15889621/sphinx-how-to-exclude-imports-in-automodule#15912502
-autodoc_mock_imports = ["scipy"]
+autodoc_mock_imports = ["scipy","scipy.interpolate"]
 
 extensions = [
     'sphinx.ext.autodoc',
