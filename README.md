@@ -2,7 +2,8 @@
 
 Quantile parametrization for probability distribution functions.
 
-[![Build Status](https://travis-ci.org/aimalz/qp.svg?branch=master)](https://travis-ci.org/aimalz/qp)
+[![Build Status](https://travis-ci.org/aimalz/qp.svg?branch=master)](https://travis-ci.org/aimalz/qp)[![Documentation Status](http://readthedocs.org/projects/qp/badge/?version=latest)](http://qp.readthedocs.io/en/latest/?badge=latest)
+
 
 ## Motivation
 This repository exists for two reasons.
