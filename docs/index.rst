@@ -26,6 +26,7 @@ The PDF Class
 .. autoclass:: pdf.PDF
     :members:
 
+    .. automethod:: pdf.PDF.__init__
 
 Quantification Utilities
 ------------------------
