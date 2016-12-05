@@ -13,9 +13,14 @@ install:
   - sudo apt-get install dvipng
   - pip install --upgrade jupyter
   - pip install nbconvert
+  # Finally get set up to build the docs
+  - pip install sphinx
+  - pip install sphinx_rtd_theme
 
 script:
   # Run the unit tests:
   # - nosetests
   # Run the demo notebook:
   - jupyter nbconvert --ExecutePreprocessor.kernel_name=python --ExecutePreprocessor.timeout=600 --to notebook --execute docs/notebooks/demo.ipynb
+  # Build the docs:
+  - sphinx-build -b html -d _build/doctrees docs _build/html
