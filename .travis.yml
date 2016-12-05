@@ -18,4 +18,4 @@ script:
   # Run the unit tests:
   # - nosetests
   # Run the demo notebook:
-  - jupyter nbconvert --ExecutePreprocessor.kernel_name=python --ExecutePreprocessor.timeout=600 --to notebook --execute demo.ipynb
+  - jupyter nbconvert --ExecutePreprocessor.kernel_name=python --ExecutePreprocessor.timeout=600 --to notebook --execute docs/notebooks/demo.ipynb
