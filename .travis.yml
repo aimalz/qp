@@ -22,6 +22,7 @@ script:
   # - nosetests
   # Run the demo notebook, to make demo.html:
   - jupyter nbconvert --ExecutePreprocessor.kernel_name=python --ExecutePreprocessor.timeout=600 --to html --execute docs/notebooks/demo.ipynb ; cp docs/notebooks/demo.html .
+  - jupyter nbconvert --ExecutePreprocessor.kernel_name=python --ExecutePreprocessor.timeout=600 --to html --execute docs/notebooks/kld.ipynb ; cp docs/notebooks/kld.html .
   # Build the docs:
   - sphinx-build -b html -d _build/doctrees docs _build/html
 
@@ -32,7 +33,7 @@ after_success: |
     if [ -n "$GITHUB_API_KEY" ]; then
         git checkout --orphan html
         git rm -rf .
-        git add -f demo.html
+        git add -f demo.html kld.html
         git -c user.name='travis' -c user.email='travis' commit -m init
         git push -q -f https://drphilmarshall:$GITHUB_API_KEY@github.com/aimalz/qp html
     fi
