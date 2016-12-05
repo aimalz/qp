@@ -28,7 +28,7 @@ class PDF(object):
         self.quantvals = None
         self.interpolator = None
 
-    def evaluate(self, loc):
+    def evaluate(self, loc, vb=True):
         """
         Evaluates the PDF (either the true version, or an approximation of it) at given location(s).
 
@@ -36,6 +36,8 @@ class PDF(object):
         ----------
         loc: float or ndarray
             Location(s) at which to evaluate the pdf
+        vb: boolean
+            Report on progress to stdout?
 
         Returns
         -------
@@ -47,13 +49,13 @@ class PDF(object):
         This function evaluates the truth function if it is available and the interpolated quantile approximation otherwise.
         """
         if self.truth is not None:
-            print('Evaluating the true distribution.')
+            if vb: print('Evaluating the true distribution.')
             val = self.truth.pdf(loc)
         elif self.quantiles is not None:
-            print('Evaluating an interpolation of the quantile distribution.')
+            if vb: print('Evaluating an interpolation of the quantile distribution.')
             val = self.approximate(loc)[1]
         else:
-            print('No representation provided for evaluation.')
+            if vb: print('No representation provided for evaluation.')
 
         return(val)
 
@@ -61,7 +63,7 @@ class PDF(object):
 
         return
 
-    def quantize(self, percent=1., number=None):
+    def quantize(self, percent=1., number=None, vb=True):
         """
         Computes an array of evenly-spaced quantiles.
 
@@ -71,6 +73,8 @@ class PDF(object):
             The separation of the requested quantiles, in percent
         num_points : int
             The number of quantiles to compute.
+        vb: boolean
+            Report on progress to stdout?
 
         Returns
         -------
@@ -96,21 +100,23 @@ class PDF(object):
             assert number > 0
 
         points = np.linspace(0.0+quantum, 1.0-quantum, number)
-        print("Calculating quantiles: ", points)
+        if vb: print("Calculating quantiles: ", points)
         if self.truth is not None:
             self.quantiles = self.truth.ppf(points)
         else:
             print('New quantiles can only be computed from a truth distribution in this version.')
-        print("Result: ", self.quantiles)
+
+        if vb: print("Result: ", self.quantiles)
         return self.quantiles
 
-    def interpolate(self):
+    def interpolate(self, vb=True):
         """
         Constructs an `interpolator` function based on the quantiles.
 
         Parameters
         ----------
-        None
+        vb: boolean
+            Report on progress to stdout?
 
         Returns
         -------
@@ -128,12 +134,12 @@ class PDF(object):
         self.mids = (self.quantiles[1:]+self.quantiles[:-1])/2.
         self.quantvals = (1.0/(len(self.quantiles)+1))/self.difs
 
-        print("Creating interpolator")
+        if vb: print("Creating interpolator")
         self.interpolator = spi.interp1d(self.mids, self.quantvals, fill_value="extrapolate")
 
         return
 
-    def approximate(self, points):
+    def approximate(self, points, vb=True):
         """
         Interpolates between the quantiles to get an approximation to the density.
 
@@ -143,6 +149,8 @@ class PDF(object):
             The number of points over which to interpolate, bounded by the quantile value endpoints
         points: ndarray
             The value(s) at which to evaluate the interpolated function
+        vb: boolean
+            Report on progress to stdout?
 
         Returns
         -------

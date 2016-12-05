@@ -22,9 +22,9 @@ def safelog(arr, threshold=sys.float_info.epsilon):
     logged = np.log(np.array([max(a,threshold) for a in flat])).reshape(shape)
     return logged
 
-def calculate_kl_divergence(pf, qf, limits=(-10.,10.), dx=0.01):
+def calculate_kl_divergence(pf, qf, limits=(-10.0,10.0), dx=0.01, vb=True):
     """
-    Calculates Kullback-Leibler Divergence
+    Calculates Kullback-Leibler Divergence between two PDFs.
 
     Parameters
     ----------
@@ -35,31 +35,34 @@ def calculate_kl_divergence(pf, qf, limits=(-10.,10.), dx=0.01):
     limits: tuple of floats
         Endpoints of integration interval in which to calculate KLD
     dx: float
-        resolution of integration grid
+        Resolution of integration grid
+    vb: boolean
+        Report on progress to stdout?
 
     Returns
     -------
     klpq: float
         Value of the Kullback-Leibler Divergence from qf to pf
     """
-    #Make a grid from the limits and resolution
+    # Make a grid from the limits and resolution
     grid = np.linspace(limits[0], limits[1], int((limits[1]-limits[0])/dx))
-    #Evaluate the functions on the grid
-    pe = pf.evaluate(grid)
-    qe = qf.evaluate(grid)
-    #Normalize the evaluations
+    # Evaluate the functions on the grid
+    pe = pf.evaluate(grid, vb=vb)
+    qe = qf.evaluate(grid, vb=vb)
+    # Normalize the evaluations, so that the integrals can be done
+    # (very approximately!) by simple summation:
     pn = pe/np.sum(pe)
     qn = qe/np.sum(qe)
-    #Store the log of the normalizations
+    # Compute the log of the normalized PDFs
     logp = safelog(pn)
     logq = safelog(qn)
-    #Calculate the KLD from q to p
+    # Calculate the KLD from q to p
     klpq = np.sum(pn*(logp-logq))
     return(klpq)
 
 def calculate_rms(pf, qf, limits=(-10.,10.), dx=0.01):
     """
-    Calculates Root Mean Square Error
+    Calculates Root Mean Square Error between two PDFs.
 
     Parameters
     ----------
