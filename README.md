@@ -19,7 +19,7 @@ This repository exists for two reasons.
 
 -->
 
-* [Simple demo](https://github.com/aimalz/qp/blob/master/docs/notebooks/demo.ipynb)
+* **[Basic  Demo](http://htmlpreview.github.io/?https://github.com/aimalz/qp/blob/html/demo.html)** [(raw notebook)](https://github.com/aimalz/qp/blob/master/docs/notebooks/demo.ipynb)
 
 Also: [Read the Docs](http://qp.readthedocs.io/)
 
