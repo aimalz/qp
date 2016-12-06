@@ -30,7 +30,7 @@ class PDF(object):
 
     def evaluate(self, loc, vb=True):
         """
-        Evaluates the truth at given location(s).
+        Evaluates the PDF (either the true version, or an approximation of it) at given location(s).
 
         Parameters
         ----------
@@ -44,8 +44,8 @@ class PDF(object):
         val: float or ndarray
             Value of the truth function at given location(s)
 
-        Comments
-        --------
+        Notes
+        -----
         This function evaluates the truth function if it is available and the interpolated quantile approximation otherwise.
         """
         if self.truth is not None:
@@ -81,8 +81,8 @@ class PDF(object):
         self.quantiles : ndarray, float
             The quantile points.
 
-        Comments
-        --------
+        Notes
+        -----
         Quantiles of a PDF could be a useful approximate way to store it. This method computes the quantiles from a truth distribution (other representations forthcoming)
         and stores them in the `self.quantiles` attribute.
 
@@ -159,12 +159,10 @@ class PDF(object):
         interpolated : ndarray, float
             The interpolated points.
 
-        Comments
-        --------
-        Extrapolation is linear while values are positive; otherwise, extrapolation returns 0.
-
         Notes
         -----
+        Extrapolation is linear while values are positive; otherwise, extrapolation returns 0.
+
         Example:
             x, y = p.approximate(np.linspace(-1., 1., 100))
         """
