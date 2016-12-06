@@ -1,6 +1,6 @@
-=============================================
-qp : quantile-parametrized PDF approximations
-=============================================
+============================================
+qp : quantile-parametrized PDF approximation
+============================================
 
 In a scientific inference we typically seek to characterize the
 posterior probability density function (PDF) for our parameter(s),
@@ -28,6 +28,7 @@ API Documentation
 The package also contains some `utils` for quantifying the quality of
 these approximations.
 
+
 The PDF Class
 -------------
 
@@ -35,6 +36,7 @@ The PDF Class
     :members:
 
     .. automethod:: pdf.PDF.__init__
+
 
 Quantification Utilities
 ------------------------
