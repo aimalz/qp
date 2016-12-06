@@ -23,24 +23,24 @@ class PDF(object):
         self.quantiles = quantiles
         self.histogram = histogram
         self.initialized = None
+
         if self.truth is not None:
             self.initialized = 'truth'
         elif self.quantiles is not None:
             self.initialized = 'quantiles'
         elif self.histogram is not None:
             self.initialized = 'histogram'
+        self.last = self.initialized
+
         # Should make this a proper exception rather than just printing an advisory notice
         if self.truth is None and self.quantiles is None and self.histogram is None:
             print('It is unwise to initialize a PDF object without inputs!')
             return
-        self.difs = None
-        self.mids = None
-        self.vals = None
         self.interpolator = None
 
     def evaluate(self, loc, vb=True):
         """
-        Evaluates the PDF at given location(s).
+        Evaluates the PDF at given location(s) using truth if available and last-calculated approximation otherwise.
 
         Parameters
         ----------
@@ -62,8 +62,8 @@ class PDF(object):
             if vb: print('Evaluating the true distribution.')
             val = self.truth.pdf(loc)
         else:
-            if vb: print('Evaluating an interpolation of the '+self.initialized+' parametrization.')
-            val = self.approximate(loc, using=self.initialized)[1]
+            if vb: print('Evaluating an interpolation of the '+self.last+' parametrization.')
+            val = self.approximate(loc, using=self.last)[1]
 
         return(val)
 
@@ -116,11 +116,12 @@ class PDF(object):
             return
 
         if vb: print("Result: ", self.quantiles)
+        self.last = 'quantiles'
         return self.quantiles
 
     def histogramize(self, binends=None, nbins=10, binrange=[0., 1.], vb=True):
         """
-        Computes the histogram values from the truth on a grid.
+        Computes the histogram values from the truth.
 
         Parameters
         ----------
@@ -137,6 +138,16 @@ class PDF(object):
         -------
         self.histogram: tuple of ndarrays of floats
             Pair of arrays of lengths (nbins+1, nbins) containing endpoints of bins and values in bins
+
+        Comments
+        --------
+        A histogram representation of a PDF is a popular approximate way to store it. This method computes some histogram bin heights from a truth distribution (other representations forthcoming)
+        and stores them in the `self.histogram` attribute.
+
+        Uses the `.cdf` method of the `rvs_continuous` distribution
+        object stored in `self.truth`. This calculates the CDF.
+        See `the Scipy docs <https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_continuous.cdf.html#scipy.stats.rv_continuous.cdf>`_ for details.
+
         """
         if binends is None:
             step = float(binrange[1]-binrange[0])/nbins
@@ -153,8 +164,9 @@ class PDF(object):
             print('New histograms can only be computed from a truth distribution in this version.')
             return
 
-        if vb: print("Result: ", self.histogram)
         self.histogram = (binends, self.histogram)
+        if vb: print("Result: ", self.histogram[1])
+        self.last = 'histogram'
         return self.histogram
 
     def interpolate(self, using, vb=True):
@@ -230,11 +242,8 @@ class PDF(object):
             x, y = p.approximate(np.linspace(-1., 1., 100))
         """
 
-#         if self.quantize is not None:
-#             using = 'quantiles'
-#         elif self.histogram is not None:
-#             using = 'histogram'
-        self.interpolate(using=using)
+        if self.interpolator is None:
+            self.interpolate(using=using)
         interpolated = self.interpolator(points)
         interpolated[interpolated<0.] = 0.
 
