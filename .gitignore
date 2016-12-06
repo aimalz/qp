@@ -87,3 +87,10 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+# Notebook output
+demo.html
+demo.nbconvert.ipynb
+kld.html
+kld.nbconvert.ipynb
+plot.png

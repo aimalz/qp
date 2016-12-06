@@ -24,7 +24,7 @@ script:
   - jupyter nbconvert --ExecutePreprocessor.kernel_name=python --ExecutePreprocessor.timeout=600 --to html --execute docs/notebooks/demo.ipynb ; cp docs/notebooks/demo.html .
   - jupyter nbconvert --ExecutePreprocessor.kernel_name=python --ExecutePreprocessor.timeout=600 --to html --execute docs/notebooks/kld.ipynb ; cp docs/notebooks/kld.html .
   # Build the docs:
-  - sphinx-build -b html -d _build/doctrees docs _build/html
+  - sphinx-build -b html -d docs/_build/doctrees docs docs/_build/html
 
 # Finally, if it's the master branch being updated, force-push the
 # notebook html pages to an otherwise empty "html" branch:
