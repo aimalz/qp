@@ -169,7 +169,7 @@ class PDF(object):
         self.last = 'histogram'
         return self.histogram
 
-    def interpolate(self, using, vb=True):
+    def interpolate(self, using=self.last, vb=True):
         """
         Constructs an `interpolator` function based on the parametrization.
 
@@ -188,6 +188,10 @@ class PDF(object):
         -----
         The `self.interpolator` object is a function that is used by the `approximate` method.
         """
+        if using == 'truth':
+            print('The truth needs no interpolation.  Try converting to an approximate parametrization first.')
+            return
+
         if using == 'quantiles':
             # First find the quantiles if none exist:
             if self.quantiles is None:
