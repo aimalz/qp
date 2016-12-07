@@ -4,11 +4,14 @@ import matplotlib.pyplot as plt
 
 import qp
 
+<<<<<<< HEAD
 class PDF(object):
 
-    def __init__(self, truth=None, quantiles=None, histogram=None):
+    def __init__(self, truth=None, quantiles=None, histogram=None,
+                 vb=True):
         """
-        Initializes the PDF object with some representation of a distribution.
+        An object representing a probability density function in
+        various ways.
 
         Parameters
         ----------
@@ -18,6 +21,8 @@ class PDF(object):
             Array of quantile values separated by 100./(len(quantiles)+1) percentiles
         histogram: tuple of ndarrays, optional
             Pair of arrays of lengths (nbins+1, nbins) containing endpoints of bins and values in bins
+        vb: boolean
+            report on progress to stdout?
         """
         self.truth = truth
         self.quantiles = quantiles
@@ -32,30 +37,34 @@ class PDF(object):
             self.initialized = 'histogram'
         self.last = self.initialized
 
-        # Should make this a proper exception rather than just printing an advisory notice
-        if self.truth is None and self.quantiles is None and self.histogram is None:
-            print('It is unwise to initialize a PDF object without inputs!')
-            return
+        if vb and self.truth is None and self.quantiles is None
+              and self.histogram is None:
+            print 'Warning: initializing a PDF object without inputs'
+        self.difs = None
+        self.mids = None
+        self.quantvals = None
         self.interpolator = None
+        return
 
     def evaluate(self, loc, vb=True):
         """
-        Evaluates the PDF at given location(s) using truth if available and last-calculated approximation otherwise.
+        Evaluates the PDF (either the true version, or the most recent
+        approximation of it) at the given location(s).
 
         Parameters
         ----------
         loc: float or ndarray
-            Location(s) at which to evaluate the pdf
+            location(s) at which to evaluate the pdf
         vb: boolean
-            Report on progress to stdout?
+            report on progress to stdout?
 
         Returns
         -------
         val: float or ndarray
-            Value of the truth function at given location(s)
+            the value of the PDF (ot its approximation) at the requested location(s)
 
-        Comments
-        --------
+        Notes
+        -----
         This function evaluates the truth function if it is available and the interpolated quantile approximation otherwise.
         """
         if self.truth is not None:
@@ -68,8 +77,24 @@ class PDF(object):
         return(val)
 
     def integrate(self, limits):
+        """
+        Computes the integral under the PDF between the given limits.
 
-        return
+        Parameters
+        ----------
+        limits: float, tuple
+            limits of integration
+
+        Returns
+        -------
+        integral: float
+            value of the integral
+
+        Notes
+        -----
+        This method is not yet operational, and returns `None`.
+        """
+        return None
 
     def quantize(self, percent=1., number=None, vb=True):
         """
@@ -77,20 +102,20 @@ class PDF(object):
 
         Parameters
         ----------
-        percent : float
-            The separation of the requested quantiles, in percent
-        number : int
-            The number of quantiles to compute.
+        percent: float
+            the separation of the requested quantiles, in percent
+        number: int
+            the number of quantiles to compute.
         vb: boolean
-            Report on progress to stdout?
+            report on progress to stdout?
 
         Returns
         -------
-        self.quantiles : ndarray, float
-            The quantile points.
+        self.quantiles: ndarray, float
+            the quantile points.
 
-        Comments
-        --------
+        Notes
+        -----
         Quantiles of a PDF could be a useful approximate way to store it. This method computes the quantiles from a truth distribution (other representations forthcoming)
         and stores them in the `self.quantiles` attribute.
 
@@ -178,7 +203,7 @@ class PDF(object):
         using: string
             Parametrization on which to interpolate, currently supports 'quantiles', 'histogram'
         vb: boolean
-            Report on progress to stdout?
+            report on progress to stdout?
 
         Returns
         -------
@@ -221,28 +246,28 @@ class PDF(object):
         Parameters
         ----------
         number: int
-            The number of points over which to interpolate, bounded by the quantile value endpoints
+            the number of points over which to interpolate, bounded by the quantile value endpoints
         points: ndarray
-            The value(s) at which to evaluate the interpolated function
+            the value(s) at which to evaluate the interpolated function
         using: string
-            Parametrization from which to approximate, currently supports 'quantiles', 'histogram'
+            approximation parametrization, currently either 'quantiles'
+            or 'histogram'
         vb: boolean
-            Report on progress to stdout?
+            report on progress to stdout?
 
         Returns
         -------
         points: ndarray, float
-            The input grid upon which to interpolate
-        interpolated : ndarray, float
-            The interpolated points.
-
-        Comments
-        --------
-        Extrapolation is linear while values are positive; otherwise, extrapolation returns 0.
+            the input grid upon which to interpolate
+        interpolated: ndarray, float
+            the interpolated points.
 
         Notes
         -----
-        Example:
+        Extrapolation is linear while values are positive; otherwise, extrapolation returns 0.
+
+        Example::
+
             x, y = p.approximate(np.linspace(-1., 1., 100))
         """
 
@@ -255,14 +280,14 @@ class PDF(object):
 
     def plot(self, limits, points=None):
         """
-        Plot the PDF, in various ways.
+        Plots the PDF, in various ways.
 
         Parameters
         ----------
-        limits : tuple, float
-            Range over which to plot the PDF
-        points: ndarray, optional
-            The value(s) at which to evaluate the interpolator
+        limits: tuple, float
+            range over which to plot the PDF
+        points: ndarray
+            the value(s) at which to evaluate the interpolator
 
         Notes
         -----
@@ -300,18 +325,19 @@ class PDF(object):
         Parameters
         ----------
         limits: tuple of floats
-            Endpoints of integration interval in which to calculate KLD
+            endpoints of integration interval in which to calculate KLD
         dx: float
             resolution of integration grid
 
         Returns
         -------
         KL: float
-            Value of Kullback-Leibler divergence from approximation to truth if truth is available; otherwise nothing.
+            value of Kullback-Leibler divergence from approximation to truth if truth is available; otherwise nothing.
 
         Notes
         -----
-        Example:
+        Example::
+
             d = p.kld(limits=(-1., 1.), dx=1./100))
         """
 
@@ -329,18 +355,19 @@ class PDF(object):
         Parameters
         ----------
         limits: tuple of floats
-            Endpoints of integration interval in which to calculate KLD
+            endpoints of integration interval in which to calculate KLD
         dx: float
             resolution of integration grid
 
         Returns
         -------
         RMS: float
-            Value of root mean square difference between approximation of truth if truth is available; otherwise nothing.
+            value of root mean square difference between approximation of truth if truth is available; otherwise nothing.
 
         Notes
         -----
-        Example:
+        Example::
+
             d = p.rms(limits=(-1., 1.), dx=1./100))
         """
 
