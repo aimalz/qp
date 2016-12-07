@@ -188,7 +188,7 @@ class PDF(object):
         -----
         The `self.interpolator` object is a function that is used by the `approximate` method.
         """
-        if using == None:
+        if using == 'truth':
             print('The truth needs no interpolation.  Try converting to an approximate parametrization first.')
             return
 
