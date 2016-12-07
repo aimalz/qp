@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 
 import qp
 
-<<<<<<< HEAD
 class PDF(object):
 
     def __init__(self, truth=None, quantiles=None, histogram=None,
@@ -37,8 +36,8 @@ class PDF(object):
             self.initialized = 'histogram'
         self.last = self.initialized
 
-        if vb and self.truth is None and self.quantiles is None
-              and self.histogram is None:
+        if vb and self.truth is None and self.quantiles is None and \
+                  self.histogram is None:
             print 'Warning: initializing a PDF object without inputs'
         self.difs = None
         self.mids = None
