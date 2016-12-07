@@ -214,7 +214,7 @@ class PDF(object):
 
         return
 
-    def approximate(self, points, using, vb=True):
+    def approximate(self, points, using=self.last, vb=True):
         """
         Interpolates the parametrization to get an approximation to the density.
 
