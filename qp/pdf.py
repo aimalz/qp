@@ -209,7 +209,7 @@ class PDF(object):
             self.mids = (self.histogram[0][1:]+self.histogram[0][:-1])/2.
             self.vals = self.histogram[1]
 
-        if vb: print("Creating interpolator")
+        if vb: print("Creating interpolator for "+using+' parametrization.')
         self.interpolator = spi.interp1d(self.mids, self.vals, fill_value="extrapolate")
 
         return
