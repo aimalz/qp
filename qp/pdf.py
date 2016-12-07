@@ -4,25 +4,41 @@ import matplotlib.pyplot as plt
 
 import qp
 
-
+<<<<<<< HEAD
 class PDF(object):
-    """
-    A PDF object, with some representation of a distribution.
 
-    Parameters
-    ----------
-    truth: scipy.stats.rv_continuous object, optional
-        continuous, parametric form of the PDF
-    quantiles: ndarray, optional
-        array of quantile values separated by
-    vb: boolean
-        report on progress to stdout?
-    """
-    def __init__(self, truth=None, quantiles=None, vb=True):
+    def __init__(self, truth=None, quantiles=None, histogram=None,
+                 vb=True):
+        """
+        An object representing a probability density function in
+        various ways.
+
+        Parameters
+        ----------
+        truth: scipy.stats.rv_continuous object, optional
+            Continuous, parametric form of the PDF
+        quantiles: ndarray, optional
+            Array of quantile values separated by 100./(len(quantiles)+1) percentiles
+        histogram: tuple of ndarrays, optional
+            Pair of arrays of lengths (nbins+1, nbins) containing endpoints of bins and values in bins
+        vb: boolean
+            report on progress to stdout?
+        """
         self.truth = truth
         self.quantiles = quantiles
-        # Should make this a proper exception rather than just printing an advisory notice
-        if vb and self.truth is None and self.quantiles is None:
+        self.histogram = histogram
+        self.initialized = None
+
+        if self.truth is not None:
+            self.initialized = 'truth'
+        elif self.quantiles is not None:
+            self.initialized = 'quantiles'
+        elif self.histogram is not None:
+            self.initialized = 'histogram'
+        self.last = self.initialized
+
+        if vb and self.truth is None and self.quantiles is None
+              and self.histogram is None:
             print 'Warning: initializing a PDF object without inputs'
         self.difs = None
         self.mids = None
@@ -32,7 +48,8 @@ class PDF(object):
 
     def evaluate(self, loc, vb=True):
         """
-        Evaluates the PDF (either the true version, or an approximation of it) at given location(s).
+        Evaluates the PDF (either the true version, or the most recent
+        approximation of it) at the given location(s).
 
         Parameters
         ----------
@@ -53,11 +70,9 @@ class PDF(object):
         if self.truth is not None:
             if vb: print('Evaluating the true distribution.')
             val = self.truth.pdf(loc)
-        elif self.quantiles is not None:
-            if vb: print('Evaluating an interpolation of the quantile distribution.')
-            val = self.approximate(loc)[1]
         else:
-            if vb: print('No representation provided for evaluation.')
+            if vb: print('Evaluating an interpolation of the '+self.last+' parametrization.')
+            val = self.approximate(loc, using=self.last)[1]
 
         return(val)
 
@@ -83,13 +98,13 @@ class PDF(object):
 
     def quantize(self, percent=1., number=None, vb=True):
         """
-        Computes an array of evenly-spaced quantiles.
+        Computes an array of evenly-spaced quantiles from the truth.
 
         Parameters
         ----------
         percent: float
             the separation of the requested quantiles, in percent
-        num_points: int
+        number: int
             the number of quantiles to compute.
         vb: boolean
             report on progress to stdout?
@@ -123,16 +138,70 @@ class PDF(object):
             self.quantiles = self.truth.ppf(points)
         else:
             print('New quantiles can only be computed from a truth distribution in this version.')
+            return
 
         if vb: print("Result: ", self.quantiles)
+        self.last = 'quantiles'
         return self.quantiles
 
-    def interpolate(self, vb=True):
+    def histogramize(self, binends=None, nbins=10, binrange=[0., 1.], vb=True):
         """
-        Constructs an `interpolator` function based on the quantiles.
+        Computes the histogram values from the truth.
 
         Parameters
         ----------
+        binends: ndarray, float, optional
+            Array of N+1 endpoints of N bins
+        nbins: int, optional
+            Number of bins if no binends provided
+        range: tuple, float, optional
+            Pair of values of endpoints of total bin range
+        vb: boolean
+            Report on progress to stdout?
+
+        Returns
+        -------
+        self.histogram: tuple of ndarrays of floats
+            Pair of arrays of lengths (nbins+1, nbins) containing endpoints of bins and values in bins
+
+        Comments
+        --------
+        A histogram representation of a PDF is a popular approximate way to store it. This method computes some histogram bin heights from a truth distribution (other representations forthcoming)
+        and stores them in the `self.histogram` attribute.
+
+        Uses the `.cdf` method of the `rvs_continuous` distribution
+        object stored in `self.truth`. This calculates the CDF.
+        See `the Scipy docs <https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_continuous.cdf.html#scipy.stats.rv_continuous.cdf>`_ for details.
+
+        """
+        if binends is None:
+            step = float(binrange[1]-binrange[0])/nbins
+            binends = np.arange(binrange[0], binrange[1]+step, step)
+
+        nbins = len(binends)-1
+        self.histogram = np.zeros(nbins)
+        if vb: print("Calculating histogram: ", binends)
+        if self.truth is not None:
+            cdf = self.truth.cdf(binends)
+            for b in range(nbins):
+                self.histogram[b] = (cdf[b+1]-cdf[b])/(binends[b+1]-binends[b])
+        else:
+            print('New histograms can only be computed from a truth distribution in this version.')
+            return
+
+        self.histogram = (binends, self.histogram)
+        if vb: print("Result: ", self.histogram[1])
+        self.last = 'histogram'
+        return self.histogram
+
+    def interpolate(self, using=None, vb=True):
+        """
+        Constructs an `interpolator` function based on the parametrization.
+
+        Parameters
+        ----------
+        using: string
+            Parametrization on which to interpolate, currently supports 'quantiles', 'histogram'
         vb: boolean
             report on progress to stdout?
 
@@ -142,24 +211,37 @@ class PDF(object):
 
         Notes
         -----
-        The `self.interpolator` object is a function, that is used by the `approximate` method.
+        The `self.interpolator` object is a function that is used by the `approximate` method.
         """
-        # First find the quantiles if none exist:
-        if self.quantiles is None:
-            self.quantiles = self.quantize()
+        if using == 'truth':
+            print('The truth needs no interpolation.  Try converting to an approximate parametrization first.')
+            return
 
-        self.difs = self.quantiles[1:]-self.quantiles[:-1]
-        self.mids = (self.quantiles[1:]+self.quantiles[:-1])/2.
-        self.quantvals = (1.0/(len(self.quantiles)+1))/self.difs
+        if using == 'quantiles':
+            # First find the quantiles if none exist:
+            if self.quantiles is None:
+                self.quantiles = self.quantize()
 
-        if vb: print("Creating interpolator")
-        self.interpolator = spi.interp1d(self.mids, self.quantvals, fill_value="extrapolate")
+            self.difs = self.quantiles[1:]-self.quantiles[:-1]
+            self.mids = (self.quantiles[1:]+self.quantiles[:-1])/2.
+            self.vals = (1.0/(len(self.quantiles)+1))/self.difs
+
+        if using == 'histogram':
+            # First find the histogram if none exists:
+            if self.histogram is None:
+                self.histogram = self.histogramize()
+
+            self.mids = (self.histogram[0][1:]+self.histogram[0][:-1])/2.
+            self.vals = self.histogram[1]
+
+        if vb: print("Creating interpolator for "+using+' parametrization.')
+        self.interpolator = spi.interp1d(self.mids, self.vals, fill_value="extrapolate")
 
         return
 
-    def approximate(self, points, vb=True):
+    def approximate(self, points, using=None, vb=True):
         """
-        Interpolates between the quantiles to get an approximation to the density.
+        Interpolates the parametrization to get an approximation to the density.
 
         Parameters
         ----------
@@ -167,6 +249,9 @@ class PDF(object):
             the number of points over which to interpolate, bounded by the quantile value endpoints
         points: ndarray
             the value(s) at which to evaluate the interpolated function
+        using: string
+            approximation parametrization, currently either 'quantiles'
+            or 'histogram'
         vb: boolean
             report on progress to stdout?
 
@@ -186,9 +271,8 @@ class PDF(object):
             x, y = p.approximate(np.linspace(-1., 1., 100))
         """
 
-        # First construct interpolator function if it does not already exist.
         if self.interpolator is None:
-            self.interpolate()
+            self.interpolate(using=using)
         interpolated = self.interpolator(points)
         interpolated[interpolated<0.] = 0.
 
@@ -216,12 +300,16 @@ class PDF(object):
             plt.plot(x, self.truth.pdf(x), color='k', linestyle='-', lw=1.0, alpha=1.0, label='True PDF')
 
         if self.quantiles is not None:
-            y = [0., 1.]
-            plt.vlines(self.quantiles, y[0], y[1], color='k', linestyle='--', lw=1.0, alpha=1., label='Quantiles')
+            plt.vlines(self.quantiles, 0., 1., color='b', linestyle='--', lw=1.0, alpha=1., label='Quantiles')
+            if points is not None:
+                (grid, qinterpolated) = self.approximate(points, using='quantiles')
+                plt.plot(grid, qinterpolated, color='b', linestyle=':', lw=2.0, alpha=1.0, label='Quantile Interpolated PDF')
 
-        if points is not None:
-            (grid, interpolated) = self.approximate(points)
-            plt.plot(grid, interpolated, color='r', linestyle=':', lw=2.0, alpha=1.0, label='Interpolated PDF')
+        if self.histogram is not None:
+            plt.hlines(self.histogram[1], self.histogram[0][:-1], self.histogram[0][1:], color='r', linestyle='--', lw=1.0, alpha=1., label='Histogram')
+            if points is not None:
+                (grid, hinterpolated) = self.approximate(points, using='histogram')
+                plt.plot(grid, hinterpolated, color='r', linestyle=':', lw=2.0, alpha=1.0, label='Histogram Interpolated PDF')
 
         plt.legend()
         plt.xlabel('x')
