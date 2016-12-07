@@ -2,7 +2,8 @@ import numpy as np
 import scipy.interpolate as spi
 import matplotlib.pyplot as plt
 
-import qp
+from .utils import calculate_kl_divergence, calculate_rms
+
 
 class PDF(object):
     """
@@ -256,7 +257,7 @@ class PDF(object):
             print('Truth not available for comparison.')
             return
         else:
-            KL = qp.utils.calculate_kl_divergence(self, self, limits=limits, dx=dx)
+            KL = calculate_kl_divergence(self, self, limits=limits, dx=dx)
             return(KL)
 
     def rms(self, limits=(0., 1.), dx=0.01):
@@ -286,5 +287,5 @@ class PDF(object):
             print('Truth not available for comparison.')
             return
         else:
-            RMS = qp.utils.calculate_rms(self, self, limits=limits, dx=dx)
+            RMS = calculate_rms(self, self, limits=limits, dx=dx)
             return(RMS)
