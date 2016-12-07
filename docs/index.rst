@@ -32,13 +32,14 @@ these approximations.
 The PDF Class
 -------------
 
-.. autoclass:: pdf.PDF
+.. automodule:: pdf
     :members:
-
-    .. automethod:: pdf.PDF.__init__
+    :undoc-members:
 
 
 Quantification Utilities
 ------------------------
 
 .. automodule:: utils
+    :members:
+    :undoc-members:
