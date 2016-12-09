@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 
 import qp
 
-<<<<<<< HEAD
 class PDF(object):
 
     def __init__(self, truth=None, quantiles=None, histogram=None,
@@ -37,8 +36,7 @@ class PDF(object):
             self.initialized = 'histogram'
         self.last = self.initialized
 
-        if vb and self.truth is None and self.quantiles is None
-              and self.histogram is None:
+        if vb and self.truth is None and self.quantiles is None and self.histogram is None:
             print 'Warning: initializing a PDF object without inputs'
         self.difs = None
         self.mids = None
@@ -277,6 +275,59 @@ class PDF(object):
         interpolated[interpolated<0.] = 0.
 
         return (points, interpolated)
+
+    def sample(self, N, using=None, vb=True):
+        """
+        Samples the pdf in given representation
+
+        Parameters
+        ----------
+        N: int
+            number of samples to produce
+        using: string
+            Parametrization on which to interpolate, currently supports 'quantiles', 'histogram'
+        vb: boolean
+            report on progress to stdout?
+
+        Returns
+        -------
+        samples: ndarray
+            array of sampled values
+        """
+        if using is None:
+            if self.truth is not None:
+                using = 'truth'
+            elif self.quantiles is not None:
+                using = 'quantiles'
+            elif self.histogram is not None:
+                using = 'histogram'
+            else:
+                'Initialize the PDF without inputs is unwise!'
+                return
+
+        if using == 'truth':
+            return self.truth.rvs(size=N)
+
+#         if using == 'quantiles':
+#             # First find the quantiles if none exist:
+#             if self.quantiles is None:
+#                 self.quantiles = self.quantize()
+
+#             self.difs = self.quantiles[1:]-self.quantiles[:-1]
+#             self.mids = (self.quantiles[1:]+self.quantiles[:-1])/2.
+#             self.vals = (1.0/(len(self.quantiles)+1))/self.difs
+
+#         if using == 'histogram':
+#             # First find the histogram if none exists:
+#             if self.histogram is None:
+#                 self.histogram = self.histogramize()
+
+#             self.mids = (self.histogram[0][1:]+self.histogram[0][:-1])/2.
+#             self.vals = self.histogram[1]
+
+        if vb: print("Sampling from "+using+' parametrization.')
+
+        return samples
 
     def plot(self, limits, points=None):
         """
