@@ -94,12 +94,14 @@ class PDF(object):
         """
         return None
 
-    def quantize(self, percent=1., number=None, vb=True):
+    def quantize(self, quants=None, percent=1., number=None, vb=True):
         """
         Computes an array of evenly-spaced quantiles from the truth.
 
         Parameters
         ----------
+        quants: ndarray, float
+            array of quantile locations as decimals
         percent: float
             the separation of the requested quantiles, in percent
         number: int
@@ -121,25 +123,34 @@ class PDF(object):
         object stored in `self.truth`. This calculates the inverse CDF.
         See `the Scipy docs <https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_continuous.ppf.html#scipy.stats.rv_continuous.ppf>`_ for details.
         """
-        if number is not None:
-            # Compute the spacing of the quantiles:
-            quantum = 1.0 / float(number+1)
+        if quants is not None:
+            full_quants = np.append(np.array([0.]),quants)
+            full_quants = np.append(full_quants,np.array([1.]))
+            quantdifs = full_quants[1:]-full_quants[:-1]
+            assert np.sum(quantdifs)==1.
+            self.quantpoints = quants
         else:
-            quantum = percent/100.0
-            # Over-write the number of quantiles:
-            number = np.ceil(100.0 / percent) - 1
-            assert number > 0
+            if number is not None:
+                # Compute the spacing of the quantiles:
+                quantum = 1.0 / float(number+1)
+            else:
+                quantum = percent/100.0
+                # Over-write the number of quantiles:
+                number = np.ceil(100.0 / percent) - 1
+                assert number > 0
 
-        points = np.linspace(0.0+quantum, 1.0-quantum, number)
-        if vb: print("Calculating quantiles: ", points)
+            self.quantpoints = np.linspace(0.0+quantum, 1.0-quantum, number)
+        if vb: print("Calculating quantiles: ", self.quantpoints)
         if self.truth is not None:
-            self.quantiles = self.truth.ppf(points)
+            self.quantiles = self.truth.ppf(self.quantpoints)
         else:
             print('New quantiles can only be computed from a truth distribution in this version.')
             return
 
         if vb: print("Result: ", self.quantiles)
+        self.quantvals = self.evaluate(self.quantiles)
         self.last = 'quantiles'
+        self.quantiles = (self.quantiles, self.quantvals)
         return self.quantiles
 
     def histogramize(self, binends=None, nbins=10, binrange=[0., 1.], vb=True):
@@ -220,9 +231,10 @@ class PDF(object):
             if self.quantiles is None:
                 self.quantiles = self.quantize()
 
-            self.difs = self.quantiles[1:]-self.quantiles[:-1]
-            self.mids = (self.quantiles[1:]+self.quantiles[:-1])/2.
-            self.vals = (1.0/(len(self.quantiles)+1))/self.difs
+            #self.difs = self.quantiles[0][1:]-self.quantiles[0][:-1]
+            #self.mids = (self.quantiles[0][1:]+self.quantiles[0][:-1])/2.
+            self.mids = self.quantiles[0]
+            self.vals = self.quantiles[1]#(1.0/(len(self.quantiles)+1))/self.difs
 
         if using == 'histogram':
             # First find the histogram if none exists:
@@ -351,7 +363,7 @@ class PDF(object):
             plt.plot(x, self.truth.pdf(x), color='k', linestyle='-', lw=1.0, alpha=1.0, label='True PDF')
 
         if self.quantiles is not None:
-            plt.vlines(self.quantiles, 0., 1., color='b', linestyle='--', lw=1.0, alpha=1., label='Quantiles')
+            plt.vlines(self.quantiles[0], np.zeros(len(self.quantiles[1])), self.quantiles[1], color='b', linestyle='--', lw=1.0, alpha=1., label='Quantiles')
             if points is not None:
                 (grid, qinterpolated) = self.approximate(points, using='quantiles')
                 plt.plot(grid, qinterpolated, color='b', linestyle=':', lw=2.0, alpha=1.0, label='Quantile Interpolated PDF')
