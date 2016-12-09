@@ -288,7 +288,7 @@ class PDF(object):
 
         return (points, interpolated)
 
-    def sample(self, N, using=None, vb=True):
+    def sample(self, N, infty=100., using=None, vb=True):
         """
         Samples the pdf in given representation
 
@@ -307,27 +307,28 @@ class PDF(object):
             array of sampled values
         """
         if using is None:
-            if self.truth is not None:
-                using = 'truth'
-            elif self.quantiles is not None:
-                using = 'quantiles'
-            elif self.histogram is not None:
-                using = 'histogram'
-            else:
-                'Warning: cannot sample without an input distribution!'
-                return
+            using = self.last
 
         if using == 'truth':
             return self.truth.rvs(size=N)
 
-#         if using == 'quantiles':
-#             # First find the quantiles if none exist:
-#             if self.quantiles is None:
-#                 self.quantiles = self.quantize()
+        if using == 'quantiles':
+            # First find the quantiles if none exist:
+            if self.quantiles is None:
+                self.quantiles = self.quantize()
 
-#             self.difs = self.quantiles[1:]-self.quantiles[:-1]
-#             self.mids = (self.quantiles[1:]+self.quantiles[:-1])/2.
-#             self.vals = (1.0/(len(self.quantiles)+1))/self.difs
+            endpoints = np.append(np.array([-1.*infty]),self.quantiles[0])
+            endpoints = np.append(endpoints,np.array([infty]))
+            weights = self.quantiles[1]
+            ncats = len(weights)
+            cats = range(ncats)
+        sampbins = [0]*ncats
+        for item in range(N):
+            sampbins[qp.utils.choice(cats, weights)] += 1
+        samples = []*N
+        for c in range(ncats):
+            for n in range(sampbins[c]):
+                samples.append(np.random.uniform(low=endpoints[c], high=endpoints[c+1]))
 
 #         if using == 'histogram':
 #             # First find the histogram if none exists:
