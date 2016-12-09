@@ -1,7 +1,6 @@
 import numpy as np
 import sys
 
-# tools for sampling an arbitrary discrete distribution, used in data generation
 def cdf(weights):
     """
     Creates a normalized CDF from an arbitrary discrete distribution
@@ -9,7 +8,7 @@ def cdf(weights):
     Parameters
     ----------
     weights: ndarray, float
-        array of input weights for classes
+        array of relative probabilities for classes
 
     Returns
     -------
@@ -26,13 +25,26 @@ def cdf(weights):
 
 def choice(pop, weights):
     """
-    choice takes a population and assigns each element a value from 0 to len(weights) based on CDF of weights
+    Samples classes from a discrete CDF
+
+    Parameters
+    ----------
+    pop: ndarray or list, float or int or str
+        possible classes to assign to sample
+    weights: ndarray, float
+        array of relative probabilities for classes
+
+    Returns
+    -------
+    output: float or int or str
+        the label on the class for the sample
     """
     assert len(pop) == len(weights)
     cdf_vals = cdf(weights)
     x = np.random.random()
     index = bisect.bisect(cdf_vals,x)
-    return pop[index]
+    output = pop[index]
+    return output
 
 def safelog(arr, threshold=sys.float_info.epsilon):
     """
