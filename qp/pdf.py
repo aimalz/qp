@@ -302,7 +302,7 @@ class PDF(object):
             elif self.histogram is not None:
                 using = 'histogram'
             else:
-                'Initialize the PDF without inputs is unwise!'
+                'Warning: cannot sample without an input distribution!'
                 return
 
         if using == 'truth':
