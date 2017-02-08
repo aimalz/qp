@@ -99,3 +99,7 @@ class composite(object):
         xs: float or numpy.ndarray, float
             quantiles
         """
+        xs = np.zeros(np.shape(xs))
+        for c in self.component_range:
+            xs += self.components[c]['function'].ppf(cdfs*self.components[c]['coefficient'])
+        return xs

@@ -13,7 +13,7 @@ class PDF(object):
         various ways.
         Parameters
         ----------
-        truth: scipy.stats.rv_continuous object, optional
+        truth: scipy.stats.rv_continuous object or qp.composite object, optional
             Continuous, parametric form of the PDF
         quantiles: tuple of ndarrays, optional
             Pair of arrays of lengths (nquants, nquants) containing CDF values and quantiles
