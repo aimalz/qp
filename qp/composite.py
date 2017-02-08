@@ -6,13 +6,13 @@ import qp
 
 class composite(object):
 
-    def __init__(self, elements, vb=True):
+    def __init__(self, components, vb=True):
         """
         A probability distribution that is a linear combination of scipy.stats.rv_continuous objects
 
         Parameters
         ----------
-        elements: list or tuple, dicts
+        components: list or tuple, dicts
             aggregation of dicts defining component functions and their coefficients
         vb: boolean
             report on progress to stdout?
@@ -21,9 +21,9 @@ class composite(object):
         self.n_components = len(self.components)
         self.component_range = range(self.n_components)
 
-        weights = np.array([componene['coefficient'] for component in self.components])
+        weights = np.array([component['coefficient'] for component in self.components])
         self.weights = weights / np.sum(weights)
-        self.functions = np.array([component['function'] for componene in self.components])
+        self.functions = np.array([component['function'] for component in self.components])
 
     def pdf(self, xs):
         """
@@ -61,15 +61,15 @@ class composite(object):
         ps = np.zeros(np.shape(xs))
         for c in self.component_range:
             ps += self.components[c]['coefficient'] * self.components[c]['function'].cdf(xs)
-        return p
+        return ps
 
-    def rvs(self, N):
+    def rvs(self, size):
         """
         Samples the composite probability distribution
 
         Parameters
         ----------
-        N: int
+        size: int
             number of samples to take
 
         Returns
@@ -77,13 +77,15 @@ class composite(object):
         xs: numpy.ndarray, float
             samples from the PDF
         """
-        groups = np.zeros(self.n_components)
-        for item in range(N):
+        groups = [0]*self.n_components
+        for item in range(size):
             groups[qp.utils.choice(self.component_range, self.weights)] += 1
-        samples = [] * N
+        print(groups)
+        samples = [] * size
         for c in self.component_range:
             for n in range(groups[c]):
                 samples.append(self.components[c]['function'].rvs())
+        return np.array(samples)
 
     def ppf(self, cdfs):
         """
@@ -99,7 +101,7 @@ class composite(object):
         xs: float or numpy.ndarray, float
             quantiles
         """
-        xs = np.zeros(np.shape(xs))
+        xs = np.zeros(np.shape(cdfs))
         for c in self.component_range:
             xs += self.components[c]['function'].ppf(cdfs*self.components[c]['coefficient'])
         return xs

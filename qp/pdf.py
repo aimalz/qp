@@ -361,7 +361,7 @@ class PDF(object):
             extrema = [min(extrema[0], self.histogram[0][0]), max(extrema[1], self.histogram[0][-1])]
 
         if self.samples is not None:
-            plt.plot(self.samples, np.zeros(self.samples.shape), 'g+', ms=20, label='Samples')
+            plt.plot(self.samples, np.zeros(np.shape(self.samples)), 'g+', ms=20, label='Samples')
             (grid, sinterpolated) = self.approximate(x, using='samples')
             plt.plot(grid, sinterpolated, color='g', lw=2.0, alpha=1.0, linestyle='--', label='Samples Interpolated PDF')
             extrema = [min(extrema[0], min(self.samples)), max(extrema[1], max(self.samples))]
