@@ -1,5 +1,53 @@
 import numpy as np
+import scipy as sp
+from scipy import stats as sps
 import sys
+import bisect
+
+def cdf(weights):
+    """
+    Creates a normalized CDF from an arbitrary discrete distribution
+
+    Parameters
+    ----------
+    weights: ndarray, float
+        array of relative probabilities for classes
+
+    Returns
+    -------
+    result: ndarray, float
+        discrete CDF
+    """
+    tot = sum(weights)
+    result = []
+    cumsum = 0.
+    for w in weights:
+        cumsum += w
+        result.append(cumsum/tot)
+    return np.array(result)
+
+def choice(pop, weights):
+    """
+    Samples classes from a discrete CDF
+
+    Parameters
+    ----------
+    pop: ndarray or list, float or int or str
+        possible classes to assign to sample
+    weights: ndarray, float
+        array of relative probabilities for classes
+
+    Returns
+    -------
+    output: float or int or str
+        the label on the class for the sample
+    """
+    assert len(pop) == len(weights)
+    cdf_vals = cdf(weights)
+    x = np.random.random()
+    index = bisect.bisect(cdf_vals,x)
+    output = pop[index]
+    return output
 
 def safelog(arr, threshold=sys.float_info.epsilon):
     """
@@ -21,6 +69,72 @@ def safelog(arr, threshold=sys.float_info.epsilon):
     flat = arr.flatten()
     logged = np.log(np.array([max(a,threshold) for a in flat])).reshape(shape)
     return logged
+
+def evaluate_quantiles((q, x), minval=-100.):
+    """
+    Produces PDF values given quantile information
+
+    Parameters
+    ----------
+    q: ndarray, float
+        CDF values
+    x: ndarray, float
+        quantile values
+    infty: float, optional
+        value at which CDF(infty) = 0, CDF(-infty) = 0
+
+    Returns
+    -------
+    (x, y): tuple, float
+        quantile values and corresponding PDF
+    """
+    qs = np.append(np.array([0.]), q)
+    # qs = np.append(qs, np.array([1.]))
+    dq = qs[1:]-qs[:-1]
+    xs = np.append(np.array([minval]), x)
+    # xs = np.append(xs, np.array([infty]))
+    dx = xs[1:]-xs[:-1]
+    y = dq / dx
+    return ((x, y))
+
+def evaluate_histogram((xp, y)):
+    """
+    Produces PDF values given histogram information
+
+    Parameters
+    ----------
+    xp: ndarray, float
+        bin endpoints
+    y: ndarray, float
+        CDFs over bins
+
+    Returns
+    -------
+    (x, y): tuple, float
+        bin midpoints and CDFs over bins
+    """
+    x = (xp[1:]+xp[:-1])/2.
+    return((x, y))
+
+def evaluate_samples(x):
+    """
+    Produces PDF values given samples
+
+    Parameters
+    ----------
+    x: ndarray, float
+        samples from the PDF
+
+    Returns
+    -------
+    (sx, y): tuple, float
+        sorted sample values and corresponding PDF values
+    """
+    sx = np.sort(x)
+    # bandwidth = np.mean(sx[1:]-sx[:-1])
+    kde = sps.gaussian_kde(x)# , bw_method=bandwidth)
+    y = kde(sx)
+    return ((sx, y))
 
 def calculate_kl_divergence(p, q, limits=(-10.0,10.0), dx=0.01, vb=True):
     """
