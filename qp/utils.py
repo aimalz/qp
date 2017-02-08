@@ -70,26 +70,71 @@ def safelog(arr, threshold=sys.float_info.epsilon):
     logged = np.log(np.array([max(a,threshold) for a in flat])).reshape(shape)
     return logged
 
-def evaluate_quantiles((q, x), infty=100.):
+def evaluate_quantiles((q, x), minval=-100.):
+    """
+    Produces PDF values given quantile information
+
+    Parameters
+    ----------
+    q: ndarray, float
+        CDF values
+    x: ndarray, float
+        quantile values
+    infty: float, optional
+        value at which CDF(infty) = 0, CDF(-infty) = 0
+
+    Returns
+    -------
+    (x, y): tuple, float
+        quantile values and corresponding PDF
+    """
     qs = np.append(np.array([0.]), q)
     # qs = np.append(qs, np.array([1.]))
     dq = qs[1:]-qs[:-1]
-    xs = np.append(np.array([-1. * infty]), x)
+    xs = np.append(np.array([minval]), x)
     # xs = np.append(xs, np.array([infty]))
     dx = xs[1:]-xs[:-1]
     y = dq / dx
     return ((x, y))
 
 def evaluate_histogram((xp, y)):
+    """
+    Produces PDF values given histogram information
+
+    Parameters
+    ----------
+    xp: ndarray, float
+        bin endpoints
+    y: ndarray, float
+        CDFs over bins
+
+    Returns
+    -------
+    (x, y): tuple, float
+        bin midpoints and CDFs over bins
+    """
     x = (xp[1:]+xp[:-1])/2.
     return((x, y))
 
 def evaluate_samples(x):
+    """
+    Produces PDF values given samples
+
+    Parameters
+    ----------
+    x: ndarray, float
+        samples from the PDF
+
+    Returns
+    -------
+    (sx, y): tuple, float
+        sorted sample values and corresponding PDF values
+    """
     sx = np.sort(x)
-    bandwidth = np.mean(sx[1:]-sx[:-1])
-    kde = sps.gaussian_kde(x, bw_method=bandwidth)
-    y = kde.evaluate(x)
-    return ((x, y))
+    # bandwidth = np.mean(sx[1:]-sx[:-1])
+    kde = sps.gaussian_kde(x)# , bw_method=bandwidth)
+    y = kde(sx)
+    return ((sx, y))
 
 def calculate_kl_divergence(p, q, limits=(-10.0,10.0), dx=0.01, vb=True):
     """

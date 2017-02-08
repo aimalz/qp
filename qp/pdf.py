@@ -198,7 +198,7 @@ class PDF(object):
         infty: float, optional
             approximate value at which CDF=1.
         using: string
-            Parametrization on which to interpolate, currently supports 'truth', 'quantiles', 'histogram'
+            Parametrization on which to interpolate
         vb: boolean
             report on progress to stdout?
         Returns
@@ -222,9 +222,7 @@ class PDF(object):
 
                 endpoints = np.append(np.array([-1.*infty]), self.quantiles[1])
                 endpoints = np.append(endpoints,np.array([infty]))
-                weights = self.evaluate((endpoints[1:]+endpoints[:-1])/2.)
-                ncats = len(weights)
-                cats = range(ncats)
+                weights = qp.utils.evaluate_quantiles(self.quantiles, infty=infty)[1]# self.evaluate((endpoints[1:]+endpoints[:-1])/2.)
 
             if using == 'histogram':
                 # First find the histogram if none exists:
@@ -233,9 +231,9 @@ class PDF(object):
 
                 endpoints = self.histogram[0]
                 weights = self.histogram[1]
-                ncats = len(weights)
-                cats = range(ncats)
 
+            ncats = len(weights)
+            cats = range(ncats)
             sampbins = [0]*ncats
             for item in range(N):
                 sampbins[qp.utils.choice(cats, weights)] += 1
@@ -346,29 +344,28 @@ class PDF(object):
         -----
         What this method plots depends on what information about the PDF is stored in it: the more properties the PDF has, the more exciting the plot!
         """
-
-        x = np.linspace(limits[0], limits[1], 100)
+        if points is None:
+            x = np.linspace(limits[0], limits[1], 100)
+        else:
+            x = points
 
         if self.truth is not None:
             plt.plot(x, self.truth.pdf(x), color='k', linestyle='-', lw=1.0, alpha=1.0, label='True PDF')
 
         if self.quantiles is not None:
             plt.vlines(self.quantiles[1], np.zeros(len(self.quantiles[1])), self.evaluate(self.quantiles[1]), color='b', linestyle=':', lw=1.0, alpha=1., label='Quantiles')
-            if points is not None:
-                (grid, qinterpolated) = self.approximate(points, using='quantiles')
-                plt.plot(grid, qinterpolated, color='b', lw=2.0, alpha=1.0, linestyle='--', label='Quantile Interpolated PDF')
+            (grid, qinterpolated) = self.approximate(x, using='quantiles')
+            plt.plot(grid, qinterpolated, color='b', lw=2.0, alpha=1.0, linestyle='--', label='Quantile Interpolated PDF')
 
         if self.histogram is not None:
             plt.hlines(self.histogram[1], self.histogram[0][:-1], self.histogram[0][1:], color='r', linestyle=':', lw=1.0, alpha=1., label='Histogram')
-            if points is not None:
-                (grid, hinterpolated) = self.approximate(points, using='histogram')
-                plt.plot(grid, hinterpolated, color='r', lw=2.0, alpha=1.0, linestyle='--', label='Histogram Interpolated PDF')
+            (grid, hinterpolated) = self.approximate(x, using='histogram')
+            plt.plot(grid, hinterpolated, color='r', lw=2.0, alpha=1.0, linestyle='--', label='Histogram Interpolated PDF')
 
         if self.samples is not None:
             plt.plot(self.samples, np.zeros(self.samples.shape), 'g+', ms=20, label='Samples')
-            if points is not None:
-                (grid, sinterpolated) = self.approximate(points, using='samples')
-                plt.plot(grid, sinterpolated, color='g', lw=2.0, alpha=1.0, linestyle='--', label='Samples Interpolated PDF')
+            (grid, sinterpolated) = self.approximate(x, using='samples')
+            plt.plot(grid, sinterpolated, color='g', lw=2.0, alpha=1.0, linestyle='--', label='Samples Interpolated PDF')
 
         plt.legend(fontsize='small')
         plt.xlabel('x')
