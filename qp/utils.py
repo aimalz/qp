@@ -1,5 +1,8 @@
 import numpy as np
+import scipy as sp
+from scipy import stats as sps
 import sys
+import bisect
 
 def cdf(weights):
     """
@@ -66,6 +69,27 @@ def safelog(arr, threshold=sys.float_info.epsilon):
     flat = arr.flatten()
     logged = np.log(np.array([max(a,threshold) for a in flat])).reshape(shape)
     return logged
+
+def evaluate_quantiles((q, x), infty=100.):
+    qs = np.append(np.array([0.]), q)
+    # qs = np.append(qs, np.array([1.]))
+    dq = qs[1:]-qs[:-1]
+    xs = np.append(np.array([-1. * infty]), x)
+    # xs = np.append(xs, np.array([infty]))
+    dx = xs[1:]-xs[:-1]
+    y = dq / dx
+    return ((x, y))
+
+def evaluate_histogram((xp, y)):
+    x = (xp[1:]+xp[:-1])/2.
+    return((x, y))
+
+def evaluate_samples(x):
+    sx = np.sort(x)
+    bandwidth = np.mean(sx[1:]-sx[:-1])
+    kde = sps.gaussian_kde(x, bw_method=bandwidth)
+    y = kde.evaluate(x)
+    return ((x, y))
 
 def calculate_kl_divergence(p, q, limits=(-10.0,10.0), dx=0.01, vb=True):
     """
