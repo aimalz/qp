@@ -90,7 +90,7 @@ class PDF(object):
         """
         return None
 
-    def quantize(self, quants=None, percent=1., number=None, infty=100., vb=True):
+    def quantize(self, quants=None, percent=10., number=None, infty=100., vb=True):
         """
         Computes an array of evenly-spaced quantiles from the truth.
         Parameters
@@ -342,10 +342,12 @@ class PDF(object):
         extrema = [0., 0.]
 
         if self.truth is not None:
-            min_x = self.truth.ppf(0.001)
-            max_x = self.truth.ppf(0.999)
+            min_x = self.truth.ppf(np.array([0.001]))
+            max_x = self.truth.ppf(np.array([0.999]))
             x = np.linspace(min_x, max_x, 100)
-            plt.plot(x, self.truth.pdf(x), color='k', linestyle='-', lw=1.0, alpha=1.0, label='True PDF')
+            y = self.truth.pdf(x)
+            print sum(y) * (max_x - min_x)/100.
+            plt.plot(x, y, color='k', linestyle='-', lw=1.0, alpha=1.0, label='True PDF')
             extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
 
         if self.quantiles is not None:

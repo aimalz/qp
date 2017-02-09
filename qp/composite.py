@@ -1,6 +1,7 @@
 import numpy as np
 import scipy as sp
 from scipy import stats as sps
+import scipy.optimize as op
 
 import qp
 
@@ -21,9 +22,10 @@ class composite(object):
         self.n_components = len(self.components)
         self.component_range = range(self.n_components)
 
-        weights = np.array([component['coefficient'] for component in self.components])
-        self.weights = weights / np.sum(weights)
+        coefficients = np.array([component['coefficient'] for component in self.components])
+        self.coefficients = coefficients / np.sum(coefficients)
         self.functions = np.array([component['function'] for component in self.components])
+        print(self.coefficients, self.functions)
 
     def pdf(self, xs):
         """
@@ -41,7 +43,7 @@ class composite(object):
         """
         p = np.zeros(np.shape(xs))
         for c in self.component_range:
-            p += self.components[c]['coefficient'] * self.components[c]['function'].pdf(xs)
+            p += self.coefficients[c] * self.functions[c].pdf(xs)
         return p
 
     def cdf(self, xs):
@@ -60,7 +62,7 @@ class composite(object):
         """
         ps = np.zeros(np.shape(xs))
         for c in self.component_range:
-            ps += self.components[c]['coefficient'] * self.components[c]['function'].cdf(xs)
+            ps += self.coefficients[c] * self.functions[c].cdf(xs)
         return ps
 
     def rvs(self, size):
@@ -79,12 +81,11 @@ class composite(object):
         """
         groups = [0]*self.n_components
         for item in range(size):
-            groups[qp.utils.choice(self.component_range, self.weights)] += 1
-        print(groups)
+            groups[qp.utils.choice(self.component_range, self.coefficients)] += 1
         samples = [] * size
         for c in self.component_range:
             for n in range(groups[c]):
-                samples.append(self.components[c]['function'].rvs())
+                samples.append(self.functions[c].rvs())
         return np.array(samples)
 
     def ppf(self, cdfs):
@@ -101,7 +102,10 @@ class composite(object):
         xs: float or numpy.ndarray, float
             quantiles
         """
-        xs = np.zeros(np.shape(cdfs))
-        for c in self.component_range:
-            xs += self.components[c]['function'].ppf(cdfs*self.components[c]['coefficient'])
-        return xs
+        xs0 = np.zeros(np.shape(cdfs))
+        print(xs0, cdfs)
+        def ppf_helper(x):
+            return np.absolute(cdfs - self.cdf(x))
+        xs = op.minimize(ppf_helper, xs0, method="Nelder-Mead", options={"maxfev": 1e5, "maxiter":1e5})
+        print(xs, self.cdf(xs.x), cdfs)
+        return xs.x
