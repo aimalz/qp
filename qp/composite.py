@@ -102,10 +102,13 @@ class composite(object):
         xs: float or numpy.ndarray, float
             quantiles
         """
-        xs0 = np.zeros(np.shape(cdfs))
+        N = np.shape(cdfs)
+        xs0 = np.zeros(N)
+        xs = xs0
         print(xs0, cdfs)
-        def ppf_helper(x):
-            return np.absolute(cdfs - self.cdf(x))
-        xs = op.minimize(ppf_helper, xs0, method="Nelder-Mead", options={"maxfev": 1e5, "maxiter":1e5})
-        print(xs, self.cdf(xs.x), cdfs)
-        return xs.x
+        for n in range(N[0]):
+            def ppf_helper(x):
+                return np.absolute(cdfs[n] - self.cdf(x))
+            xs[n] = op.minimize(ppf_helper, xs0[n], method="Nelder-Mead", options={"maxfev": 1e5, "maxiter":1e5}).x
+        print(xs, self.cdf(xs), cdfs)
+        return xs
