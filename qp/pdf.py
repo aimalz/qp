@@ -28,28 +28,30 @@ class PDF(object):
         self.quantiles = quantiles
         self.histogram = histogram
         self.samples = samples
-        self.initialized = None
-
-        if self.truth is not None:
-            self.initialized = self.truth
-            self.last = 'truth'
-        elif self.quantiles is not None:
-            self.initialized = self.quantiles
-            self.last = 'quantiles'
-        elif self.histogram is not None:
-            self.initialized = self.histogram
-            self.last = 'histogram'
-        elif self.samples is not None:
-            self.initialized = self.samples
-            self.last = 'samples'
 
         if vb and self.truth is None and self.quantiles is None and self.histogram is None and self.samples is None:
             print 'Warning: initializing a PDF object without inputs'
+            return
+
+        if self.truth is not None:
+            self.initialized = self.truth
+            self.first = 'truth'
+        elif self.quantiles is not None:
+            self.initialized = self.quantiles
+            self.first = 'quantiles'
+        elif self.histogram is not None:
+            self.initialized = self.histogram
+            self.first = 'histogram'
+        elif self.samples is not None:
+            self.initialized = self.samples
+            self.first = 'samples'
+
+        self.last = self.first
 
         self.interpolator = None
         return
 
-    def evaluate(self, loc, vb=True):
+    def evaluate(self, loc, vb=True, using=None):
         """
         Evaluates the PDF (either the true version, or the most recent
         approximation of it) at the given location(s).
@@ -67,12 +69,15 @@ class PDF(object):
         -----
         This function evaluates the truth function if it is available and the interpolated quantile approximation otherwise.
         """
-        if self.truth is not None:
-            if vb: print('Evaluating the true distribution.')
-            val = self.truth.pdf(loc)
+        if using is None:
+            using=self.first
+        if using == 'truth':
+            if self.truth is not None:
+                if vb: print('Evaluating the true distribution.')
+                val = self.truth.pdf(loc)
         else:
-            if vb: print('Evaluating an interpolation of the '+self.last+' parametrization.')
-            val = self.approximate(loc, using=self.last)[1]
+            if vb: print('Evaluating an interpolation of the '+using+' parametrization.')
+            val = self.approximate(loc, using=using)[1]
 
         return(val)
 
@@ -214,7 +219,7 @@ class PDF(object):
             array of sampled values
         """
         if using is None:
-            using = self.last
+            using = self.first
 
         if vb: print("Sampling from "+using+' parametrization.')
 
@@ -250,7 +255,6 @@ class PDF(object):
                     samples.append(np.random.uniform(low=endpoints[c], high=endpoints[c+1]))
 
         if vb: print("Sampled values: ", samples)
-        self.sampvals = self.evaluate(samples)
         self.samples = samples
         self.last = 'samples'
         return self.samples
@@ -272,7 +276,8 @@ class PDF(object):
         The `self.interpolator` object is a function that is used by the `approximate` method.
         """
         if using is None:
-            using = self.last
+            using = self.first
+        if vb: print('interpolating '+using+' parametrization')
 
         if using == 'truth':
             print('The truth needs no interpolation.  Try converting to an approximate parametrization first.')
@@ -299,10 +304,11 @@ class PDF(object):
 
             (x, y) = qp.evaluate_samples(self.samples)
 
-        if vb: print("Creating interpolator for "+using+' parametrization.')
+        if vb:
+            print("Creating interpolator for "+using+' parametrization.')
         self.interpolator = spi.interp1d(x, y, fill_value="extrapolate")
 
-        return
+        return self.interpolator
 
     def approximate(self, points, using=None, vb=True):
         """
@@ -327,20 +333,24 @@ class PDF(object):
         Notes
         -----
         Extrapolation is linear while values are positive; otherwise, extrapolation returns 0.
-        Example::
+        Example:
             x, y = p.approximate(np.linspace(-1., 1., 100))
         """
 
-        if self.interpolator is None:
-            self.interpolate(using=using)
+        self.interpolator = self.interpolate(using=using)
         interpolated = self.interpolator(points)
         interpolated[interpolated<0.] = 0.
 
         return (points, interpolated)
 
-    def plot(self):
+    def plot(self, vb=True):
         """
         Plots the PDF, in various ways.
+
+        Parameters
+        ----------
+        vb: boolean
+            report on progress to stdout?
 
         Notes
         -----
@@ -355,15 +365,19 @@ class PDF(object):
             extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
             y = self.truth.pdf(x)
             plt.plot(x, y, color='k', linestyle='-', lw=1.0, alpha=1.0, label='True PDF')
+            if vb:
+                print('plotted truth')
 
         if self.quantiles is not None:
             min_x = self.quantiles[1][0]
             max_x = self.quantiles[1][-1]
             x = np.linspace(min_x, max_x, 100)
-            plt.vlines(self.quantiles[1], np.zeros(len(self.quantiles[1])), self.evaluate(self.quantiles[1]), color='b', linestyle=':', lw=1.0, alpha=1., label='Quantiles')
+            plt.vlines(self.quantiles[1], np.zeros(len(self.quantiles[1])), self.evaluate(self.quantiles[1], using='quantiles'), color='b', linestyle=':', lw=1.0, alpha=1., label='Quantiles')
             (grid, qinterpolated) = self.approximate(x, using='quantiles')
             plt.plot(grid, qinterpolated, color='b', lw=2.0, alpha=1.0, linestyle=(0,(5,10)), label='Quantile Interpolated PDF')
             extrema = [min(extrema[0], self.quantiles[1][0]), max(extrema[1], self.quantiles[1][-1])]
+            if vb:
+                print('plotted quantiles')
 
         if self.histogram is not None:
             min_x = self.histogram[0][0]
@@ -373,6 +387,8 @@ class PDF(object):
             (grid, hinterpolated) = self.approximate(x, using='histogram')
             plt.plot(grid, hinterpolated, color='r', lw=2.0, alpha=1.0, linestyle=(5,(5,10)), label='Histogram Interpolated PDF')
             extrema = [min(extrema[0], self.histogram[0][0]), max(extrema[1], self.histogram[0][-1])]
+            if vb:
+                print('plotted histogram')
 
         if self.samples is not None:
             min_x = min(self.samples)
@@ -382,6 +398,8 @@ class PDF(object):
             (grid, sinterpolated) = self.approximate(x, using='samples')
             plt.plot(grid, sinterpolated, color='g', lw=2.0, alpha=1.0, linestyle=(10,(5,10)), label='Samples Interpolated PDF')
             extrema = [min(extrema[0], min(self.samples)), max(extrema[1], max(self.samples))]
+            if vb:
+                print('plotted samples')
 
         plt.xlim(extrema[0], extrema[-1])
         plt.legend(fontsize='small')
