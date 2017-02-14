@@ -31,14 +31,17 @@ class PDF(object):
         self.initialized = None
 
         if self.truth is not None:
-            self.initialized = 'truth'
+            self.initialized = self.truth
+            self.last = 'truth'
         elif self.quantiles is not None:
-            self.initialized = 'quantiles'
+            self.initialized = self.quantiles
+            self.last = 'quantiles'
         elif self.histogram is not None:
-            self.initialized = 'histogram'
+            self.initialized = self.histogram
+            self.last = 'histogram'
         elif self.samples is not None:
-            self.initialized = 'samples'
-        self.last = self.initialized
+            self.initialized = self.samples
+            self.last = 'samples'
 
         if vb and self.truth is None and self.quantiles is None and self.histogram is None and self.samples is None:
             print 'Warning: initializing a PDF object without inputs'
@@ -349,26 +352,35 @@ class PDF(object):
             min_x = self.truth.ppf(np.array([0.001]))
             max_x = self.truth.ppf(np.array([0.999]))
             x = np.linspace(min_x, max_x, 100)
+            extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
             y = self.truth.pdf(x)
             plt.plot(x, y, color='k', linestyle='-', lw=1.0, alpha=1.0, label='True PDF')
-            extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
 
         if self.quantiles is not None:
+            min_x = self.quantiles[1][0]
+            max_x = self.quantiles[1][-1]
+            x = np.linspace(min_x, max_x, 100)
             plt.vlines(self.quantiles[1], np.zeros(len(self.quantiles[1])), self.evaluate(self.quantiles[1]), color='b', linestyle=':', lw=1.0, alpha=1., label='Quantiles')
             (grid, qinterpolated) = self.approximate(x, using='quantiles')
-            plt.plot(grid, qinterpolated, color='b', lw=2.0, alpha=1.0, linestyle=(0,(6,6)), label='Quantile Interpolated PDF')
+            plt.plot(grid, qinterpolated, color='b', lw=2.0, alpha=1.0, linestyle=(0,(5,10)), label='Quantile Interpolated PDF')
             extrema = [min(extrema[0], self.quantiles[1][0]), max(extrema[1], self.quantiles[1][-1])]
 
         if self.histogram is not None:
+            min_x = self.histogram[0][0]
+            max_x = self.histogram[0][-1]
+            x = np.linspace(min_x, max_x, 100)
             plt.hlines(self.histogram[1], self.histogram[0][:-1], self.histogram[0][1:], color='r', linestyle=':', lw=1.0, alpha=1., label='Histogram')
             (grid, hinterpolated) = self.approximate(x, using='histogram')
-            plt.plot(grid, hinterpolated, color='r', lw=2.0, alpha=1.0, linestyle=(2,(6,6)), label='Histogram Interpolated PDF')
+            plt.plot(grid, hinterpolated, color='r', lw=2.0, alpha=1.0, linestyle=(5,(5,10)), label='Histogram Interpolated PDF')
             extrema = [min(extrema[0], self.histogram[0][0]), max(extrema[1], self.histogram[0][-1])]
 
         if self.samples is not None:
+            min_x = min(self.samples)
+            max_x = max(self.samples)
+            x = np.linspace(min_x, max_x, 100)
             plt.plot(self.samples, np.zeros(np.shape(self.samples)), 'g+', ms=20, label='Samples')
             (grid, sinterpolated) = self.approximate(x, using='samples')
-            plt.plot(grid, sinterpolated, color='g', lw=2.0, alpha=1.0, linestyle=(4,(6,6)), label='Samples Interpolated PDF')
+            plt.plot(grid, sinterpolated, color='g', lw=2.0, alpha=1.0, linestyle=(10,(5,10)), label='Samples Interpolated PDF')
             extrema = [min(extrema[0], min(self.samples)), max(extrema[1], max(self.samples))]
 
         plt.xlim(extrema[0], extrema[-1])
