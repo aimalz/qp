@@ -100,7 +100,6 @@ def evaluate_quantiles((q, x), infty=100.):
     dx = xs[1:]-xs[:-1]
     mx = (xs[1:]+xs[:-1])/2.
     y = dq / dx
-    plt.plot(mx, y)
     return ((mx, y))
 
 def evaluate_histogram((xp, y)):
@@ -120,7 +119,6 @@ def evaluate_histogram((xp, y)):
         bin midpoints and CDFs over bins
     """
     x = (xp[1:]+xp[:-1])/2.
-    plt.plot(x, y)
     return((x, y))
 
 def evaluate_samples(x):
@@ -141,7 +139,6 @@ def evaluate_samples(x):
     # bandwidth = np.mean(sx[1:]-sx[:-1])
     kde = sps.gaussian_kde(x)# , bw_method=bandwidth)
     y = kde(sx)
-    plt.plot(sx, y)
     return ((sx, y))
 
 def calculate_kl_divergence(p, q, limits=(-10.0,10.0), dx=0.01, vb=True):
