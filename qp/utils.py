@@ -4,6 +4,8 @@ from scipy import stats as sps
 import sys
 import bisect
 
+import matplotlib.pyplot as plt
+
 def cdf(weights):
     """
     Creates a normalized CDF from an arbitrary discrete distribution
@@ -70,7 +72,7 @@ def safelog(arr, threshold=sys.float_info.epsilon):
     logged = np.log(np.array([max(a,threshold) for a in flat])).reshape(shape)
     return logged
 
-def evaluate_quantiles((q, x), minval=-100.):
+def evaluate_quantiles((q, x), infty=100.):
     """
     Produces PDF values given quantile information
 
@@ -88,14 +90,18 @@ def evaluate_quantiles((q, x), minval=-100.):
     (x, y): tuple, float
         quantile values and corresponding PDF
     """
-    qs = np.append(np.array([0.]), q)
-    # qs = np.append(qs, np.array([1.]))
+    # q = np.append(q, np.array([1.]))
+    # qs = np.append(np.array([0.]), q)
+    qs = q
     dq = qs[1:]-qs[:-1]
-    xs = np.append(np.array([minval]), x)
-    # xs = np.append(xs, np.array([infty]))
+    # xs = np.append(x, np.array([infty]))
+    # xs = np.append(np.array([-1. * infty]), x)
+    xs = x
     dx = xs[1:]-xs[:-1]
+    mx = (xs[1:]+xs[:-1])/2.
     y = dq / dx
-    return ((x, y))
+    plt.plot(mx, y)
+    return ((mx, y))
 
 def evaluate_histogram((xp, y)):
     """
@@ -114,6 +120,7 @@ def evaluate_histogram((xp, y)):
         bin midpoints and CDFs over bins
     """
     x = (xp[1:]+xp[:-1])/2.
+    plt.plot(x, y)
     return((x, y))
 
 def evaluate_samples(x):
@@ -134,6 +141,7 @@ def evaluate_samples(x):
     # bandwidth = np.mean(sx[1:]-sx[:-1])
     kde = sps.gaussian_kde(x)# , bw_method=bandwidth)
     y = kde(sx)
+    plt.plot(sx, y)
     return ((sx, y))
 
 def calculate_kl_divergence(p, q, limits=(-10.0,10.0), dx=0.01, vb=True):
