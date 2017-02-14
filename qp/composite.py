@@ -25,7 +25,6 @@ class composite(object):
         coefficients = np.array([component['coefficient'] for component in self.components])
         self.coefficients = coefficients / np.sum(coefficients)
         self.functions = np.array([component['function'] for component in self.components])
-        print(self.coefficients, self.functions)
 
     def pdf(self, xs):
         """
@@ -105,10 +104,8 @@ class composite(object):
         N = np.shape(cdfs)
         xs0 = np.zeros(N)
         xs = xs0
-        print(xs0, cdfs)
         for n in range(N[0]):
             def ppf_helper(x):
                 return np.absolute(cdfs[n] - self.cdf(x))
             xs[n] = op.minimize(ppf_helper, xs0[n], method="Nelder-Mead", options={"maxfev": 1e5, "maxiter":1e5}).x
-        print(xs, self.cdf(xs), cdfs)
         return xs

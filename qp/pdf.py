@@ -143,14 +143,14 @@ class PDF(object):
         self.last = 'quantiles'
         return self.quantiles
 
-    def histogramize(self, binends=None, nbins=10, binrange=[0., 1.], vb=True):
+    def histogramize(self, binends=None, number=10, binrange=[0., 1.], vb=True):
         """
         Computes the histogram values from the truth.
         Parameters
         ----------
         binends: ndarray, float, optional
             Array of N+1 endpoints of N bins
-        nbins: int, optional
+        number: int, optional
             Number of bins if no binends provided
         range: tuple, float, optional
             Pair of values of endpoints of total bin range
@@ -159,7 +159,7 @@ class PDF(object):
         Returns
         -------
         self.histogram: tuple of ndarrays of floats
-            Pair of arrays of lengths (nbins+1, nbins) containing endpoints of bins and values in bins
+            Pair of arrays of lengths (number+1, number) containing endpoints of bins and values in bins
         Comments
         --------
         A histogram representation of a PDF is a popular approximate way to store it. This method computes some histogram bin heights from a truth distribution (other representations forthcoming)
@@ -169,15 +169,15 @@ class PDF(object):
         See `the Scipy docs <https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_continuous.cdf.html#scipy.stats.rv_continuous.cdf>`_ for details.
         """
         if binends is None:
-            step = float(binrange[1]-binrange[0])/nbins
+            step = float(binrange[1]-binrange[0])/number
             binends = np.arange(binrange[0], binrange[1]+step, step)
 
-        nbins = len(binends)-1
-        histogram = np.zeros(nbins)
+        number = len(binends)-1
+        histogram = np.zeros(number)
         if vb: print("Calculating histogram: ", binends)
         if self.truth is not None:
             cdf = self.truth.cdf(binends)
-            for b in range(nbins):
+            for b in range(number):
                 histogram[b] = (cdf[b+1]-cdf[b])/(binends[b+1]-binends[b])
         else:
             print('New histograms can only be computed from a truth distribution in this version.')
@@ -346,7 +346,6 @@ class PDF(object):
             max_x = self.truth.ppf(np.array([0.999]))
             x = np.linspace(min_x, max_x, 100)
             y = self.truth.pdf(x)
-            print sum(y) * (max_x - min_x)/100.
             plt.plot(x, y, color='k', linestyle='-', lw=1.0, alpha=1.0, label='True PDF')
             extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
 
