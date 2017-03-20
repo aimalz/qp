@@ -50,13 +50,13 @@ make upgrade
 
 If this project is in a public GitHub repo, you can use the `.travis.yml` file in this folder to cause [travis-ci](http://travis-ci.org) to compile your paper into a PDF in the base repo at GitHub every time you push a commit to the master branch. The paper should appear as:
 
-**https://github.com/DarkEnergyScienceCollaboration/qp/tree/pdf/desc-0000-qp-photo-z_approximation.pdf**
+**https://github.com/aimalz/qp/tree/pdf/desc-0000-qp-photo-z_approximation.pdf**
 
 To enable this service, you need to follow these steps:
 
-1. Turn on travis continuous integration, by [toggling your repo on your travis profile](https://travis-ci.org/profile). If you don't see your repo listed, you may not have permission to do this: in this case, [contact an admin via the issues](https://github.com/DarkEnergyScienceCollaboration/qp/issues/new?body=@DarkEnergyScienceCollaboration/admin).
+1. Turn on travis continuous integration, by [toggling your repo on your travis profile](https://travis-ci.org/profile). If you don't see your repo listed, you may not have permission to do this: in this case, [contact Alex via the issues](https://github.com/aimalz/qp/issues/new?body=@aimalz).
 2. Get a [GitHub "personal access token"](https://github.com/settings/tokens). Choose the "repo" option.
-3. Set the `GITHUB_API_KEY` environment variable with the value of this token at your repo's [travis settings page](https://travis-ci.org/DarkEnergyScienceCollaboration/qp/settings).
+3. Set the `GITHUB_API_KEY` environment variable with the value of this token at your repo's [travis settings page](https://travis-ci.org/aimalz/qp/settings).
 4. Copy the `.travis.yml` file in this folder to the top level of your repo (or merge its contents with your existing `.travis.yml` file).
 Edit the final `git push` command with your GitHub username.  
 Commit and push to trigger your travis build, but note that the PDF will only be deployed if the master branch is updated.
