@@ -26,6 +26,6 @@ after_success: |
         git checkout --orphan pdf
         git rm -rf .
         git add -f desc-0000-qp-photo-z_approximation.pdf
-        git -c user.name='travis' -c user.email='travis' commit -m init
-        git push -q -f https://YourGitHubUserName:$GITHUB_API_KEY@github.com/DarkEnergyScienceCollaboration/qp pdf
+        git -c user.name='travis' -c user.email='travis' commit -m "made this PDF the last time the master branch was updated."
+        git push -q -f https://aimalz:$GITHUB_API_KEY@github.com/aimalz/qp pdf
     fi
