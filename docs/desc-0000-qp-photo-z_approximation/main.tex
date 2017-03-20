@@ -34,7 +34,7 @@
 
 \begin{abstract}
 
-Upcoming and ongoing galaxy surveys will produce photo-z probability distribution functions (PDFs) in addition to traditional photo-z point estimates.  However, the storage of photo-z PDFs may present a challenge as the dataset size increases, as we face a trade-off between the accuracy of subsequent science measurements and the storage cost. We investigate a number of different PDF approximations, using metrics that quantify performance in both large scale structure and weak gravitational lensing studies. In the process, we present qp, a Python library enabling the evaluation of various approximations of 1-dimensional PDFs, as suitable for photometric redshifts.
+Upcoming and ongoing galaxy surveys will produce redshift probability distribution functions (PDFs) in addition to traditional photometric redshift (photo-$z$) point estimates.  However, the storage of photo-$z$ PDFs may present a challenge as the dataset size increases, as we face a trade-off between the accuracy of subsequent science measurements and the storage cost. We investigate a number of different PDF approximations, using metrics that quantify performance in both large scale structure and weak gravitational lensing studies. In the process, we present \texttt{qp}, a Python library enabling the evaluation of various approximations of 1-dimensional PDFs, as suitable for photometric redshifts.
 
 \end{abstract}
 
@@ -141,24 +141,24 @@ Upcoming and ongoing galaxy surveys will produce photo-z probability distributio
 \subsection{Simulation}
 \label{sec:mock}
 
-[Observed $z_{s}$ vs. $z_{p}$ (from SDSS)]
+["Observed" $z_{s}$ vs. $z_{p}$ (from Buzzard)]
 
 \begin{figure}
-\includegraphics[width=0.9\columnwidth]{}
+%\includegraphics[width=0.9\columnwidth]{}
 \caption{[plot of $z_{s}$ vs. $z_{p}$]\label{fig:observed}}
 \end{figure}
 
 [Fit $z_{s}$ vs. $z_{p}$ with bivariate GMM]
 
 \begin{figure}
-\includegraphics[width=0.9\columnwidth]{}
+%\includegraphics[width=0.9\columnwidth]{}
 \caption{[$z_{s}$ vs. $z_{p}$ contour plot after GMM fit]\label{fig:fit}}
 \end{figure}
 
 [Specify true $n(z)$]
 
 \begin{figure}
-\includegraphics[width=0.9\columnwidth]{}
+%\includegraphics[width=0.9\columnwidth]{}
 \caption{[chosen true $n(z)$]\label{fig:nz}}
 \end{figure}
 
@@ -167,10 +167,10 @@ Upcoming and ongoing galaxy surveys will produce photo-z probability distributio
 
 [Choose catalog size $N$ and sample $z_{s}$ values from true $n(z)$]
 
-[Evaluate $N$ "true" $p(z)$s from horizontal cuts in fitted $z_{s}$ vs. $z_{p}$; these are qp.catalog objects comprised of qp.PDF objects defined by original GMM formulae]
+[Evaluate $N$ "true" $p(z)$s from horizontal cuts in fitted $z_{s}$ vs. $z_{p}$; these are \texttt{qp.catalog} objects comprised of \texttt{qp.PDF} objects defined by original GMM formulae]
 
 \begin{figure}
-\includegraphics[width=0.9\columnwidth]{}
+%\includegraphics[width=0.9\columnwidth]{}
 \caption{[Some example $p(z)$s]\label{fig:pzs}}
 \end{figure}
 
@@ -184,12 +184,25 @@ Upcoming and ongoing galaxy surveys will produce photo-z probability distributio
 \subsection{$n(z)$}
 \label{sec:nz}
 
-[stacked estimator]
+\begin{align}
+\hat{n}(z) &= \frac{1}{N}\sum_{i=1}^{N}p_{i}(z)
+\label{eq:nz}
+\end{align}
 
 \subsection{$\Sigma_{crit}^{-1}$}
 \label{sec:sigma}
 
-[MAP then stacked estimator]
+\citet{bonnett_redshift_2015}
+
+\begin{align}
+\Sigma_{crit}^{-1} &= \frac{4\pi G}{c}\frac{D_{ls}D_{l}}{D_{s}}
+\label{eq:sigma}
+\end{align}
+
+\begin{align}
+\left\langle\Sigma_{crit}^{-1}\right\rangle(z_{lens}) &= \sum_{i=1}^{N}p(z_{source, i})\Sigma_{crit}^{-1}(z_{lens}, z_{source, i})
+\label{eq:meansigma}
+\end{align}
 
 % ----------------------------------------------------------------------
 
@@ -206,7 +219,7 @@ Upcoming and ongoing galaxy surveys will produce photo-z probability distributio
 [Multipanel key plot commentary]
 
 \begin{figure}
-\includegraphics[width=0.9\columnwidth]{}
+%\includegraphics[width=0.9\columnwidth]{}
 \caption{[number of stored floats $N_{f}$ vs. metric, one curve per approximation method]\label{fig:results}}
 \end{figure}
 
