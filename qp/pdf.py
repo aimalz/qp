@@ -6,11 +6,12 @@ import qp
 
 class PDF(object):
 
-    def __init__(self, truth=None, quantiles=None, histogram=None, samples=None,
-                 vb=True):
+    def __init__(self, truth=None, quantiles=None, histogram=None,
+                 samples=None, vb=True):
         """
         An object representing a probability density function in
         various ways.
+
         Parameters
         ----------
         truth: scipy.stats.rv_continuous object or qp.composite object, optional
@@ -55,16 +56,19 @@ class PDF(object):
         """
         Evaluates the PDF (either the true version, or the most recent
         approximation of it) at the given location(s).
+
         Parameters
         ----------
         loc: float or ndarray
             location(s) at which to evaluate the pdf
         vb: boolean
             report on progress to stdout?
+
         Returns
         -------
         val: float or ndarray
             the value of the PDF (ot its approximation) at the requested location(s)
+
         Notes
         -----
         This function evaluates the truth function if it is available and the interpolated quantile approximation otherwise.
@@ -84,14 +88,17 @@ class PDF(object):
     def integrate(self, limits):
         """
         Computes the integral under the PDF between the given limits.
+
         Parameters
         ----------
         limits: float, tuple
             limits of integration
+
         Returns
         -------
         integral: float
             value of the integral
+
         Notes
         -----
         This method is not yet operational, and returns `None`.
@@ -101,6 +108,7 @@ class PDF(object):
     def quantize(self, quants=None, percent=10., number=None, infty=100., vb=True):
         """
         Computes an array of evenly-spaced quantiles from the truth.
+
         Parameters
         ----------
         quants: ndarray, float, optional
@@ -113,10 +121,12 @@ class PDF(object):
             approximate value at which CDF=1.
         vb: boolean
             report on progress to stdout?
+
         Returns
         -------
         self.quantiles: ndarray, float
             the quantile points.
+
         Notes
         -----
         Quantiles of a PDF could be a useful approximate way to store it. This method computes the quantiles from a truth distribution (other representations forthcoming)
@@ -158,6 +168,7 @@ class PDF(object):
     def histogramize(self, binends=None, number=10, binrange=[0., 1.], vb=True):
         """
         Computes the histogram values from the truth.
+
         Parameters
         ----------
         binends: ndarray, float, optional
@@ -168,10 +179,12 @@ class PDF(object):
             Pair of values of endpoints of total bin range
         vb: boolean
             Report on progress to stdout?
+
         Returns
         -------
         self.histogram: tuple of ndarrays of floats
             Pair of arrays of lengths (number+1, number) containing endpoints of bins and values in bins
+
         Comments
         --------
         A histogram representation of a PDF is a popular approximate way to store it. This method computes some histogram bin heights from a truth distribution (other representations forthcoming)
@@ -203,6 +216,7 @@ class PDF(object):
     def sample(self, N=100, infty=100., using=None, vb=True):
         """
         Samples the pdf in given representation
+
         Parameters
         ----------
         N: int, optional
@@ -213,6 +227,7 @@ class PDF(object):
             Parametrization on which to interpolate
         vb: boolean
             report on progress to stdout?
+
         Returns
         -------
         samples: ndarray
@@ -262,15 +277,18 @@ class PDF(object):
     def interpolate(self, using=None, vb=True):
         """
         Constructs an `interpolator` function based on the parametrization.
+
         Parameters
         ----------
         using: string
             Parametrization on which to interpolate, currently supports 'quantiles', 'histogram'
         vb: boolean
             report on progress to stdout?
+
         Returns
         -------
         None
+
         Notes
         -----
         The `self.interpolator` object is a function that is used by the `approximate` method.
@@ -313,6 +331,7 @@ class PDF(object):
     def approximate(self, points, using=None, vb=True):
         """
         Interpolates the parametrization to get an approximation to the density.
+
         Parameters
         ----------
         number: int
@@ -324,12 +343,14 @@ class PDF(object):
             or 'histogram'
         vb: boolean
             report on progress to stdout?
+
         Returns
         -------
         points: ndarray, float
             the input grid upon which to interpolate
         interpolated: ndarray, float
             the interpolated points.
+
         Notes
         -----
         Extrapolation is linear while values are positive; otherwise, extrapolation returns 0.
@@ -412,16 +433,19 @@ class PDF(object):
     def kld(self, limits=(0., 1.), dx=0.01):
         """
         Calculates Kullback-Leibler divergence of quantile approximation from truth.
+
         Parameters
         ----------
         limits: tuple of floats
             endpoints of integration interval in which to calculate KLD
         dx: float
             resolution of integration grid
+
         Returns
         -------
         KL: float
             value of Kullback-Leibler divergence from approximation to truth if truth is available; otherwise nothing.
+
         Notes
         -----
         Example::
@@ -438,16 +462,19 @@ class PDF(object):
     def rms(self, limits=(0., 1.), dx=0.01):
         """
         Calculates root mean square difference between quantile approximation and truth.
+
         Parameters
         ----------
         limits: tuple of floats
             endpoints of integration interval in which to calculate KLD
         dx: float
             resolution of integration grid
+
         Returns
         -------
         RMS: float
             value of root mean square difference between approximation of truth if truth is available; otherwise nothing.
+
         Notes
         -----
         Example::
