@@ -179,7 +179,7 @@ def calculate_kl_divergence(p, q, limits=(-10.0,10.0), dx=0.01, vb=True):
     Dpq = np.sum(pn*(logp-logq))
     return Dpq
 
-def calculate_rms(p, q, limits=(-10.,10.), dx=0.01):
+def calculate_rmse(p, q, limits=(-10.,10.), dx=0.01, vb=True):
     """
     Calculates the Root Mean Square Error between two PDFs.
 
@@ -193,6 +193,8 @@ def calculate_rms(p, q, limits=(-10.,10.), dx=0.01):
         endpoints of integration interval in which to calculate RMS
     dx: float
         resolution of integration grid
+    vb: boolean
+        report on progress to stdout?
 
     Returns
     -------
@@ -203,8 +205,8 @@ def calculate_rms(p, q, limits=(-10.,10.), dx=0.01):
     npoints = int((limits[1]-limits[0])/dx)
     grid = np.linspace(limits[0], limits[1], npoints)
     # Evaluate the functions on the grid
-    pe = p.evaluate(grid)[1]
-    qe = q.evaluate(grid)[1]
+    pe = p.evaluate(grid, vb=vb)[1]
+    qe = q.evaluate(grid, vb=vb)[1]
     # Calculate the RMS between p and q
     rms = np.sqrt(np.sum((pe-qe)**2)/npoints)
     return rms
