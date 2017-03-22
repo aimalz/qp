@@ -7,7 +7,7 @@ import qp
 class PDF(object):
 
     def __init__(self, truth=None, quantiles=None, histogram=None,
-                 samples=None, vb=True):
+                 evaluated=None, samples=None, vb=True):
         """
         An object representing a probability density function in
         various ways.
@@ -17,9 +17,14 @@ class PDF(object):
         truth: scipy.stats.rv_continuous object or qp.composite object, optional
             Continuous, parametric form of the PDF
         quantiles: tuple of ndarrays, optional
-            Pair of arrays of lengths (nquants, nquants) containing CDF values and quantiles
+            Pair of arrays of lengths (nquants, nquants) containing CDF values
+            and quantiles
         histogram: tuple of ndarrays, optional
-            Pair of arrays of lengths (nbins+1, nbins) containing endpoints of bins and values in bins
+            Pair of arrays of lengths (nbins+1, nbins) containing endpoints
+            of bins and values in bins
+        evaluated: tuple of ndarrays, optional
+            Pair of arrays of lengths (npoints, npoints) containing points
+            at which function is evaluated and function values at those points
         samples: ndarray, optional
             Array of length nsamples containing sampled values
         vb: boolean
@@ -29,8 +34,9 @@ class PDF(object):
         self.quantiles = quantiles
         self.histogram = histogram
         self.samples = samples
+        self.evaluated = evaluated
 
-        if vb and self.truth is None and self.quantiles is None and self.histogram is None and self.samples is None:
+        if vb and self.truth is None and self.quantiles is None and self.histogram is None and self.evaluated is None and self.samples is None:
             print 'Warning: initializing a PDF object without inputs'
             return
 
@@ -43,6 +49,9 @@ class PDF(object):
         elif self.histogram is not None:
             self.initialized = self.histogram
             self.first = 'histogram'
+        elif self.evaluated is not None:
+            self.evaluated = self.evaluated
+            self.first = 'gridded'
         elif self.samples is not None:
             self.initialized = self.samples
             self.first = 'samples'
@@ -54,8 +63,9 @@ class PDF(object):
 
     def evaluate(self, loc, vb=True, using=None):
         """
-        Evaluates the PDF (either the true version, or the most recent
-        approximation of it) at the given location(s).
+        Evaluates the PDF (either the true version or the first
+        approximation of it if no parametrization is specified)
+        at the given location(s).
 
         Parameters
         ----------
@@ -71,7 +81,8 @@ class PDF(object):
 
         Notes
         -----
-        This function evaluates the truth function if it is available and the interpolated quantile approximation otherwise.
+        This function evaluates the truth function if it is available
+        and an interpolated approximation otherwise.
         """
         if using is None:
             using=self.first
@@ -79,11 +90,13 @@ class PDF(object):
             if self.truth is not None:
                 if vb: print('Evaluating the true distribution.')
                 val = self.truth.pdf(loc)
+                self.evaluated = (loc, val)
         else:
             if vb: print('Evaluating an interpolation of the '+using+' parametrization.')
-            val = self.approximate(loc, using=using)[1]
+            evaluated = self.approximate(loc, using=using)
+            val = evaluated[1]
 
-        return(val)
+        return(loc, val)
 
     def integrate(self, limits):
         """
@@ -129,7 +142,9 @@ class PDF(object):
 
         Notes
         -----
-        Quantiles of a PDF could be a useful approximate way to store it. This method computes the quantiles from a truth distribution (other representations forthcoming)
+        Quantiles of a PDF could be a useful approximate way to store it.
+        This method computes the quantiles from a truth distribution
+        (other representations forthcoming)
         and stores them in the `self.quantiles` attribute.
         Uses the `.ppf` method of the `rvs_continuous` distribution
         object stored in `self.truth`. This calculates the inverse CDF.
@@ -183,11 +198,14 @@ class PDF(object):
         Returns
         -------
         self.histogram: tuple of ndarrays of floats
-            Pair of arrays of lengths (number+1, number) containing endpoints of bins and values in bins
+            Pair of arrays of lengths (number+1, number) containing endpoints
+            of bins and values in bins
 
         Comments
         --------
-        A histogram representation of a PDF is a popular approximate way to store it. This method computes some histogram bin heights from a truth distribution (other representations forthcoming)
+        A histogram representation of a PDF is a popular approximate way
+        to store it. This method computes some histogram bin heights
+        from a truth distribution (other representations forthcoming)
         and stores them in the `self.histogram` attribute.
         Uses the `.cdf` method of the `rvs_continuous` distribution
         object stored in `self.truth`. This calculates the CDF.
@@ -281,13 +299,14 @@ class PDF(object):
         Parameters
         ----------
         using: string
-            Parametrization on which to interpolate, currently supports 'quantiles', 'histogram'
+            Parametrization on which to interpolate
         vb: boolean
             report on progress to stdout?
 
         Returns
         -------
-        None
+        self.interpolator
+            an interpolator object
 
         Notes
         -----
@@ -315,6 +334,12 @@ class PDF(object):
 
             (x, y) = qp.utils.evaluate_histogram(self.histogram)
 
+        if using == 'evaluated':
+            if self.evaluated is None:
+                print('Interpolation from a gridded parametrization requires a previous gridded parametrization.')
+                return
+            (x, y) = self.evaluated
+
         if using == 'samples':
             # First sample if not already done:
             if self.samples is None:
@@ -335,7 +360,8 @@ class PDF(object):
         Parameters
         ----------
         number: int
-            the number of points over which to interpolate, bounded by the quantile value endpoints
+            the number of points over which to interpolate, bounded by
+            the quantile value endpoints
         points: ndarray
             the value(s) at which to evaluate the interpolated function
         using: string, optional
@@ -353,7 +379,8 @@ class PDF(object):
 
         Notes
         -----
-        Extrapolation is linear while values are positive; otherwise, extrapolation returns 0.
+        Extrapolation is linear while values are positive; otherwise,
+        extrapolation returns 0.
         Example:
             x, y = p.approximate(np.linspace(-1., 1., 100))
         """
@@ -375,7 +402,9 @@ class PDF(object):
 
         Notes
         -----
-        What this method plots depends on what information about the PDF is stored in it: the more properties the PDF has, the more exciting the plot!
+        What this method plots depends on what information about the PDF
+        is stored in it: the more properties the PDF has,
+        the more exciting the plot!
         """
         extrema = [0., 0.]
 
@@ -393,10 +422,10 @@ class PDF(object):
             min_x = self.quantiles[1][0]
             max_x = self.quantiles[1][-1]
             x = np.linspace(min_x, max_x, 100)
-            plt.vlines(self.quantiles[1], np.zeros(len(self.quantiles[1])), self.evaluate(self.quantiles[1], using='quantiles'), color='b', linestyle=':', lw=1.0, alpha=1., label='Quantiles')
+            plt.vlines(self.quantiles[1], np.zeros(len(self.quantiles[1])), self.evaluate(self.quantiles[1], using='quantiles')[1], color='b', linestyle=':', lw=1.0, alpha=1., label='Quantiles')
             (grid, qinterpolated) = self.approximate(x, using='quantiles')
             plt.plot(grid, qinterpolated, color='b', lw=2.0, alpha=1.0, linestyle=(0,(5,10)), label='Quantile Interpolated PDF')
-            extrema = [min(extrema[0], self.quantiles[1][0]), max(extrema[1], self.quantiles[1][-1])]
+            extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
             if vb:
                 print('plotted quantiles')
 
@@ -407,9 +436,18 @@ class PDF(object):
             plt.hlines(self.histogram[1], self.histogram[0][:-1], self.histogram[0][1:], color='r', linestyle=':', lw=1.0, alpha=1., label='Histogram')
             (grid, hinterpolated) = self.approximate(x, using='histogram')
             plt.plot(grid, hinterpolated, color='r', lw=2.0, alpha=1.0, linestyle=(5,(5,10)), label='Histogram Interpolated PDF')
-            extrema = [min(extrema[0], self.histogram[0][0]), max(extrema[1], self.histogram[0][-1])]
+            extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
             if vb:
                 print('plotted histogram')
+
+        if self.evaluated is not None:
+            min_x = self.evaluated[0][0]
+            max_x = self.evaluated[0][-1]
+            (x, y) = self.evaluated
+            plt.plot(x, y, color='k', lw=2.0, alpha=0.5, linestyle='--', label='Evaluated PDF')
+            extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
+            if vb:
+                print('plotted evaluation')
 
         if self.samples is not None:
             min_x = min(self.samples)
@@ -418,7 +456,7 @@ class PDF(object):
             plt.plot(self.samples, np.zeros(np.shape(self.samples)), 'g+', ms=20, label='Samples')
             (grid, sinterpolated) = self.approximate(x, using='samples')
             plt.plot(grid, sinterpolated, color='g', lw=2.0, alpha=1.0, linestyle=(10,(5,10)), label='Samples Interpolated PDF')
-            extrema = [min(extrema[0], min(self.samples)), max(extrema[1], max(self.samples))]
+            extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
             if vb:
                 print('plotted samples')
 
@@ -444,7 +482,8 @@ class PDF(object):
         Returns
         -------
         KL: float
-            value of Kullback-Leibler divergence from approximation to truth if truth is available; otherwise nothing.
+            value of Kullback-Leibler divergence from approximation to truth
+            if truth is available; otherwise nothing.
 
         Notes
         -----
@@ -461,7 +500,8 @@ class PDF(object):
 
     def rms(self, limits=(0., 1.), dx=0.01):
         """
-        Calculates root mean square difference between quantile approximation and truth.
+        Calculates root mean square difference between quantile approximation
+        and truth.
 
         Parameters
         ----------
@@ -473,7 +513,8 @@ class PDF(object):
         Returns
         -------
         RMS: float
-            value of root mean square difference between approximation of truth if truth is available; otherwise nothing.
+            value of root mean square difference between approximation of truth
+            if truth is available; otherwise nothing.
 
         Notes
         -----
