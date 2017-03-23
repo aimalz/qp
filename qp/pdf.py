@@ -7,7 +7,7 @@ import qp
 class PDF(object):
 
     def __init__(self, truth=None, quantiles=None, histogram=None,
-                 evaluated=None, samples=None, scheme='linear',
+                 gridded=None, samples=None, scheme='linear',
                  vb=True):
         """
         An object representing a probability density function in
@@ -23,7 +23,7 @@ class PDF(object):
         histogram: tuple of ndarrays, optional
             Pair of arrays of lengths (nbins+1, nbins) containing
             endpoints of bins and values in bins
-        evaluated: tuple of ndarrays, optional
+        gridded: tuple of ndarrays, optional
             Pair of arrays of lengths (npoints, npoints) containing
             points at which function is evaluated and function values
             at those points
@@ -38,10 +38,10 @@ class PDF(object):
         self.quantiles = quantiles
         self.histogram = histogram
         self.samples = samples
-        self.evaluated = evaluated
+        self.gridded = gridded
         self.scheme = scheme
 
-        if vb and self.truth is None and self.quantiles is None and self.histogram is None and self.evaluated is None and self.samples is None:
+        if vb and self.truth is None and self.quantiles is None and self.histogram is None and self.gridded is None and self.samples is None:
             print 'Warning: initializing a PDF object without inputs'
             return
 
@@ -55,8 +55,8 @@ class PDF(object):
         elif self.histogram is not None:
             self.initialized = self.histogram
             self.first = 'histogram'
-        elif self.evaluated is not None:
-            self.initialized = self.evaluated
+        elif self.gridded is not None:
+            self.initialized = self.gridded
             self.first = 'gridded'
         elif self.samples is not None:
             self.initialized = self.samples
@@ -346,11 +346,11 @@ class PDF(object):
 
             (x, y) = qp.utils.evaluate_histogram(self.histogram)
 
-        if using == 'evaluated':
-            if self.evaluated is None:
+        if using == 'gridded':
+            if self.gridded is None:
                 print 'Interpolation from a gridded parametrization requires a previous gridded parametrization.'
                 return
-            (x, y) = self.evaluated
+            (x, y) = self.gridded
 
         if using == 'samples':
             # First sample if not already done:
@@ -480,12 +480,12 @@ class PDF(object):
             if vb:
                 print 'Plotted histogram.'
 
-        if self.evaluated is not None:
-            min_x = self.evaluated[0][0]
-            max_x = self.evaluated[0][-1]
-            (x, y) = self.evaluated
+        if self.gridded is not None:
+            min_x = self.gridded[0][0]
+            max_x = self.gridded[0][-1]
+            (x, y) = self.gridded
             plt.plot(x, y, color='k', lw=2.0, alpha=0.5,
-                     linestyle='--', label='Evaluated PDF')
+                     linestyle='--', label='gridded PDF')
             extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
             if vb:
                 print 'Plotted evaluation.'
