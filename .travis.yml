@@ -31,7 +31,7 @@ script:
 
 # Finally, if it's the master branch being updated, force-push the
 # notebook html pages to an otherwise empty "html" branch:
-#    if [ -n "$GITHUB_API_KEY" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ "$TRAVIS_BRANCH" == "master" ]; then
+    if [ -n "$GITHUB_API_KEY" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ "$TRAVIS_BRANCH" == "master" ]; then
 after_success: |
     if [ -n "$GITHUB_API_KEY" ]; then
         git checkout --orphan html
@@ -39,4 +39,10 @@ after_success: |
         git add -f demo.html kld.html
         git -c user.name='travis' -c user.email='travis' commit -m init
         git push -q -f https://drphilmarshall:$GITHUB_API_KEY@github.com/aimalz/qp html
+    if [ -n "$GITHUB_API_KEY" ]; then
+        git checkout --orphan html
+        git rm -rf .
+        git add -f main.pdf
+        git -c user.name='travis' -c user.email='travis' commit -m init
+        git push -q -f https://aimalz:$GITHUB_API_KEY@github.com/aimalz/qp pdf
     fi
