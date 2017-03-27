@@ -26,8 +26,8 @@ script:
   # Build the docs, the same way readthedocs does it:
   - cd docs ; sphinx-build -b html . _build/html ; cd -
   # Now make the PDF, and move it to the top level, ready for deployment.
-  - make -C desc-0000-qp-photo-z_approximation
-  - cd ../..
+  - make -C docs/desc-0000-qp-photo-z_approximation
+  - cd -
   - cp docs/desc-0000-qp-photo-z_approximation/main.pdf .
 
 # Finally, if it's the master branch being updated, force-push the
