@@ -1,5 +1,5 @@
+import numpy as np
 import multiprocessing as mp
-# import numpy as np
 # import scipy.interpolate as spi
 # import matplotlib.pyplot as plt
 
@@ -7,7 +7,7 @@ import qp
 
 class catalog(object):
 
-    def __init__(self, pdfs=[], nps=1, nbs=100, vb=True):
+    def __init__(self, pdfs=[], nprocs=1, nparams=100, vb=True):
         """
         An object containing an ensemble of qp.PDF objects
 
@@ -15,9 +15,9 @@ class catalog(object):
         ----------
         pdfs: list, optional
             list of qp.PDF objects
-        nps: int, optional
+        nprocs: int, optional
             number of processors to use
-        nbs: int, optional
+        nparams: int, optional
             default number of parameters to use in all approximations
         vb: boolean, optional
             report on progress to stdout?
@@ -25,10 +25,10 @@ class catalog(object):
         self.pdfs = pdfs
         self.n_pdfs = len(pdfs)
 
-        self.n_procs = nps
-        self.pool = mp.Pool(self.nps)
+        self.n_procs = nprocs
+        self.pool = mp.Pool(self.n_procs)
 
-        self.n_params = nbs
+        self.n_params = nparams
 
     def add(self, pdfs):
         """
@@ -60,10 +60,10 @@ class catalog(object):
             array
         """
         if N is None:
-            N = self.nbs
-        sample = lambda pdf: pdf.sample(N, using=using, vb=False)
+            N = self.n_params
+        sample = lambda n: self.pdfs[n].sample(N, using=using, vb=False)
         self.pool.join()
-        self.samples = np.array(self.pool.map(sample, pdfs))
+        self.samples = np.array(self.pool.map(sample, range(self.n_pdfs)))
         self.pool.close()
         return self.samples
 
@@ -83,6 +83,8 @@ class catalog(object):
         self.quantiles: dict of numpy.ndarrays
             array
         """
+
+        return
 
     def approximate(self, format, **kwargs):
         """
