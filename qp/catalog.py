@@ -1,5 +1,6 @@
 import numpy as np
-import multiprocessing as mp
+from pathos.multiprocessing import ProcessingPool as Pool
+#import multiprocessing as mp
 # import scipy.interpolate as spi
 # import matplotlib.pyplot as plt
 
@@ -24,9 +25,11 @@ class catalog(object):
         """
         self.pdfs = pdfs
         self.n_pdfs = len(pdfs)
+        self.pdf_indices = range(self.n_pdfs)
 
         self.n_procs = nprocs
-        self.pool = mp.Pool(self.n_procs)
+        self.pool = Pool(self.n_procs)
+        #self.pool.close()
 
         self.n_params = nparams
 
@@ -41,9 +44,29 @@ class catalog(object):
         """
         self.pdfs = self.pdfs + pdfs
         self.n_pdfs = len(self.pdfs)
+        self.pdf_indices = range(self.n_pdfs)
         return
 
-    def sample(self, N=None, using='truth'):
+    def help_sample(self, sample_container, n, N, using):
+        """
+        Helper function for sampling the catalog
+
+        Parameters
+        ----------
+        sample_container: list
+            where the samples are being stored
+        n: int
+            catalog index of PDF to be sampled
+        N: int
+            number of samples to take
+        using: string
+            parametrization/approximation to use
+        """
+        samples = self.pdfs[n].sample(N, using=using, vb=False)
+        sample_container[n] = samples
+        return
+
+    def sample(self, N=None, using=None):
         """
         Returns array of samples from all qp.PDF objects in the catalog
 
@@ -53,18 +76,23 @@ class catalog(object):
             number of samples to take from each qp.PDF objects
         using: string, optional
             format from which to take samples ('histogram', 'quantiles', 'truth')
+            if same for entire catalog
 
         Returns
         -------
         self.samples: numpy.ndarray
-            array
+            array of samples for all qp.PDF objects in catalog
         """
         if N is None:
             N = self.n_params
-        sample = lambda n: self.pdfs[n].sample(N, using=using, vb=False)
-        self.pool.join()
-        self.samples = np.array(self.pool.map(sample, range(self.n_pdfs)))
-        self.pool.close()
+        self.samples = [None] * self.n_pdfs
+        do_sample = lambda n: self.help_sample(self.samples, n, N, using)
+        #self.pool.join()
+        self.pool.map(do_sample, self.pdf_indices)
+        #self.pool.close()
+        #self.pool.join()
+        #self.pool.close()
+        self.samples = np.array(self.samples)
         return self.samples
 
     def quantize(self, N=None):

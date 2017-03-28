@@ -260,7 +260,7 @@ class PDF(object):
             array of sampled values
         """
         if using is None:
-            using = self.first
+            using = self.last
 
         if vb: print 'Sampling from '+using+' parametrization.'
 
