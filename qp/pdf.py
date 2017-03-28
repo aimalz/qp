@@ -1,6 +1,9 @@
 import numpy as np
+import scipy.stats as sps
 import scipy.interpolate as spi
 import matplotlib.pyplot as plt
+import sklearn as skl
+from sklearn import mixture
 
 import qp
 
@@ -39,6 +42,8 @@ class PDF(object):
         self.histogram = histogram
         self.samples = samples
         self.gridded = gridded
+        self.mix_mod = None
+
         self.scheme = scheme
 
         if vb and self.truth is None and self.quantiles is None and self.histogram is None and self.gridded is None and self.samples is None:
@@ -83,6 +88,8 @@ class PDF(object):
             location(s) at which to evaluate the pdf
         vb: boolean
             report on progress to stdout?
+        using: string
+            which parametrization to evaluate, defaults to initialization
 
         Returns
         -------
@@ -99,6 +106,12 @@ class PDF(object):
                 self.evaluated = (loc, val)
             else:
                 raise ValueError('true PDF is not set, use an approximation instead (the most recent one was '+self.last+')')
+        elif using == 'mix_mod':
+            if self.mix_mod is None:
+                self.mix_mod = self.mix_mod_fit()
+            if vb: print 'Evaluating the fitted mixture model distribution.'
+            val = self.mix_mod.pdf(loc)
+            self.evaluated = (loc, val)
         else:
             if vb: print 'Evaluating a `'+self.scheme+'` interpolation of the '+using+' parametrization.'
             evaluated = self.approximate(loc, using=using, vb=vb)
@@ -239,6 +252,48 @@ class PDF(object):
         self.last = 'histogram'
         return self.histogram
 
+    def mix_mod_fit(self, n_components=5, using=None):
+        """
+        Fits the parameters of a given functional form to an approximation
+
+        Parameters
+        ----------
+        n_components: int, optional
+            number of components to consider
+        using: string, optional
+            which existing approximation to use, defaults to first approximation
+
+        Returns
+        -------
+        self.mix_mod: qp.composite object
+            the qp.composite object approximating the PDF
+
+        Notes
+        -----
+        Currently only supports mixture of Gaussians
+        """
+        if self.samples is None:
+            self.samples = self.sample(using=using)
+
+        estimator = skl.mixture.GaussianMixture(n_components=n_components)
+        estimator.fit(self.samples.reshape(-1, 1))
+
+        weights = estimator.weights_
+        means = estimator.means_
+        variances = estimator.covariances_
+
+        components = []
+        for i in range(n_components):
+            mix_mod_dict = {}
+            function = sps.norm(loc = means[i], scale = np.sqrt(variances[i][0][0]))
+            coefficient = weights[i]
+            mix_mod_dict['function'] = function
+            mix_mod_dict['coefficient'] = coefficient
+            components.append(mix_mod_dict)
+
+        self.mix_mod = qp.composite(components)
+        return self.mix_mod
+
     def sample(self, N=100, infty=100., using=None, vb=True):
         """
         Samples the pdf in given representation
@@ -249,8 +304,8 @@ class PDF(object):
             number of samples to produce
         infty: float, optional
             approximate value at which CDF=1.
-        using: string
-            Parametrization on which to interpolate
+        using: string, optional
+            Parametrization on which to interpolate, defaults to initialization
         vb: boolean
             report on progress to stdout?
 
@@ -266,6 +321,8 @@ class PDF(object):
 
         if using == 'truth':
             samples = self.truth.rvs(size=N)
+        elif using == 'mix_mod':
+            samples = self.mix_mod.rvs(size=N)
 
         else:
             if using == 'quantiles':
@@ -306,8 +363,8 @@ class PDF(object):
 
         Parameters
         ----------
-        using: string
-            parametrization on which to interpolate
+        using: string, optional
+            parametrization on which to interpolate, defaults to initialization
         vb: boolean
             report on progress to stdout?
 
@@ -328,8 +385,8 @@ class PDF(object):
             using = self.first
         # if vb: print('Interpolating the `'+using+'` parametrization')
 
-        if using == 'truth':
-            print 'The truth needs no interpolation.  Try converting to an approximate parametrization first.'
+        if using == 'truth' or using == 'mix_mod':
+            print 'A functional form needs no interpolation.  Try converting to an approximate parametrization first.'
             return
 
         if using == 'quantiles':
@@ -444,6 +501,16 @@ class PDF(object):
             plt.plot(x, y, color='k', linestyle='-', lw=1.0, alpha=1.0, label='True PDF')
             if vb:
                 print 'Plotted truth.'
+
+        if self.mix_mod is not None:
+            min_x = self.mix_mod.ppf(np.array([0.001]))
+            max_x = self.mix_mod.ppf(np.array([0.999]))
+            x = np.linspace(min_x, max_x, 100)
+            extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
+            y = self.mix_mod.pdf(x)
+            plt.plot(x, y, color='k', linestyle=':', lw=1.0, alpha=0.5, label='Mixture Model PDF')
+            if vb:
+                print 'Plotted mixture model.'
 
         if self.quantiles is not None:
             min_x = self.quantiles[1][0]
