@@ -324,6 +324,17 @@ class PDF(object):
         elif using == 'mix_mod':
             samples = self.mix_mod.rvs(size=N)
 
+        elif using == 'gridded':
+            interpolator = self.interpolate(using = 'gridded')
+            (xmin, xmax) = (min(self.gridded[0]), max(self.gridded[0]))
+            (ymin, ymax) = (min(self.gridded[1]), max(self.gridded[1]))
+            (xran, yran) = (xmax - xmin, ymax - ymin)
+            samples = []
+            while len(samples) < N:
+                (x, y) = (xmin + xran * np.random.uniform(), ymin + yran * np.random.uniform())
+                if y < interpolator(x):
+                    samples.append(x)
+
         else:
             if using == 'quantiles':
                 # First find the quantiles if none exist:
