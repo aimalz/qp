@@ -364,7 +364,7 @@ class PDF(object):
                     samples.append(np.random.uniform(low=endpoints[c], high=endpoints[c+1]))
 
         if vb: print 'Sampled values: ', samples
-        self.samples = samples
+        self.samples = np.array(samples)
         self.last = 'samples'
         return self.samples
 
