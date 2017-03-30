@@ -508,7 +508,7 @@ class PDF(object):
             x = np.linspace(min_x, max_x, 100)
             extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
             y = self.mix_mod.pdf(x)
-            plt.plot(x, y, color='k', linestyle=':', lw=1.0, alpha=0.5, label='Mixture Model PDF')
+            plt.plot(x, y, color='k', linestyle=':', lw=1.0, alpha=1.0, label='Mixture Model PDF')
             if vb:
                 print 'Plotted mixture model.'
 
