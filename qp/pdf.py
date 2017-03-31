@@ -324,6 +324,17 @@ class PDF(object):
         elif using == 'mix_mod':
             samples = self.mix_mod.rvs(size=N)
 
+        elif using == 'gridded':
+            interpolator = self.interpolate(using = 'gridded')
+            (xmin, xmax) = (min(self.gridded[0]), max(self.gridded[0]))
+            (ymin, ymax) = (min(self.gridded[1]), max(self.gridded[1]))
+            (xran, yran) = (xmax - xmin, ymax - ymin)
+            samples = []
+            while len(samples) < N:
+                (x, y) = (xmin + xran * np.random.uniform(), ymin + yran * np.random.uniform())
+                if y < interpolator(x):
+                    samples.append(x)
+
         else:
             if using == 'quantiles':
                 # First find the quantiles if none exist:
@@ -353,7 +364,7 @@ class PDF(object):
                     samples.append(np.random.uniform(low=endpoints[c], high=endpoints[c+1]))
 
         if vb: print 'Sampled values: ', samples
-        self.samples = samples
+        self.samples = np.array(samples)
         self.last = 'samples'
         return self.samples
 
@@ -508,7 +519,7 @@ class PDF(object):
             x = np.linspace(min_x, max_x, 100)
             extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
             y = self.mix_mod.pdf(x)
-            plt.plot(x, y, color='k', linestyle=':', lw=1.0, alpha=0.5, label='Mixture Model PDF')
+            plt.plot(x, y, color='k', linestyle=':', lw=1.0, alpha=1.0, label='Mixture Model PDF')
             if vb:
                 print 'Plotted mixture model.'
 
