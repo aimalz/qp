@@ -252,7 +252,7 @@ class PDF(object):
         self.last = 'histogram'
         return self.histogram
 
-    def mix_mod_fit(self, n_components=5, using=None):
+    def mix_mod_fit(self, n_components=5, using=None, vb=True):
         """
         Fits the parameters of a given functional form to an approximation
 
@@ -262,6 +262,8 @@ class PDF(object):
             number of components to consider
         using: string, optional
             which existing approximation to use, defaults to first approximation
+        vb: boolean
+            Report progress on stdout?
 
         Returns
         -------
@@ -281,17 +283,21 @@ class PDF(object):
         weights = estimator.weights_
         means = estimator.means_
         variances = estimator.covariances_
+        # if vb:
+        #     print(weights, means, variances)
 
         components = []
         for i in range(n_components):
             mix_mod_dict = {}
-            function = sps.norm(loc = means[i], scale = np.sqrt(variances[i][0][0]))
+            function = sps.norm(loc = means[i][0], scale = np.sqrt(variances[i][0][0]))
             coefficient = weights[i]
             mix_mod_dict['function'] = function
             mix_mod_dict['coefficient'] = coefficient
             components.append(mix_mod_dict)
 
         self.mix_mod = qp.composite(components)
+        # if vb:
+        #     print(components)
         return self.mix_mod
 
     def sample(self, N=100, infty=100., using=None, vb=True):
@@ -559,14 +565,14 @@ class PDF(object):
                 print 'Plotted histogram.'
 
         if self.gridded is not None:
-            min_x = self.gridded[0][0]
-            max_x = self.gridded[0][-1]
+            min_x = min(self.gridded[0])
+            max_x = max(self.gridded[0])
             (x, y) = self.gridded
             plt.plot(x, y, color='k', lw=2.0, alpha=0.5,
-                     linestyle='--', label='gridded PDF')
+                     linestyle='--', label='Gridded PDF')
             extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
             if vb:
-                print 'Plotted evaluation.'
+                print 'Plotted gridded.'
 
         if self.samples is not None:
             min_x = min(self.samples)
