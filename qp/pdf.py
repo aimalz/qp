@@ -60,9 +60,11 @@ class PDF(object):
         elif self.histogram is not None:
             self.initialized = self.histogram
             self.first = 'histogram'
+            if vb: print('Is your histogram input properly normalized? qp does not check normalization!')
         elif self.gridded is not None:
             self.initialized = self.gridded
             self.first = 'gridded'
+            if vb: print('Is your gridded input properly normalized? qp does not check normalization!')
         elif self.samples is not None:
             self.initialized = self.samples
             self.first = 'samples'
@@ -283,8 +285,8 @@ class PDF(object):
         weights = estimator.weights_
         means = estimator.means_
         variances = estimator.covariances_
-        # if vb:
-        #     print(weights, means, variances)
+        if vb:
+            print(weights, means, variances)
 
         components = []
         for i in range(n_components):
