@@ -199,7 +199,6 @@ class PDF(object):
             integrals = self.truth.cdf(quantiles)
             print("Checking integrals: "+str(integrals))
         self.quantiles = (quantpoints, quantiles)
-        print(np.shape(quantpoints), np.shape(quantiles))
         self.last = 'quantiles'
         return self.quantiles
 
@@ -276,6 +275,8 @@ class PDF(object):
         -----
         Currently only supports mixture of Gaussians
         """
+        comp_range = range(n_components)
+
         if self.samples is None:
             self.samples = self.sample(using=using)
 
@@ -289,7 +290,7 @@ class PDF(object):
             print(weights, means, variances)
 
         components = []
-        for i in range(n_components):
+        for i in comp_range:
             mix_mod_dict = {}
             function = sps.norm(loc = means[i][0], scale = np.sqrt(variances[i][0][0]))
             coefficient = weights[i]
@@ -297,9 +298,12 @@ class PDF(object):
             mix_mod_dict['coefficient'] = coefficient
             components.append(mix_mod_dict)
 
+        if vb:
+            statement = ''
+            for c in comp_range:
+                statement += str(weights[c])+r'$\cdot\mathcal{N}($'+str(means[i][0])+r','+str(variances[c][0][0])+r')\n'
+            print(statement)
         self.mix_mod = qp.composite(components)
-        # if vb:
-        #     print(components)
         return self.mix_mod
 
     def sample(self, N=100, infty=100., using=None, vb=True):
@@ -402,7 +406,7 @@ class PDF(object):
         """
         if using is None:
             using = self.first
-        # if vb: print('Interpolating the `'+using+'` parametrization')
+        if vb: print('Interpolating the `'+using+'` parametrization')
 
         if using == 'truth' or using == 'mix_mod':
             print 'A functional form needs no interpolation.  Try converting to an approximate parametrization first.'
@@ -527,7 +531,7 @@ class PDF(object):
             x = np.linspace(min_x, max_x, 100)
             extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
             y = self.mix_mod.pdf(x)
-            plt.plot(x, y, color='k', linestyle=':', lw=1.0, alpha=1.0, label='Mixture Model PDF')
+            plt.plot(x, y, color='k', linestyle=':', lw=2.0, alpha=1.0, label='Mixture Model PDF')
             if vb:
                 print 'Plotted mixture model.'
 
