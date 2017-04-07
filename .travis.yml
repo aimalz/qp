@@ -19,7 +19,7 @@ install:
 
 script:
   # Run the unit tests:
-  # - nosetests
+  - nosetests
   # Run the demo notebook, to make demo.html:
   - jupyter nbconvert --ExecutePreprocessor.kernel_name=python --ExecutePreprocessor.timeout=600 --to html --execute docs/notebooks/demo.ipynb ; cp docs/notebooks/demo.html .
   - jupyter nbconvert --ExecutePreprocessor.kernel_name=python --ExecutePreprocessor.timeout=600 --to html --execute docs/notebooks/kld.ipynb ; cp docs/notebooks/kld.html .
