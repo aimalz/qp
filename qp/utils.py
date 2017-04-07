@@ -170,8 +170,9 @@ def calculate_kl_divergence(p, q, limits=(-10.0,10.0), dx=0.01, vb=True):
     qe = q.evaluate(grid, vb=vb)[1]
     # Normalize the evaluations, so that the integrals can be done
     # (very approximately!) by simple summation:
-    pn = pe/np.sum(pe)
-    qn = qe/np.sum(qe)
+    pn = pe / np.sum(pe)
+    denominator = max(np.sum(qe), sys.float_info.epsilon)
+    qn = qe / denominator
     # Compute the log of the normalized PDFs
     logp = safelog(pn)
     logq = safelog(qn)
