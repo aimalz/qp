@@ -141,7 +141,7 @@ class PDF(object):
         """
         return None
 
-    def quantize(self, quants=None, percent=10., number=None, infty=100., vb=True):
+    def quantize(self, quants=None, percent=10., N=None, infty=100., vb=True):
         """
         Computes an array of evenly-spaced quantiles from the truth.
 
@@ -151,7 +151,7 @@ class PDF(object):
             array of quantile locations as decimals
         percent: float, optional
             the separation of the requested quantiles, in percent
-        number: int, optional
+        N: int, optional
             the number of quantiles to compute.
         infty: float, optional
             approximate value at which CDF=1.
@@ -176,15 +176,15 @@ class PDF(object):
         if quants is not None:
             quantpoints = quants
         else:
-            if number is not None:
+            if N is not None:
                 # Compute the spacing of the quantiles:
-                quantum = 1.0 / float(number+1)
+                quantum = 1.0 / float(N+1)
             else:
                 quantum = percent/100.0
                 # Over-write the number of quantiles:
-                number = np.ceil(100.0 / percent) - 1
-                assert number > 0
-            quantpoints = np.linspace(0.0+quantum, 1.0-quantum, number)
+                N = np.ceil(100.0 / percent) - 1
+                assert N > 0
+            quantpoints = np.linspace(0.0+quantum, 1.0-quantum, N)
 
         if vb:
             print("Calculating "+str(len(quantpoints))+" quantiles: "+str(quantpoints))
@@ -202,7 +202,7 @@ class PDF(object):
         self.last = 'quantiles'
         return self.quantiles
 
-    def histogramize(self, binends=None, number=10, binrange=[0., 1.], vb=True):
+    def histogramize(self, binends=None, N=10, binrange=[0., 1.], vb=True):
         """
         Computes integrated histogram bin values from the truth via the CDF.
 
@@ -210,7 +210,7 @@ class PDF(object):
         ----------
         binends: ndarray, float, optional
             Array of N+1 endpoints of N bins
-        number: int, optional
+        N: int, optional
             Number of bins if no binends provided
         range: tuple, float, optional
             Pair of values of endpoints of total bin range
@@ -220,7 +220,7 @@ class PDF(object):
         Returns
         -------
         self.histogram: tuple of ndarrays of floats
-            Pair of arrays of lengths (number+1, number) containing endpoints
+            Pair of arrays of lengths (N+1, N) containing endpoints
             of bins and values in bins
 
         Comments
@@ -234,15 +234,15 @@ class PDF(object):
         See `the Scipy docs <https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_continuous.cdf.html#scipy.stats.rv_continuous.cdf>`_ for details.
         """
         if binends is None:
-            step = float(binrange[1]-binrange[0])/number
+            step = float(binrange[1]-binrange[0])/N
             binends = np.arange(binrange[0], binrange[1]+step, step)
 
-        number = len(binends)-1
-        histogram = np.zeros(number)
+        N = len(binends)-1
+        histogram = np.zeros(N)
         if vb: print 'Calculating histogram: ', binends
         if self.truth is not None:
             cdf = self.truth.cdf(binends)
-            for b in range(number):
+            for b in range(N):
                 histogram[b] = (cdf[b+1]-cdf[b])/(binends[b+1]-binends[b])
         else:
             print 'New histograms can only be computed from a truth distribution in this version.'
@@ -453,9 +453,6 @@ class PDF(object):
 
         Parameters
         ----------
-        number: int
-            the number of points over which to interpolate, bounded by
-            the quantile value endpoints
         points: ndarray
             the value(s) at which to evaluate the interpolated function
         using: string, optional

@@ -114,6 +114,6 @@ class composite(object):
                 return np.absolute(cdfs[n] - self.cdf(x))
             res = op.minimize(ppf_helper, xs0[n], method="Nelder-Mead", options={"maxfev": 1e5, "maxiter":1e5})
             xs[n] += res.x
-            if vb:
-                print(res.message, res.success)
+            # if vb:
+            #     print(res.message, res.success)
         return xs
