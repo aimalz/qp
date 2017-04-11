@@ -482,6 +482,7 @@ class PDF(object):
         Example:
             x, y = p.approximate(np.linspace(-1., 1., 100))
         """
+        delta_points = np.max(points)-np.min(points)
 
         # First, reset the interpolation scheme if one is passed
         # explicitly:
@@ -491,6 +492,10 @@ class PDF(object):
         # Now make the interpolation, using the current scheme:
         self.interpolator = self.interpolate(using=using, vb=vb)
         interpolated = self.interpolator(points)
+
+        # delta_points = np.max(points)-np.min(points)
+        # assert(np.sum(interpolated / (interpolated * delta_points)) == 1.)
+
         interpolated[interpolated<0.] = 0.
 
         return (points, interpolated)

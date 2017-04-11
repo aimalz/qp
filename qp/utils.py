@@ -25,7 +25,7 @@ def cdf(weights):
     cumsum = 0.
     for w in weights:
         cumsum += w
-        result.append(cumsum/tot)
+        result.append(cumsum / tot)
     return np.array(result)
 
 def choice(pop, weights):
@@ -69,7 +69,7 @@ def safelog(arr, threshold=sys.float_info.epsilon):
     """
     shape = np.shape(arr)
     flat = arr.flatten()
-    logged = np.log(np.array([max(a,threshold) for a in flat])).reshape(shape)
+    logged = np.log(np.array([max(a, threshold) for a in flat])).reshape(shape)
     return logged
 
 def evaluate_quantiles((q, x), infty=100.):
@@ -93,12 +93,12 @@ def evaluate_quantiles((q, x), infty=100.):
     # q = np.append(q, np.array([1.]))
     # qs = np.append(np.array([0.]), q)
     qs = q
-    dq = qs[1:]-qs[:-1]
+    dq = qs[1:] - qs[:-1]
     # xs = np.append(x, np.array([infty]))
     # xs = np.append(np.array([-1. * infty]), x)
     xs = x
-    dx = xs[1:]-xs[:-1]
-    mx = (xs[1:]+xs[:-1])/2.
+    dx = xs[1:] - xs[:-1]
+    mx = (xs[1:] + xs[:-1]) / 2.
     y = dq / dx
     return ((mx, y))
 
@@ -118,7 +118,7 @@ def evaluate_histogram((xp, y)):
     (x, y): tuple, float
         bin midpoints and CDFs over bins
     """
-    x = (xp[1:]+xp[:-1])/2.
+    x = (xp[1:] + xp[:-1]) / 2.
     return((x, y))
 
 def evaluate_samples(x):
@@ -177,7 +177,7 @@ def calculate_kl_divergence(p, q, limits=(-10.0,10.0), dx=0.01, vb=True):
     logp = safelog(pn)
     logq = safelog(qn)
     # Calculate the KLD from q to p
-    Dpq = np.sum(pn*(logp-logq))
+    Dpq = np.sum(pn * (logp - logq))
     return Dpq
 
 def calculate_rmse(p, q, limits=(-10.,10.), dx=0.01, vb=True):
@@ -203,11 +203,11 @@ def calculate_rmse(p, q, limits=(-10.,10.), dx=0.01, vb=True):
         the value of the RMS error between `q` and `p`
     """
     # Make a grid from the limits and resolution
-    npoints = int((limits[1]-limits[0])/dx)
+    npoints = int((limits[1] - limits[0]) / dx)
     grid = np.linspace(limits[0], limits[1], npoints)
     # Evaluate the functions on the grid
     pe = p.evaluate(grid, vb=vb)[1]
     qe = q.evaluate(grid, vb=vb)[1]
     # Calculate the RMS between p and q
-    rms = np.sqrt(np.sum((pe-qe)**2)/npoints)
+    rms = np.sqrt(np.sum((pe-qe) ** 2) / npoints)
     return rms
