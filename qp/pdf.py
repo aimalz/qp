@@ -58,13 +58,11 @@ class PDF(object):
             self.initialized = self.quantiles
             self.first = 'quantiles'
         elif self.histogram is not None:
-            self.initialized = self.histogram
+            self.initialized = qp.utils.normalize_histogram(self.histogram, vb=True)
             self.first = 'histogram'
-            if vb: print('Is your histogram input properly normalized? qp does not check normalization!')
         elif self.gridded is not None:
-            self.initialized = self.gridded
+            self.initialized = qp.utils.normalize_gridded(self.gridded, vb=True)
             self.first = 'gridded'
-            if vb: print('Is your gridded input properly normalized? qp does not check normalization!')
         elif self.samples is not None:
             self.initialized = self.samples
             self.first = 'samples'
@@ -242,8 +240,10 @@ class PDF(object):
         if vb: print 'Calculating histogram: ', binends
         if self.truth is not None:
             cdf = self.truth.cdf(binends)
-            for b in range(N):
-                histogram[b] = (cdf[b+1]-cdf[b])/(binends[b+1]-binends[b])
+            heights = cdf[1:] - cdf[:-1]
+            histogram = qp.utils.normalize_histogram((binends, heights), vb=vb)
+            # for b in range(N):
+            #     histogram[b] = (cdf[b+1]-cdf[b])/(binends[b+1]-binends[b])
         else:
             print 'New histograms can only be computed from a truth distribution in this version.'
             return
@@ -482,7 +482,7 @@ class PDF(object):
         Example:
             x, y = p.approximate(np.linspace(-1., 1., 100))
         """
-        delta_points = np.max(points)-np.min(points)
+        # delta_points = np.max(points)-np.min(points)
 
         # First, reset the interpolation scheme if one is passed
         # explicitly:
@@ -493,10 +493,9 @@ class PDF(object):
         self.interpolator = self.interpolate(using=using, vb=vb)
         interpolated = self.interpolator(points)
 
-        # delta_points = np.max(points)-np.min(points)
-        # assert(np.sum(interpolated / (interpolated * delta_points)) == 1.)
-
-        interpolated[interpolated<0.] = 0.
+        # interpolated[interpolated<0.] = 0.
+        # interpolated /= np.sum(interpolated * delta_points / len(points))
+        (points, interpolated) = qp.utils.normalize_gridded((points, interpolated), vb=vb)
 
         return (points, interpolated)
 

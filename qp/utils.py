@@ -6,6 +6,8 @@ import bisect
 
 import matplotlib.pyplot as plt
 
+epsilon = sys.float_info.epsilon
+
 def cdf(weights):
     """
     Creates a normalized CDF from an arbitrary discrete distribution
@@ -51,7 +53,7 @@ def choice(pop, weights):
     output = pop[index]
     return output
 
-def safelog(arr, threshold=sys.float_info.epsilon):
+def safelog(arr, threshold=epsilon):
     """
     Takes the natural logarithm of an array that might contain zeroes.
 
@@ -71,6 +73,52 @@ def safelog(arr, threshold=sys.float_info.epsilon):
     flat = arr.flatten()
     logged = np.log(np.array([max(a, threshold) for a in flat])).reshape(shape)
     return logged
+
+def normalize_gridded((x, y), vb=True):
+    """
+    Normalizes gridded parametrizations assuming evenly spaced grid
+
+    Parameters
+    ----------
+    (x, y): tuple, ndarray, float
+        tuple of points at which function is evaluated and the PDF at those points
+    vb: boolean
+        print progress to stdout?
+
+    Returns
+    -------
+    (x, y): tuple, ndarray, float
+        tuple of input x and normalized y
+    """
+    delta = np.max(x)-np.min(x)
+    if vb: print(np.sum(y * delta))
+    y[y < 0.] = 0.
+    y /= np.sum(y * delta / len(x))
+    if vb: print(np.sum(y * delta))
+    return (x, y)
+
+def normalize_histogram((x, y), vb=True):
+    """
+    Normalizes histogram parametrizations
+
+    Parameters
+    ----------
+    (x, y): tuple, ndarray, float
+        tuple of (n+1) bin endpoints and (n) CDF between endpoints
+    vb: boolean
+        print progress to stdout?
+
+    Returns
+    -------
+    (x, y): tuple, ndarray, float
+        tuple of input x and normalized y
+    """
+    delta = x[1:] - x[:-1]
+    if vb: print(np.sum(y * delta))
+    y[y < 0.] = 0.
+    y /= np.sum(y * delta)
+    if vb: print(np.sum(y * delta))
+    return (x, y)
 
 def evaluate_quantiles((q, x), infty=100.):
     """
@@ -171,8 +219,8 @@ def calculate_kl_divergence(p, q, limits=(-10.0,10.0), dx=0.01, vb=True):
     # Normalize the evaluations, so that the integrals can be done
     # (very approximately!) by simple summation:
     pn = pe / np.sum(pe)
-    denominator = max(np.sum(qe), sys.float_info.epsilon)
-    qn = qe / denominator
+    #denominator = max(np.sum(qe), epsilon)
+    qn = qe / np.sum(qe)#denominator
     # Compute the log of the normalized PDFs
     logp = safelog(pn)
     logq = safelog(qn)
@@ -209,5 +257,5 @@ def calculate_rmse(p, q, limits=(-10.,10.), dx=0.01, vb=True):
     pe = p.evaluate(grid, vb=vb)[1]
     qe = q.evaluate(grid, vb=vb)[1]
     # Calculate the RMS between p and q
-    rms = np.sqrt(np.sum((pe-qe) ** 2) / npoints)
+    rms = np.sqrt(np.sum((pe - qe) ** 2) / npoints)
     return rms
