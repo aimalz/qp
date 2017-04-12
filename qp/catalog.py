@@ -6,7 +6,7 @@ from pathos.multiprocessing import ProcessingPool as Pool
 
 import qp
 
-class catalog(object):
+class Ensemble(object):
 
     def __init__(self, pdfs=[], nprocs=1, nparams=100, vb=True):
         """
@@ -39,15 +39,17 @@ class catalog(object):
 
         Parameters
         ----------
-        pdfs: list
+        pdfs: list#if qp.PDF. . .
             list of qp.PDF objects
         """
-        self.pdfs = self.pdfs + pdfs
+        self.pdfs = self.pdfs + pdfs#append if pdfs is qp.PDF instead of list, or make it a list up front
         self.n_pdfs = len(self.pdfs)
         self.pdf_indices = range(self.n_pdfs)
         return
 
-    def help_sample(self, sample_container, n, N, using):
+    def 
+
+    def help_sample(self, sample_container, n, N, using):#remove container stuff
         """
         Helper function for sampling the catalog
 
@@ -63,7 +65,7 @@ class catalog(object):
             parametrization/approximation to use
         """
         samples = self.pdfs[n].sample(N, using=using, vb=False)
-        sample_container[n] = samples
+        #sample_container[n] = samples
         return
 
     def sample(self, N=None, using=None):
@@ -109,7 +111,7 @@ class catalog(object):
         Returns
         -------
         self.quantiles: dict of numpy.ndarrays
-            array
+            input cdfs, array of output quantiles
         """
 
         return
