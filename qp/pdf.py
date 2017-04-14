@@ -58,10 +58,10 @@ class PDF(object):
             self.initialized = self.quantiles
             self.first = 'quantiles'
         elif self.histogram is not None:
-            self.initialized = qp.utils.normalize_histogram(self.histogram, vb=True)
+            self.initialized = qp.utils.normalize_histogram(self.histogram, vb=False)
             self.first = 'histogram'
         elif self.gridded is not None:
-            self.initialized = qp.utils.normalize_gridded(self.gridded, vb=True)
+            self.initialized = qp.utils.normalize_gridded(self.gridded, vb=False)
             self.first = 'gridded'
         elif self.samples is not None:
             self.initialized = self.samples
@@ -241,7 +241,7 @@ class PDF(object):
         if self.truth is not None:
             cdf = self.truth.cdf(binends)
             heights = cdf[1:] - cdf[:-1]
-            histogram = qp.utils.normalize_histogram((binends, heights), vb=vb)
+            histogram = qp.utils.normalize_histogram((binends, heights), vb=False)
             # for b in range(N):
             #     histogram[b] = (cdf[b+1]-cdf[b])/(binends[b+1]-binends[b])
         else:
@@ -490,8 +490,9 @@ class PDF(object):
         # Now make the interpolation, using the current scheme:
         self.interpolator = self.interpolate(using=using, vb=vb)
         interpolated = self.interpolator(points)
+        interpolated = qp.utils.normalize_gridded((points, interpolated), vb=False)
 
-        return (points, interpolated)
+        return interpolated#(points, interpolated)
 
     def plot(self, vb=True):
         """

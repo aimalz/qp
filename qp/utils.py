@@ -90,11 +90,11 @@ def normalize_gridded((x, y), vb=True):
     (x, y): tuple, ndarray, float
         tuple of input x and normalized y
     """
-    delta = np.max(x)-np.min(x)
-    if vb: print(np.sum(y * delta))
+    delta = (np.max(x) - np.min(x)) / len(x)
+    if vb: print('before normalization: '+str(np.sum(y * delta)))
     y[y < 0.] = 0.
-    y /= np.sum(y * delta / len(x))
-    if vb: print(np.sum(y * delta))
+    y /= np.sum(y * delta)
+    if vb: print('after normalization: '+str(np.sum(y * delta)))
     return (x, y)
 
 def normalize_histogram((x, y), vb=True):
