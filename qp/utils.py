@@ -92,7 +92,7 @@ def normalize_gridded((x, y), vb=True):
     """
     delta = (np.max(x) - np.min(x)) / len(x)
     if vb: print('before normalization: '+str(np.sum(y * delta)))
-    y[y < 0.] = 0.
+    y[y < 0.] = epsilon
     y /= np.sum(y * delta)
     if vb: print('after normalization: '+str(np.sum(y * delta)))
     return (x, y)
