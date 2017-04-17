@@ -6,6 +6,8 @@ import bisect
 
 import matplotlib.pyplot as plt
 
+epsilon = sys.float_info.epsilon
+
 def cdf(weights):
     """
     Creates a normalized CDF from an arbitrary discrete distribution
@@ -25,7 +27,7 @@ def cdf(weights):
     cumsum = 0.
     for w in weights:
         cumsum += w
-        result.append(cumsum/tot)
+        result.append(cumsum / tot)
     return np.array(result)
 
 def choice(pop, weights):
@@ -51,7 +53,7 @@ def choice(pop, weights):
     output = pop[index]
     return output
 
-def safelog(arr, threshold=sys.float_info.epsilon):
+def safelog(arr, threshold=epsilon):
     """
     Takes the natural logarithm of an array that might contain zeroes.
 
@@ -69,8 +71,54 @@ def safelog(arr, threshold=sys.float_info.epsilon):
     """
     shape = np.shape(arr)
     flat = arr.flatten()
-    logged = np.log(np.array([max(a,threshold) for a in flat])).reshape(shape)
+    logged = np.log(np.array([max(a, threshold) for a in flat])).reshape(shape)
     return logged
+
+def normalize_gridded((x, y), vb=True):
+    """
+    Normalizes gridded parametrizations assuming evenly spaced grid
+
+    Parameters
+    ----------
+    (x, y): tuple, ndarray, float
+        tuple of points at which function is evaluated and the PDF at those points
+    vb: boolean
+        print progress to stdout?
+
+    Returns
+    -------
+    (x, y): tuple, ndarray, float
+        tuple of input x and normalized y
+    """
+    delta = (np.max(x) - np.min(x)) / len(x)
+    if vb: print('before normalization: '+str(np.sum(y * delta)))
+    y[y < 0.] = epsilon
+    y /= np.sum(y * delta)
+    if vb: print('after normalization: '+str(np.sum(y * delta)))
+    return (x, y)
+
+def normalize_histogram((x, y), vb=True):
+    """
+    Normalizes histogram parametrizations
+
+    Parameters
+    ----------
+    (x, y): tuple, ndarray, float
+        tuple of (n+1) bin endpoints and (n) CDF between endpoints
+    vb: boolean
+        print progress to stdout?
+
+    Returns
+    -------
+    (x, y): tuple, ndarray, float
+        tuple of input x and normalized y
+    """
+    delta = x[1:] - x[:-1]
+    if vb: print(np.sum(y * delta))
+    y[y < 0.] = 0.
+    y /= np.sum(y * delta)
+    if vb: print(np.sum(y * delta))
+    return (x, y)
 
 def evaluate_quantiles((q, x), infty=100.):
     """
@@ -93,12 +141,12 @@ def evaluate_quantiles((q, x), infty=100.):
     # q = np.append(q, np.array([1.]))
     # qs = np.append(np.array([0.]), q)
     qs = q
-    dq = qs[1:]-qs[:-1]
+    dq = qs[1:] - qs[:-1]
     # xs = np.append(x, np.array([infty]))
     # xs = np.append(np.array([-1. * infty]), x)
     xs = x
-    dx = xs[1:]-xs[:-1]
-    mx = (xs[1:]+xs[:-1])/2.
+    dx = xs[1:] - xs[:-1]
+    mx = (xs[1:] + xs[:-1]) / 2.
     y = dq / dx
     return ((mx, y))
 
@@ -118,7 +166,7 @@ def evaluate_histogram((xp, y)):
     (x, y): tuple, float
         bin midpoints and CDFs over bins
     """
-    x = (xp[1:]+xp[:-1])/2.
+    x = (xp[1:] + xp[:-1]) / 2.
     return((x, y))
 
 def evaluate_samples(x):
@@ -171,13 +219,13 @@ def calculate_kl_divergence(p, q, limits=(-10.0,10.0), dx=0.01, vb=True):
     # Normalize the evaluations, so that the integrals can be done
     # (very approximately!) by simple summation:
     pn = pe / np.sum(pe)
-    denominator = max(np.sum(qe), sys.float_info.epsilon)
-    qn = qe / denominator
+    #denominator = max(np.sum(qe), epsilon)
+    qn = qe / np.sum(qe)#denominator
     # Compute the log of the normalized PDFs
     logp = safelog(pn)
     logq = safelog(qn)
     # Calculate the KLD from q to p
-    Dpq = np.sum(pn*(logp-logq))
+    Dpq = np.sum(pn * (logp - logq))
     return Dpq
 
 def calculate_rmse(p, q, limits=(-10.,10.), dx=0.01, vb=True):
@@ -203,11 +251,11 @@ def calculate_rmse(p, q, limits=(-10.,10.), dx=0.01, vb=True):
         the value of the RMS error between `q` and `p`
     """
     # Make a grid from the limits and resolution
-    npoints = int((limits[1]-limits[0])/dx)
+    npoints = int((limits[1] - limits[0]) / dx)
     grid = np.linspace(limits[0], limits[1], npoints)
     # Evaluate the functions on the grid
     pe = p.evaluate(grid, vb=vb)[1]
     qe = q.evaluate(grid, vb=vb)[1]
     # Calculate the RMS between p and q
-    rms = np.sqrt(np.sum((pe-qe)**2)/npoints)
+    rms = np.sqrt(np.sum((pe - qe) ** 2) / npoints)
     return rms
