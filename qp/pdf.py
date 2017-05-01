@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.stats as sps
 import scipy.interpolate as spi
+import scipy.optimize as spo
 import matplotlib.pyplot as plt
 import sklearn as skl
 from sklearn import mixture
@@ -277,22 +278,40 @@ class PDF(object):
         """
         comp_range = range(n_components)
 
-        if self.samples is None:
-            self.samples = self.sample(using=using)
+        if self.gridded is not None:
+            ival_weights = np.ones(n_components) / n_components
+            ival_means = min(self.gridded[0]) + (max(self.gridded[0]) - min(self.gridded[0])) * np.arange(n_components) / n_components
+            ival_stdevs = (max(self.gridded[0]) - min(self.gridded[0])) * np.ones(n_components) / n_components
+            ivals = np.array([ival_weights, ival_means, ival_stdevs]).T.flatten()
+            def gmm(x, *args):
+                y = 0.
+                for c in comp_range:
+                    index = c * n_components
+                    y += args[index] *  sps.norm(loc = args[index + 1], scale = args[index + 2]).pdf(x)
+                return y
+            popt, pcov = spo.curve_fit(gmm, self.gridded[0], self.gridded[1], ivals)
+            popt = popt.reshape((n_components, 3)).T
+            weights = popt[0]
+            means = popt[1]
+            stdevs = popt[2]
+        else:
+            if self.samples is None:
+                self.samples = self.sample(using=using)
 
-        estimator = skl.mixture.GaussianMixture(n_components=n_components)
-        estimator.fit(self.samples.reshape(-1, 1))
+            estimator = skl.mixture.GaussianMixture(n_components=n_components)
+            estimator.fit(self.samples.reshape(-1, 1))
 
-        weights = estimator.weights_
-        means = estimator.means_
-        variances = estimator.covariances_
+            weights = estimator.weights_
+            means = estimator.means_[:, 0]
+            stdevs = np.sqrt(estimator.covariances_[:, 0, 0])
+
         if vb:
-            print(weights, means, variances)
+            print(weights, means, stdevs)
 
         components = []
         for i in comp_range:
             mix_mod_dict = {}
-            function = sps.norm(loc = means[i][0], scale = np.sqrt(variances[i][0][0]))
+            function = sps.norm(loc = means[i], scale = stdevs[i])
             coefficient = weights[i]
             mix_mod_dict['function'] = function
             mix_mod_dict['coefficient'] = coefficient
@@ -301,7 +320,7 @@ class PDF(object):
         if vb:
             statement = ''
             for c in comp_range:
-                statement += str(weights[c])+r'$\cdot\mathcal{N}($'+str(means[i][0])+r','+str(variances[c][0][0])+r')\n'
+                statement += str(weights[c])+r'$\cdot\mathcal{N}($'+str(means[c])+r','+str(stdevs[c])+r')\n'
             print(statement)
         self.mix_mod = qp.composite(components)
         return self.mix_mod
