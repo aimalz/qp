@@ -279,9 +279,10 @@ class PDF(object):
         comp_range = range(n_components)
 
         if self.gridded is not None:
+            (x, y) =self.gridded
             ival_weights = np.ones(n_components) / n_components
-            ival_means = min(self.gridded[0]) + (max(self.gridded[0]) - min(self.gridded[0])) * np.arange(n_components) / n_components
-            ival_stdevs = (max(self.gridded[0]) - min(self.gridded[0])) * np.ones(n_components) / n_components
+            ival_means = (min(x) + (max(x) - min(x))) * np.arange(n_components) / n_components
+            ival_stdevs = (max(x) - min(x)) * np.ones(n_components) / n_components
             ivals = np.array([ival_weights, ival_means, ival_stdevs]).T.flatten()
             def gmm(x, *args):
                 y = 0.
@@ -289,7 +290,9 @@ class PDF(object):
                     index = c * n_components
                     y += args[index] *  sps.norm(loc = args[index + 1], scale = args[index + 2]).pdf(x)
                 return y
-            popt, pcov = spo.curve_fit(gmm, self.gridded[0], self.gridded[1], ivals)
+            low_bounds = np.array([np.zeros(n_components), min(x) * np.ones(n_components), np.ones(n_components) * (max(x) - min(x)) / len(x)]).flatten()
+            high_bounds = np.array([np.ones(n_components), max(x) * np.ones(n_components), np.ones(n_components) * (max(x) - min(x))]).flatten()
+            popt, pcov = spo.curve_fit(gmm, self.gridded[0], self.gridded[1], ivals, bounds = (low_bounds, high_bounds))
             popt = popt.reshape((n_components, 3)).T
             weights = popt[0]
             means = popt[1]
