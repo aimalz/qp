@@ -40,9 +40,9 @@ class PDF(object):
         """
         self.truth = truth
         self.quantiles = quantiles
-        self.histogram = histogram
+        self.histogram = qp.utils.normalize_histogram(histogram, vb=False)
         self.samples = samples
-        self.gridded = gridded
+        self.gridded = qp.utils.normalize_gridded(gridded, vb=False)
         self.mix_mod = None
 
         self.scheme = scheme
@@ -59,10 +59,12 @@ class PDF(object):
             self.initialized = self.quantiles
             self.first = 'quantiles'
         elif self.histogram is not None:
-            self.initialized = qp.utils.normalize_histogram(self.histogram, vb=False)
+            self.initialized = self.histogram
             self.first = 'histogram'
         elif self.gridded is not None:
-            self.initialized = qp.utils.normalize_gridded(self.gridded, vb=False)
+            delta = (np.max(self.gridded[0]) - np.min(self.gridded[0])) / len(self.gridded[0])
+            self.gridded = (self.gridded[0], self.gridded[1] / np.sum(self.gridded[1] * delta))
+            self.initialized = self.gridded
             self.first = 'gridded'
         elif self.samples is not None:
             self.initialized = self.samples
@@ -201,7 +203,7 @@ class PDF(object):
         self.last = 'quantiles'
         return self.quantiles
 
-    def histogramize(self, binends=None, N=10, binrange=[0., 1.], vb=True):
+    def histogramize(self, binends=None, N=10, binrange=None, vb=True):
         """
         Computes integrated histogram bin values from the truth via the CDF.
 
@@ -211,7 +213,7 @@ class PDF(object):
             Array of N+1 endpoints of N bins
         N: int, optional
             Number of bins if no binends provided
-        range: tuple, float, optional
+        binrange: tuple, float, optional
             Pair of values of endpoints of total bin range
         vb: boolean
             Report on progress to stdout?
@@ -232,6 +234,18 @@ class PDF(object):
         object stored in `self.truth`. This calculates the CDF.
         See `the Scipy docs <https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_continuous.cdf.html#scipy.stats.rv_continuous.cdf>`_ for details.
         """
+        if binrange is None:
+            if self.gridded is not None:
+                binrange = [min(self.gridded[0]), max(self.gridded[0])]
+            elif self.samples is not None:
+                binrange = [min(self.samples), max(self.samples)]
+            elif self.quantiles is not None:
+                binrange = [min(self.quantiles[1]), max(self.quantiles[1])]
+            elif self.histogram is not None:
+                return self.histogram
+            else:
+                binrange = [0., 1.]
+
         if binends is None:
             step = float(binrange[1]-binrange[0])/N
             binends = np.arange(binrange[0], binrange[1]+step, step)
@@ -281,17 +295,18 @@ class PDF(object):
         if self.gridded is not None:
             (x, y) =self.gridded
             ival_weights = np.ones(n_components) / n_components
-            ival_means = (min(x) + (max(x) - min(x))) * np.arange(n_components) / n_components
-            ival_stdevs = (max(x) - min(x)) * np.ones(n_components) / n_components
+            ival_means = min(x) + (max(x) - min(x)) * np.arange(n_components) / n_components
+            ival_stdevs = np.sqrt((max(x) - min(x)) * np.ones(n_components) / n_components)
             ivals = np.array([ival_weights, ival_means, ival_stdevs]).T.flatten()
             def gmm(x, *args):
                 y = 0.
+                args = np.array(args).reshape((n_components, 3))
                 for c in comp_range:
-                    index = c * n_components
-                    y += args[index] *  sps.norm(loc = args[index + 1], scale = args[index + 2]).pdf(x)
+                    # index = c * n_components
+                    y += args[c][0] *  sps.norm(loc = args[c][1], scale = args[c][2]).pdf(x)
                 return y
-            low_bounds = np.array([np.zeros(n_components), min(x) * np.ones(n_components), np.ones(n_components) * (max(x) - min(x)) / len(x)]).flatten()
-            high_bounds = np.array([np.ones(n_components), max(x) * np.ones(n_components), np.ones(n_components) * (max(x) - min(x))]).flatten()
+            low_bounds = np.array([np.zeros(n_components), min(x) * np.ones(n_components), np.ones(n_components) * (max(x) - min(x)) / len(x)]).T.flatten()
+            high_bounds = np.array([np.ones(n_components), max(x) * np.ones(n_components), np.ones(n_components) * (max(x) - min(x))]).T.flatten()
             popt, pcov = spo.curve_fit(gmm, self.gridded[0], self.gridded[1], ivals, bounds = (low_bounds, high_bounds))
             popt = popt.reshape((n_components, 3)).T
             weights = popt[0]
@@ -513,6 +528,7 @@ class PDF(object):
         self.interpolator = self.interpolate(using=using, vb=vb)
         interpolated = self.interpolator(points)
         interpolated = qp.utils.normalize_gridded((points, interpolated), vb=False)
+        # interpolated[interpolated<0.] = 0.
 
         return interpolated#(points, interpolated)
 

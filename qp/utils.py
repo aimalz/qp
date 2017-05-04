@@ -74,13 +74,13 @@ def safelog(arr, threshold=epsilon):
     logged = np.log(np.array([max(a, threshold) for a in flat])).reshape(shape)
     return logged
 
-def normalize_gridded((x, y), vb=True):
+def normalize_gridded(in_data, vb=True):
     """
     Normalizes gridded parametrizations assuming evenly spaced grid
 
     Parameters
     ----------
-    (x, y): tuple, ndarray, float
+    in_data: None or tuple, ndarray, float
         tuple of points at which function is evaluated and the PDF at those points
     vb: boolean
         print progress to stdout?
@@ -90,20 +90,23 @@ def normalize_gridded((x, y), vb=True):
     (x, y): tuple, ndarray, float
         tuple of input x and normalized y
     """
-    delta = (np.max(x) - np.min(x)) / len(x)
-    if vb: print('before normalization: '+str(np.sum(y * delta)))
-    y[y < 0.] = epsilon
-    y /= np.sum(y * delta)
-    if vb: print('after normalization: '+str(np.sum(y * delta)))
+    if in_data is None:
+        return in_data
+    (x, y) = in_data
+    #delta = (np.max(x) - np.min(x)) / len(x)
+    # if vb: print('before normalization: '+str(np.sum(y * delta)))
+    y[y < epsilon] = epsilon
+    #y /= np.sum(y * delta)
+    # if vb: print('after normalization: '+str(np.sum(y * delta)))
     return (x, y)
 
-def normalize_histogram((x, y), vb=True):
+def normalize_histogram(in_data, vb=True):
     """
     Normalizes histogram parametrizations
 
     Parameters
     ----------
-    (x, y): tuple, ndarray, float
+    in_data: None or tuple, ndarray, float
         tuple of (n+1) bin endpoints and (n) CDF between endpoints
     vb: boolean
         print progress to stdout?
@@ -113,25 +116,26 @@ def normalize_histogram((x, y), vb=True):
     (x, y): tuple, ndarray, float
         tuple of input x and normalized y
     """
+    if in_data is None:
+        return in_data
+    (x, y) = in_data
     delta = x[1:] - x[:-1]
-    if vb: print(np.sum(y * delta))
+    # if vb: print(np.sum(y * delta))
     y[y < 0.] = 0.
     y /= np.sum(y * delta)
-    if vb: print(np.sum(y * delta))
+    # if vb: print(np.sum(y * delta))
     return (x, y)
 
-def evaluate_quantiles((q, x), infty=100.):
+def evaluate_quantiles((qs, xs)):
     """
     Produces PDF values given quantile information
 
     Parameters
     ----------
-    q: ndarray, float
+    qs: ndarray, float
         CDF values
-    x: ndarray, float
+    xs: ndarray, float
         quantile values
-    infty: float, optional
-        value at which CDF(infty) = 0, CDF(-infty) = 0
 
     Returns
     -------
@@ -140,14 +144,15 @@ def evaluate_quantiles((q, x), infty=100.):
     """
     # q = np.append(q, np.array([1.]))
     # qs = np.append(np.array([0.]), q)
-    qs = q
+    norm = max(qs) - min(qs)
     dq = qs[1:] - qs[:-1]
     # xs = np.append(x, np.array([infty]))
     # xs = np.append(np.array([-1. * infty]), x)
-    xs = x
     dx = xs[1:] - xs[:-1]
     mx = (xs[1:] + xs[:-1]) / 2.
     y = dq / dx
+    # print(np.dot(y, dx))
+    # y *= norm
     return ((mx, y))
 
 def evaluate_histogram((xp, y)):
