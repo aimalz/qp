@@ -364,7 +364,7 @@ class PDF(object):
             array of sampled values
         """
         if using is None:
-            using = self.first
+            using = self.last
 
         if vb: print 'Sampling from '+using+' parametrization.'
 
@@ -392,7 +392,7 @@ class PDF(object):
 
                 endpoints = np.append(np.array([-1.*infty]), self.quantiles[1])
                 endpoints = np.append(endpoints,np.array([infty]))
-                weights = qp.utils.evaluate_quantiles(self.quantiles, infty=infty)[1]# self.evaluate((endpoints[1:]+endpoints[:-1])/2.)
+                weights = qp.utils.evaluate_quantiles(self.quantiles)[1]# self.evaluate((endpoints[1:]+endpoints[:-1])/2.)
 
             if using == 'histogram':
                 # First find the histogram if none exists:
