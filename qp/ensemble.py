@@ -63,7 +63,8 @@ class Ensemble(object):
             parametrization/approximation to use
         """
         samples = self.pdfs[n].sample(N, using=using, vb=False)
-        #sample_container[n] = samples
+        sample_container[n] = samples
+        print(sample_container)
         return
 
     def sample(self, N=None, using=None):
@@ -86,6 +87,7 @@ class Ensemble(object):
         if N is None:
             N = self.n_params
         self.samples = [None] * self.n_pdfs
+        print(self.samples)
         do_sample = lambda n: self.help_sample(self.samples, n, N, using)
         #self.pool.join()
         self.pool.map(do_sample, self.pdf_indices)
@@ -93,6 +95,7 @@ class Ensemble(object):
         #self.pool.join()
         #self.pool.close()
         self.samples = np.array(self.samples)
+        print(self.samples)
         return self.samples
 
     def quantize(self, N=None):
@@ -135,4 +138,26 @@ class Ensemble(object):
 
     def select(self, function):
         """
+        Creates subset of ensemble based on given criteria
+
+        Notes
+        -----
+        Example::
+        """
+
+    def write(self, loc):
+        """
+        Writes the content of an ensemble object to file
+        """
+        return
+
+    def read(self, loc):
+        """
+        Reads the content of an ensemble object from file
+        """
+        return
+
+    def plot(self, code):
+        """
+        Plots population statistics of the pdfs based on key
         """
