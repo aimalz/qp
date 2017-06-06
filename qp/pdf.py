@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.stats as sps
 import scipy.interpolate as spi
+import scipy.optimize as spo
 import matplotlib.pyplot as plt
 import sklearn as skl
 from sklearn import mixture
@@ -39,9 +40,9 @@ class PDF(object):
         """
         self.truth = truth
         self.quantiles = quantiles
-        self.histogram = histogram
+        self.histogram = qp.utils.normalize_histogram(histogram, vb=False)
         self.samples = samples
-        self.gridded = gridded
+        self.gridded = qp.utils.normalize_gridded(gridded, vb=False)
         self.mix_mod = None
 
         self.scheme = scheme
@@ -61,6 +62,8 @@ class PDF(object):
             self.initialized = self.histogram
             self.first = 'histogram'
         elif self.gridded is not None:
+            delta = (np.max(self.gridded[0]) - np.min(self.gridded[0])) / len(self.gridded[0])
+            self.gridded = (self.gridded[0], self.gridded[1] / np.sum(self.gridded[1] * delta))
             self.initialized = self.gridded
             self.first = 'gridded'
         elif self.samples is not None:
@@ -139,7 +142,7 @@ class PDF(object):
         """
         return None
 
-    def quantize(self, quants=None, percent=10., number=None, infty=100., vb=True):
+    def quantize(self, quants=None, percent=10., N=None, infty=100., vb=True):
         """
         Computes an array of evenly-spaced quantiles from the truth.
 
@@ -149,7 +152,7 @@ class PDF(object):
             array of quantile locations as decimals
         percent: float, optional
             the separation of the requested quantiles, in percent
-        number: int, optional
+        N: int, optional
             the number of quantiles to compute.
         infty: float, optional
             approximate value at which CDF=1.
@@ -174,15 +177,15 @@ class PDF(object):
         if quants is not None:
             quantpoints = quants
         else:
-            if number is not None:
+            if N is not None:
                 # Compute the spacing of the quantiles:
-                quantum = 1.0 / float(number+1)
+                quantum = 1.0 / float(N+1)
             else:
                 quantum = percent/100.0
                 # Over-write the number of quantiles:
-                number = np.ceil(100.0 / percent) - 1
-                assert number > 0
-            quantpoints = np.linspace(0.0+quantum, 1.0-quantum, number)
+                N = np.ceil(100.0 / percent) - 1
+                assert N > 0
+            quantpoints = np.linspace(0.0+quantum, 1.0-quantum, N)
 
         if vb:
             print("Calculating "+str(len(quantpoints))+" quantiles: "+str(quantpoints))
@@ -197,11 +200,10 @@ class PDF(object):
             integrals = self.truth.cdf(quantiles)
             print("Checking integrals: "+str(integrals))
         self.quantiles = (quantpoints, quantiles)
-        print(np.shape(quantpoints), np.shape(quantiles))
         self.last = 'quantiles'
         return self.quantiles
 
-    def histogramize(self, binends=None, number=10, binrange=[0., 1.], vb=True):
+    def histogramize(self, binends=None, N=10, binrange=None, vb=True):
         """
         Computes integrated histogram bin values from the truth via the CDF.
 
@@ -209,9 +211,9 @@ class PDF(object):
         ----------
         binends: ndarray, float, optional
             Array of N+1 endpoints of N bins
-        number: int, optional
+        N: int, optional
             Number of bins if no binends provided
-        range: tuple, float, optional
+        binrange: tuple, float, optional
             Pair of values of endpoints of total bin range
         vb: boolean
             Report on progress to stdout?
@@ -219,7 +221,7 @@ class PDF(object):
         Returns
         -------
         self.histogram: tuple of ndarrays of floats
-            Pair of arrays of lengths (number+1, number) containing endpoints
+            Pair of arrays of lengths (N+1, N) containing endpoints
             of bins and values in bins
 
         Comments
@@ -232,27 +234,41 @@ class PDF(object):
         object stored in `self.truth`. This calculates the CDF.
         See `the Scipy docs <https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_continuous.cdf.html#scipy.stats.rv_continuous.cdf>`_ for details.
         """
+        if binrange is None:
+            if self.gridded is not None:
+                binrange = [min(self.gridded[0]), max(self.gridded[0])]
+            elif self.samples is not None:
+                binrange = [min(self.samples), max(self.samples)]
+            elif self.quantiles is not None:
+                binrange = [min(self.quantiles[1]), max(self.quantiles[1])]
+            elif self.histogram is not None:
+                return self.histogram
+            else:
+                binrange = [0., 1.]
+
         if binends is None:
-            step = float(binrange[1]-binrange[0])/number
+            step = float(binrange[1]-binrange[0])/N
             binends = np.arange(binrange[0], binrange[1]+step, step)
 
-        number = len(binends)-1
-        histogram = np.zeros(number)
+        N = len(binends)-1
+        histogram = np.zeros(N)
         if vb: print 'Calculating histogram: ', binends
         if self.truth is not None:
             cdf = self.truth.cdf(binends)
-            for b in range(number):
-                histogram[b] = (cdf[b+1]-cdf[b])/(binends[b+1]-binends[b])
+            heights = cdf[1:] - cdf[:-1]
+            histogram = qp.utils.normalize_histogram((binends, heights), vb=False)
+            # for b in range(N):
+            #     histogram[b] = (cdf[b+1]-cdf[b])/(binends[b+1]-binends[b])
         else:
             print 'New histograms can only be computed from a truth distribution in this version.'
             return
 
         if vb: print 'Result: ', histogram
-        self.histogram = (binends, histogram)
+        self.histogram = histogram
         self.last = 'histogram'
         return self.histogram
 
-    def mix_mod_fit(self, n_components=5, using=None):
+    def mix_mod_fit(self, n_components=5, using=None, vb=True):
         """
         Fits the parameters of a given functional form to an approximation
 
@@ -262,6 +278,8 @@ class PDF(object):
             number of components to consider
         using: string, optional
             which existing approximation to use, defaults to first approximation
+        vb: boolean
+            Report progress on stdout?
 
         Returns
         -------
@@ -272,25 +290,56 @@ class PDF(object):
         -----
         Currently only supports mixture of Gaussians
         """
-        if self.samples is None:
-            self.samples = self.sample(using=using)
+        comp_range = range(n_components)
 
-        estimator = skl.mixture.GaussianMixture(n_components=n_components)
-        estimator.fit(self.samples.reshape(-1, 1))
+        if self.gridded is not None:
+            (x, y) =self.gridded
+            ival_weights = np.ones(n_components) / n_components
+            ival_means = min(x) + (max(x) - min(x)) * np.arange(n_components) / n_components
+            ival_stdevs = np.sqrt((max(x) - min(x)) * np.ones(n_components) / n_components)
+            ivals = np.array([ival_weights, ival_means, ival_stdevs]).T.flatten()
+            def gmm(x, *args):
+                y = 0.
+                args = np.array(args).reshape((n_components, 3))
+                for c in comp_range:
+                    # index = c * n_components
+                    y += args[c][0] *  sps.norm(loc = args[c][1], scale = args[c][2]).pdf(x)
+                return y
+            low_bounds = np.array([np.zeros(n_components), min(x) * np.ones(n_components), np.ones(n_components) * (max(x) - min(x)) / len(x)]).T.flatten()
+            high_bounds = np.array([np.ones(n_components), max(x) * np.ones(n_components), np.ones(n_components) * (max(x) - min(x))]).T.flatten()
+            popt, pcov = spo.curve_fit(gmm, self.gridded[0], self.gridded[1], ivals, bounds = (low_bounds, high_bounds))
+            popt = popt.reshape((n_components, 3)).T
+            weights = popt[0]
+            means = popt[1]
+            stdevs = popt[2]
+        else:
+            if self.samples is None:
+                self.samples = self.sample(using=using)
 
-        weights = estimator.weights_
-        means = estimator.means_
-        variances = estimator.covariances_
+            estimator = skl.mixture.GaussianMixture(n_components=n_components)
+            estimator.fit(self.samples.reshape(-1, 1))
+
+            weights = estimator.weights_
+            means = estimator.means_[:, 0]
+            stdevs = np.sqrt(estimator.covariances_[:, 0, 0])
+
+        if vb:
+            print(weights, means, stdevs)
 
         components = []
-        for i in range(n_components):
+        for i in comp_range:
             mix_mod_dict = {}
-            function = sps.norm(loc = means[i], scale = np.sqrt(variances[i][0][0]))
+            function = sps.norm(loc = means[i], scale = stdevs[i])
             coefficient = weights[i]
             mix_mod_dict['function'] = function
             mix_mod_dict['coefficient'] = coefficient
             components.append(mix_mod_dict)
 
+        if vb:
+            statement = ''
+            for c in comp_range:
+                statement += str(weights[c])+r'$\cdot\mathcal{N}($'+str(means[c])+r','+str(stdevs[c])+r')\n'
+            print(statement)
         self.mix_mod = qp.composite(components)
         return self.mix_mod
 
@@ -325,7 +374,7 @@ class PDF(object):
             samples = self.mix_mod.rvs(size=N)
 
         elif using == 'gridded':
-            interpolator = self.interpolate(using = 'gridded')
+            interpolator = self.interpolate(using = 'gridded', vb=vb)
             (xmin, xmax) = (min(self.gridded[0]), max(self.gridded[0]))
             (ymin, ymax) = (min(self.gridded[1]), max(self.gridded[1]))
             (xran, yran) = (xmax - xmin, ymax - ymin)
@@ -394,7 +443,7 @@ class PDF(object):
         """
         if using is None:
             using = self.first
-        # if vb: print('Interpolating the `'+using+'` parametrization')
+        if vb: print('Interpolating the `'+using+'` parametrization')
 
         if using == 'truth' or using == 'mix_mod':
             print 'A functional form needs no interpolation.  Try converting to an approximate parametrization first.'
@@ -441,9 +490,6 @@ class PDF(object):
 
         Parameters
         ----------
-        number: int
-            the number of points over which to interpolate, bounded by
-            the quantile value endpoints
         points: ndarray
             the value(s) at which to evaluate the interpolated function
         using: string, optional
@@ -473,7 +519,6 @@ class PDF(object):
         Example:
             x, y = p.approximate(np.linspace(-1., 1., 100))
         """
-
         # First, reset the interpolation scheme if one is passed
         # explicitly:
         if scheme is not None:
@@ -482,9 +527,10 @@ class PDF(object):
         # Now make the interpolation, using the current scheme:
         self.interpolator = self.interpolate(using=using, vb=vb)
         interpolated = self.interpolator(points)
-        interpolated[interpolated<0.] = 0.
+        interpolated = qp.utils.normalize_gridded((points, interpolated), vb=False)
+        # interpolated[interpolated<0.] = 0.
 
-        return (points, interpolated)
+        return interpolated#(points, interpolated)
 
     def plot(self, vb=True):
         """
@@ -519,7 +565,7 @@ class PDF(object):
             x = np.linspace(min_x, max_x, 100)
             extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
             y = self.mix_mod.pdf(x)
-            plt.plot(x, y, color='k', linestyle=':', lw=1.0, alpha=1.0, label='Mixture Model PDF')
+            plt.plot(x, y, color='k', linestyle=':', lw=2.0, alpha=1.0, label='Mixture Model PDF')
             if vb:
                 print 'Plotted mixture model.'
 
@@ -559,14 +605,14 @@ class PDF(object):
                 print 'Plotted histogram.'
 
         if self.gridded is not None:
-            min_x = self.gridded[0][0]
-            max_x = self.gridded[0][-1]
+            min_x = min(self.gridded[0])
+            max_x = max(self.gridded[0])
             (x, y) = self.gridded
             plt.plot(x, y, color='k', lw=2.0, alpha=0.5,
-                     linestyle='--', label='gridded PDF')
+                     linestyle='--', label='Gridded PDF')
             extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
             if vb:
-                print 'Plotted evaluation.'
+                print 'Plotted gridded.'
 
         if self.samples is not None:
             min_x = min(self.samples)
