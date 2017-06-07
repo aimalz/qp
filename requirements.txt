@@ -1,5 +1,7 @@
-scipy
+hickle
+matpoltlib
 numpy
-matplotlib
-sklearn
 pathos
+psutil
+scipy
+sklearn
