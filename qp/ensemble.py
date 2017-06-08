@@ -1,6 +1,5 @@
 import numpy as np
 from pathos.multiprocessing import ProcessingPool as Pool
-#import multiprocessing as mp
 # import scipy.interpolate as spi
 # import matplotlib.pyplot as plt
 
@@ -8,44 +7,75 @@ import qp
 
 class Ensemble(object):
 
-    def __init__(self, pdfs=[], nprocs=1, nparams=100, vb=True):
+    def __init__(self, catalog=None, nprocs=1, vb=True):
         """
         An object containing an ensemble of qp.PDF objects
 
         Parameters
         ----------
-        pdfs: list, optional
-            list of qp.PDF objects
+        catalog
         nprocs: int, optional
-            number of processors to use
-        nparams: int, optional
-            default number of parameters to use in all approximations
+            number of processors to use, defaults to 1
         vb: boolean, optional
             report on progress to stdout?
+
+        Notes
+        -----
+        The qp.Ensemble object is basically a front-end to a qp.Catalog
+        that just stores parameter values.  This will keep the qp.Ensemble from
+        consuming too much memory by holding very large qp.PDF objects.
         """
-        self.pdfs = pdfs
-        self.n_pdfs = len(pdfs)
-        self.pdf_indices = range(self.n_pdfs)
+        # all possible parametrizations will be columns
+        self.parametrizations = ['mm', 'gridded', 'histogram', 'quantiles', 'samples']
+        self.metadata = {}
+        for p in self.parametrizations:
+            self.metadata[p] = {}
+
+        # initialize a qp.Catalog
+        if catalog is None:
+            self.catalog = qp.Catalog(self)
+        else:
+            self.catalog = catalog
 
         self.n_procs = nprocs
         self.pool = Pool(self.n_procs)
-        #self.pool.close()
 
-        self.n_params = nparams
-
-    def add(self, pdfs):
+    def __add__(self, other):
         """
-        Adds qp.PDF objects to an existing qp.catalog object
+        Combines two or more ensembles using "+" if parametrizations are the
+        same
 
         Parameters
         ----------
-        pdfs: list#if qp.PDF. . .
-            list of qp.PDF objects
+        other: qp.Ensemble
+            the qp.Enseble object to be combined with this one
+
+        Returns
+        -------
+        new_ensemble: qp.Ensemble
+            returns a new ensemble that is the combination of this one and other
         """
-        self.pdfs = self.pdfs + pdfs#append if pdfs is qp.PDF instead of list, or make it a list up front
-        self.n_pdfs = len(self.pdfs)
-        self.pdf_indices = range(self.n_pdfs)
-        return
+        if other.metadata != self.metadata:
+            for p in parametrizations:
+                if other.metadata[p] != {} and self.metadata[p] != {} and other.metadata[p] != self.metadata[p]:
+                    print(p + ' metadata is not the same!')
+            return
+        else:
+            new_catalog = self.catalog.merge(other.catalog)
+            new_ensemble = qp.Ensemble(catalog = new_catalog)
+            return new_ensemble
+
+    def add_pdf(self, pdf, vb=True):
+        """
+        Adds one qp.PDF object to the qp.Ensemble
+
+        Parameters
+        ----------
+        pdf: qp.PDF
+            the qp.PDF object to be added to the qp.Ensemble
+        """
+
+    def evaluate(self, loc, using):
 
     def help_sample(self, sample_container, n, N, using):#remove container stuff
         """
@@ -75,7 +105,8 @@ class Ensemble(object):
         N: int, optional
             number of samples to take from each qp.PDF objects
         using: string, optional
-            format from which to take samples ('histogram', 'quantiles', 'truth')
+            format from which to take samples ('histogram', 'quantiles',
+            'truth')
             if same for entire catalog
 
         Returns
@@ -104,7 +135,8 @@ class Ensemble(object):
         N: int, optional
             number of samples to take from each qp.PDF objects
         using: string, optional
-            format from which to take samples ('histogram', 'quantiles', 'truth')
+            format from which to take samples ('histogram', 'quantiles',
+            'truth')
 
         Returns
         -------
