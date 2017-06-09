@@ -36,7 +36,7 @@ class Ensemble(object):
         scheme: string, optional
             name of interpolation scheme to use.
         vb: boolean, optional
-            report on progress to stdout?
+            report on progress
 
         Notes
         -----
@@ -71,6 +71,7 @@ class Ensemble(object):
         else:
             self.gridded = [(gridded[0], gridded[1][i]) for i in self.pdf_range]
         self.mix_mod = None
+        self.evaluated = None
 
         self.scheme = scheme
 
@@ -111,7 +112,7 @@ class Ensemble(object):
             using: string, optional
                 Parametrization on which to interpolate, defaults to initialization
             vb: boolean
-                report on progress to stdout?
+                report on progress
 
             Returns
             -------
@@ -142,7 +143,7 @@ class Ensemble(object):
         infty: float, optional
             approximate value at which CDF=1.
         vb: boolean
-            report on progress to stdout?
+            report on progress
 
         Returns
         -------
@@ -156,6 +157,9 @@ class Ensemble(object):
                                             N=N, infty=infty, vb=False)
 
         self.quantiles = self.pool.map(quantize_helper, self.pdf_range)
+        self.quantiles = np.swapaxes(np.array(self.quantiles), 0, 1)
+
+        self.quantiles = (self.quantiles[0][0], self.quantiles[1])
 
         return self.quantiles
 
@@ -172,7 +176,7 @@ class Ensemble(object):
         binrange: tuple, float, optional
             Pair of values of endpoints of total bin range
         vb: boolean
-            Report on progress to stdout?
+            Report on progress
 
         Returns
         -------
@@ -187,6 +191,8 @@ class Ensemble(object):
                                                 binrange=binrange, vb=False)
 
         self.histogram = self.pool.map(histogram_helper, self.pdf_range)
+        self.histogram = np.swapaxes(np.array(self.histogram), 0, 1)
+        self.histogram = (self.histogram[0][0], self.histogram[1])
 
         return self.histogram
 
@@ -201,7 +207,7 @@ class Ensemble(object):
         using: string, optional
             which existing approximation to use, defaults to first approximation
         vb: boolean
-            Report progress on stdout?
+            Report progress
 
         Returns
         -------
@@ -232,7 +238,7 @@ class Ensemble(object):
         using: string
             which parametrization to evaluate, defaults to initialization
         vb: boolean
-            report on progress to stdout?
+            report on progress
 
         Returns
         -------
@@ -243,11 +249,40 @@ class Ensemble(object):
         def evaluate_helper(i):
             with open(self.logfilename, 'a') as logfile:
                 logfile.write('evaluating pdf '+str(i)+'\n')
-            return self.pdfs[i].evaluate(n_components=loc, using=using, vb=False)
+            return self.pdfs[i].evaluate(loc=loc, using=using, vb=False)
 
-        self.evaluated = self.pool.map(evaluate_helper, self.pdf_range)
+        self.gridded = self.pool.map(evaluate_helper, self.pdf_range)
+        self.gridded = np.swapaxes(np.array(self.gridded), 0, 1)
+        self.gridded = (self.gridded[0][0], self.gridded[1])
 
-        return self.evaluated
+        return self.gridded
+
+    def stack(self, loc, using, vb=True):
+        """
+        Produces a stack of the PDFs
+
+        Parameters
+        ----------
+        loc: ndarray, float or float
+            location(s) at which to evaluate the PDFs
+        using: string
+            which parametrization to use for the approximation
+        vb: boolean
+            report on progress
+
+        Returns
+        -------
+        self.stacked: tuple, ndarray, float
+            pair of arrays for locations where approximations were evaluated
+            and the values of the stacked PDFs at those points
+        """
+        loc_range = max(loc) - min(loc)
+        delta = loc_range / len(loc)
+        self.evaluated = self.evaluate(loc, using=using, vb=True)
+        stack = np.mean(self.evaluated[1], axis=0)
+        stack /= np.sum(stack) * delta
+        self.stacked = (self.evaluated[0], stack)
+        return self.stacked
 
 # # Total pie in the sky beyond this point!  I'll approach this complication
 # # if and when we need to optimize qp further.
@@ -265,7 +300,7 @@ class Ensemble(object):
 #         nprocs: int, optional
 #             number of processors to use, defaults to 1
 #         vb: boolean, optional
-#             report on progress to stdout?
+#             report on progress
 #
 #         Notes
 #         -----
