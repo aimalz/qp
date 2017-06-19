@@ -88,7 +88,7 @@ class Ensemble(object):
         Makes a list of qp.PDF objects based on input
         """
         def make_pdfs_helper(i):
-            with open(self.logfilename, 'a') as logfile:
+            with open(self.logfilename, 'wb') as logfile:
                 logfile.write('making pdf '+str(i)+'\n')
             return qp.PDF(truth=self.truth[i], quantiles=self.quantiles[i],
                             histogram=self.histogram[i],
@@ -120,7 +120,7 @@ class Ensemble(object):
                 array of sampled values
             """
             def sample_helper(i):
-                with open(self.logfilename, 'a') as logfile:
+                with open(self.logfilename, 'wb') as logfile:
                     logfile.write('sampling pdf '+str(i)+'\n')
                 return self.pdfs[i].sample(N=N, infty=infty, using=using, vb=False)
 
@@ -151,14 +151,13 @@ class Ensemble(object):
             array of tuples of the CDF values and the quantiles for each PDF
         """
         def quantize_helper(i):
-            with open(self.logfilename, 'a') as logfile:
+            with open(self.logfilename, 'wb') as logfile:
                 logfile.write('quantizing pdf '+str(i)+'\n')
             return self.pdfs[i].quantize(quants=quants, percent=percent,
                                             N=N, infty=infty, vb=False)
 
         self.quantiles = self.pool.map(quantize_helper, self.pdf_range)
         self.quantiles = np.swapaxes(np.array(self.quantiles), 0, 1)
-
         self.quantiles = (self.quantiles[0][0], self.quantiles[1])
 
         return self.quantiles
@@ -185,7 +184,7 @@ class Ensemble(object):
             of bins and values in bins
         """
         def histogram_helper(i):
-            with open(self.logfilename, 'a') as logfile:
+            with open(self.logfilename, 'wb') as logfile:
                 logfile.write('histogramizing pdf '+str(i)+'\n')
             return self.pdfs[i].histogramize(binends=binends, N=N,
                                                 binrange=binrange, vb=False)
@@ -219,7 +218,7 @@ class Ensemble(object):
         Currently only supports mixture of Gaussians
         """
         def mixmod_helper(i):
-            with open(self.logfilename, 'a') as logfile:
+            with open(self.logfilename, 'wb') as logfile:
                 logfile.write('fitting pdf '+str(i)+'\n')
             return self.pdfs[i].mix_mod_fit(n_components=N, using=using, vb=False)
 
@@ -247,10 +246,9 @@ class Ensemble(object):
             location(s), of shape (npdfs, nlocs)
         """
         def evaluate_helper(i):
-            with open(self.logfilename, 'a') as logfile:
+            with open(self.logfilename, 'wb') as logfile:
                 logfile.write('evaluating pdf '+str(i)+'\n')
             return self.pdfs[i].evaluate(loc=loc, using=using, vb=False)
-
         self.gridded = self.pool.map(evaluate_helper, self.pdf_range)
         self.gridded = np.swapaxes(np.array(self.gridded), 0, 1)
         self.gridded = (self.gridded[0][0], self.gridded[1])
@@ -278,10 +276,11 @@ class Ensemble(object):
         """
         loc_range = max(loc) - min(loc)
         delta = loc_range / len(loc)
-        self.evaluated = self.evaluate(loc, using=using, vb=True)
-        stack = np.mean(self.evaluated[1], axis=0)
+        evaluated = self.evaluate(loc, using=using, vb=True)
+        stack = np.mean(evaluated[1], axis=0)
         stack /= np.sum(stack) * delta
-        self.stacked = (self.evaluated[0], stack)
+        assert(np.isclose(np.sum(stack) * delta, 1.))
+        self.stacked = (evaluated[0], stack)
         return self.stacked
 
 # # Total pie in the sky beyond this point!  I'll approach this complication
