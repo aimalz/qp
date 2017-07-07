@@ -293,7 +293,7 @@ class PDF(object):
         comp_range = range(n_components)
 
         if self.gridded is not None:
-            (x, y) =self.gridded
+            (x, y) = self.gridded
             ival_weights = np.ones(n_components) / n_components
             ival_means = min(x) + (max(x) - min(x)) * np.arange(n_components) / n_components
             ival_stdevs = np.sqrt((max(x) - min(x)) * np.ones(n_components) / n_components)
