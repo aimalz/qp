@@ -58,7 +58,6 @@ def do_case(i):
     all_stats[str(i)] = nz_stats
 
     outpath = os.path.join(dirname, str(n_pdfs)+dirname+str(n_params)+'.hkl')
-    print(type(nz_stats))
     with open(outpath, 'w') as outfile:
         hkl.dump(nz_stats, outfile)
 
@@ -72,8 +71,6 @@ if __name__ == "__main__":
     import cProfile
     import pstats
     import StringIO
-    import psutil
-    from pathos.multiprocessing import ProcessingPool as Pool
     import hickle as hkl
     import matplotlib.pyplot as plt
     import qp
@@ -102,6 +99,9 @@ if __name__ == "__main__":
 
     all_stats = {}
 
-    nps = psutil.cpu_count()
-    pool = Pool(nps)
-    final = pool.map(do_case, case_range)
+    # nps = psutil.cpu_count()
+    # pool = Pool(nps)
+    # final = pool.map(do_case, case_range)
+
+    for i in case_range:
+        do_case(i)
