@@ -2,7 +2,7 @@ import numpy as np
 from pathos.multiprocessing import ProcessingPool as Pool
 import psutil
 import os
-import sqlalchemy
+# import sqlalchemy
 import scipy.interpolate as spi
 import matplotlib.pyplot as plt
 
