@@ -91,8 +91,8 @@ if __name__ == "__main__":
         if not os.path.exists(dirname):
             os.makedirs(dirname)
 
-    n_samps = 1e3
-    n_gals = [1e4]
+    n_samps = 1000
+    n_gals = [10000]
     n_params_to_test = [3, 10, 30, 100]
     params_to_test = ['samples', 'histogram', 'quantiles']
     cases = list(itertools.product(datasets.keys(), n_gals, n_params_to_test))
