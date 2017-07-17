@@ -3,20 +3,41 @@ from pathos.multiprocessing import ProcessingPool as Pool
 import psutil
 import os
 import sqlalchemy
-# import scipy.interpolate as spi
-# import matplotlib.pyplot as plt
+import scipy.interpolate as spi
+import matplotlib.pyplot as plt
 
 import qp
 
 class Ensemble(object):
 
-    def __init__(self, where='ensemble.db', procs=None):#N, pdfs=None, truth=None, quantiles=None, histogram=None, gridded=None, samples=None, scheme='linear', vb=True):
+    def __init__(self, N, pdfs=None, truth=None, quantiles=None, histogram=None, gridded=None, samples=None, scheme='linear', vb=True, procs=None):# where='ensemble.db', procs=None):#
         """
         Creates an object comprised of many qp.PDF objects to efficiently
         perform operations on all of them
 
         Parameters
         ----------
+        N: int
+            number of pdfs in the ensemble
+        truth: list of scipy.stats.rv_continuous objects or qp.composite objects
+            , optional
+            List of length (npdfs) containing the continuous, parametric forms of the PDFs
+        quantiles: tuple of ndarrays, optional
+            Pair of arrays of lengths (nquants) and (npdfs, nquants) containing
+            shared CDF values and quantiles for each pdf
+        histogram: tuple of ndarrays, optional
+            Pair of arrays of lengths (nbins+1) and (npdfs, nbins) containing
+            shared endpoints of bins and values in bins for each pdf
+        gridded: tuple of ndarrays, optional
+            Pair of arrays of lengths (npoints) and (npdfs, npoints) containing
+            shared points at which pdfs are evaluated and the values of each
+            pdf at those points
+        samples: ndarray, optional
+            Array of size (npdfs, nsamples) containing sampled values
+        scheme: string, optional
+            name of interpolation scheme to use.
+        vb: boolean, optional
+            report on progress
         where: string
             path to file corresponding to Ensemble, presumed to not yet exist
         procs: int, optional
@@ -28,58 +49,96 @@ class Ensemble(object):
             self.n_procs = psutil.cpu_count()
         self.pool = Pool(self.n_procs)
 
-        self.where = where
-        if os.path.isfile(self.where):
-            #something like this, uses connection?
-            self.engine = self.read(self.where)
+        self.n_pdfs = N
+        self.pdf_range = range(N)
+
+        if truth is None:
+            self.truth = [None] * N
         else:
-            self.engine = sqlalchemy.create_engine('sql:///'+self.where)
+            self.truth = truth
+        if samples is None:
+            self.samples = [None] * N
+        else:
+            self.samples = samples
+        if quantiles is None:
+            self.quantiles = [None] * N
+        else:
+            self.quantiles = [(quantiles[0], quantiles[1][i]) for i in self.pdf_range]
+        if histogram is None:
+            self.histogram = [None] * N
+        else:
+            self.histogram = [(histogram[0], histogram[1][i]) for i in self.pdf_range]
+        if gridded is None:
+            self.gridded = [None] * N
+        else:
+            self.gridded = [(gridded[0], gridded[1][i]) for i in self.pdf_range]
+        self.mix_mod = None
+        self.evaluated = None
 
-        self.metadata = MetaData(bind=self.engine)
+        self.scheme = scheme
 
-        parametrizations_table =Table('parametrizations', metadata,)
+        if vb and self.truth is None and self.quantiles is None and self.histogram is None and self.gridded is None and self.samples is None:
+            print 'Warning: initializing an Ensemble object without inputs'
+            return
 
+        self.make_pdfs()
 
-    def read(self):
+        # self.logfilename = 'logfile.txt'
 
-    def write(self):
+        self.stacked = {}
 
-    def make_db(self, where):
-        """
-        Makes a fresh set of ensemble tables
-        """
+        # self.where = where
+        # if os.path.isfile(self.where):
+        #     #something like this, uses connection?
+        #     self.engine = self.read(self.where)
+        # else:
+        #     self.engine = sqlalchemy.create_engine('sql:///'+self.where)
+        #
+        # self.metadata = MetaData(bind=self.engine)
+        #
+        # parametrizations_table =Table('parametrizations', metadata,)
 
-        return
-
-    def __add__(self, ensemble):
-
-    def add_PDFs(self, PDFs):
-        """
-        Adds qp.PDF objects to the ensemble
-
-        Parameters
-        ----------
-        PDFs: list, qp.PDF object
-            list of PDF objects to add to the ensemble
-        """
-        pdf_range = range(len(PDFs))
-        def add_one(i):
-
-
-        self.pdfs = self.pool.map(add_one, pdf_range)
-
-        return(self)
-
-    def add_parameterization(self, type, parameters):
-
+    #
+    #
+    # def read(self):
+    #
+    # def write(self):
+    #
+    # def make_db(self, where):
+    #     """
+    #     Makes a fresh set of ensemble tables
+    #     """
+    #     return
+    #
+    # def __add__(self, ensemble):
+    #
+    # def add_PDFs(self, PDFs):
+    #     """
+    #     Adds qp.PDF objects to the ensemble
+    #
+    #     Parameters
+    #     ----------
+    #     PDFs: list, qp.PDF object
+    #         list of PDF objects to add to the ensemble
+    #     """
+    #     pdf_range = range(len(PDFs))
+    #     def add_one(i):
+    #
+    #
+    #     self.pdfs = self.pool.map(add_one, pdf_range)
+    #
+    #     return(self)
+    #
+    # def add_parameterization(self, type, parameters):
+    #
 
     def make_pdfs(self):
         """
         Makes a list of qp.PDF objects based on input
         """
         def make_pdfs_helper(i):
-            with open(self.logfilename, 'wb') as logfile:
-                logfile.write('making pdf '+str(i)+'\n')
+            # with open(self.logfilename, 'wb') as logfile:
+            #     logfile.write('making pdf '+str(i)+'\n')
             return qp.PDF(truth=self.truth[i], quantiles=self.quantiles[i],
                             histogram=self.histogram[i],
                             gridded=self.gridded[i], samples=self.samples[i],
@@ -111,9 +170,9 @@ class Ensemble(object):
                 array of sampled values
             """
             def sample_helper(i):
-                with open(self.logfilename, 'wb') as logfile:
-                    logfile.write('sampling pdf '+str(i)+'\n')
-                return self.pdfs[i].sample(N=N, infty=infty, using=using, vb=False)
+                # with open(self.logfilename, 'wb') as logfile:
+                #     logfile.write('sampling pdf '+str(i)+'\n')
+                return self.pdfs[i].sample(N=samps, infty=infty, using=using, vb=False)
 
             self.samples = self.pool.map(sample_helper, self.pdf_range)
 
@@ -142,8 +201,8 @@ class Ensemble(object):
             array of tuples of the CDF values and the quantiles for each PDF
         """
         def quantize_helper(i):
-            with open(self.logfilename, 'wb') as logfile:
-                logfile.write('quantizing pdf '+str(i)+'\n')
+            # with open(self.logfilename, 'wb') as logfile:
+            #     logfile.write('quantizing pdf '+str(i)+'\n')
             return self.pdfs[i].quantize(quants=quants, percent=percent,
                                             N=N, infty=infty, vb=False)
 
@@ -175,8 +234,8 @@ class Ensemble(object):
             of bins and values in bins
         """
         def histogram_helper(i):
-            with open(self.logfilename, 'wb') as logfile:
-                logfile.write('histogramizing pdf '+str(i)+'\n')
+            # with open(self.logfilename, 'wb') as logfile:
+            #     logfile.write('histogramizing pdf '+str(i)+'\n')
             return self.pdfs[i].histogramize(binends=binends, N=N,
                                                 binrange=binrange, vb=False)
 
@@ -192,7 +251,7 @@ class Ensemble(object):
 
         Parameters
         ----------
-        N: int, optional
+        comps: int, optional
             number of components to consider
         using: string, optional
             which existing approximation to use, defaults to first approximation
@@ -209,9 +268,9 @@ class Ensemble(object):
         Currently only supports mixture of Gaussians
         """
         def mixmod_helper(i):
-            with open(self.logfilename, 'wb') as logfile:
-                logfile.write('fitting pdf '+str(i)+'\n')
-            return self.pdfs[i].mix_mod_fit(n_components=N, using=using, vb=False)
+            # with open(self.logfilename, 'wb') as logfile:
+            #     logfile.write('fitting pdf '+str(i)+'\n')
+            return self.pdfs[i].mix_mod_fit(n_components=comps, using=using, vb=False)
 
         self.mix_mod = self.pool.map(mixmod_helper, self.pdf_range)
 
@@ -237,8 +296,8 @@ class Ensemble(object):
             location(s), of shape (npdfs, nlocs)
         """
         def evaluate_helper(i):
-            with open(self.logfilename, 'wb') as logfile:
-                logfile.write('evaluating pdf '+str(i)+'\n')
+            # with open(self.logfilename, 'wb') as logfile:
+            #     logfile.write('evaluating pdf '+str(i)+'\n')
             return self.pdfs[i].evaluate(loc=loc, using=using, vb=False)
         self.gridded = self.pool.map(evaluate_helper, self.pdf_range)
         self.gridded = np.swapaxes(np.array(self.gridded), 0, 1)
@@ -246,7 +305,7 @@ class Ensemble(object):
 
         return self.gridded
 
-    def approximate(self, points, using=None, scheme=None, vb=True):
+    # def approximate(self, points, using=None, scheme=None, vb=True):
 
     def stack(self, loc, using, vb=True):
         """
@@ -273,18 +332,76 @@ class Ensemble(object):
         stack = np.mean(evaluated[1], axis=0)
         stack /= np.sum(stack) * delta
         assert(np.isclose(np.sum(stack) * delta, 1.))
-        self.stacked = (evaluated[0], stack)
+        self.stacked[using] = (evaluated[0], stack)
         return self.stacked
 
-    def kld(self, limits=(0., 1.), dx=0.01):
+    def kld(self, stacked=True, limits=(0., 1.), dx=0.01):
+        """
+        Calculates the KLD for the stacked estimator under different parametrizations
+
+        Parameters
+        ----------
+        stacked: boolean, optional
+            calculate metric on stacked estimator?
+        limits: tuple, float, optional
+
+        dx: float, optional
+
+        Returns
+        -------
+
+        """
+        if self.truth is None:
+            print('Truth must be defined for KLD')
+            return
+        kld = {}
+        if stacked == True:
+            P = qp.PDF(gridded=self.stack['truth'])
+            for est in self.stacked.keys():
+                klds[est] = qp.utils.calculate_kl_divergence(P, self.stacked[est], limits=limits, dx=dx)
+            return klds
+        else:
+            print('KLDs of each PDF not yet supported')
+            return
 
     def rms(self, limits=(0., 1.), dx=0.01):
+        """
+        Calculates the KLD for the stacked estimator under different parametrizations
+
+        Parameters
+        ----------
+        stacked: boolean, optional
+            calculate metric on stacked estimator?
+        limits: tuple, float, optional
+
+        dx: float, optional
+
+        Returns
+        -------
+
+        """
+        if self.truth is None:
+            print('Truth must be defined for KLD')
+            return
+        kld = {}
+        if stacked == True:
+            P = qp.PDF(gridded=self.stack['truth'])
+            for est in self.stacked.keys():
+                klds[est] = qp.utils.calculate_kl_divergence(P, self.stacked[est], limits=limits, dx=dx)
+            return klds
+        else:
+            print('KLDs of each PDF not yet supported')
+            return
+        return
 
     def plot(self, vb=True):
+        return
 
     def read(self, format, location):
+        return
 
     def write(self, format, location):
+        return
 
 # # Total pie in the sky beyond this point!  I'll approach this complication
 # # if and when we need to optimize qp further.
@@ -357,23 +474,23 @@ class Ensemble(object):
 #             new_ensemble = qp.Ensemble(catalog = new_catalog)
 #             return new_ensemble
 
-from sqlalchemy import Column, Integer, String
-from sqlalchemy.ext.declarative import declarative_base
-
-Base = declarative_base()
-
-class PDF(Base):
-    __tablename__ = 'PDF'
-    id = Column(Integer, primary_key=True)
-
-class parametrization(Base):
-    __tablename__ = 'parametrization'
-    id = Column(Integer, primary_key=True)
-
-class metaparameters(Base):
-    __tablename__ = 'metaparameters'
-    id = Column(Integer, primary_key=True)
-
-class representation(Base):
-    __tablename__ = 'representation'
-    id = Column(Integer, primary_key=True)
+# from sqlalchemy import Column, Integer, String
+# from sqlalchemy.ext.declarative import declarative_base
+#
+# Base = declarative_base()
+#
+# class PDF(Base):
+#     __tablename__ = 'PDF'
+#     id = Column(Integer, primary_key=True)
+#
+# class parametrization(Base):
+#     __tablename__ = 'parametrization'
+#     id = Column(Integer, primary_key=True)
+#
+# class metaparameters(Base):
+#     __tablename__ = 'metaparameters'
+#     id = Column(Integer, primary_key=True)
+#
+# class representation(Base):
+#     __tablename__ = 'representation'
+#     id = Column(Integer, primary_key=True)
