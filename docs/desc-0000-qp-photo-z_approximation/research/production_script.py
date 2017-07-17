@@ -83,10 +83,10 @@ if __name__ == "__main__":
     datasets['mg']['filename'] = 'bpz_euclid_test_10_2.probs'
     datasets['mg']['z_ends'] = (0.01, 3.51)
     datasets['mg']['n_comps'] = 3
-    # datasets['ss'] = {}
-    # datasets['ss']['filename'] = 'test_magscat_trainingfile_probs.out'
-    # datasets['ss']['z_ends'] = (0.005, 1.11)
-    # datasets['ss']['n_comps'] = 5
+    datasets['ss'] = {}
+    datasets['ss']['filename'] = 'test_magscat_trainingfile_probs.out'
+    datasets['ss']['z_ends'] = (0.005, 1.11)
+    datasets['ss']['n_comps'] = 5
     for dirname in datasets.keys():
         if not os.path.exists(dirname):
             os.makedirs(dirname)
