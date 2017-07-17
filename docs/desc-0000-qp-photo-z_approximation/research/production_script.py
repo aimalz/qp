@@ -71,7 +71,8 @@ if __name__ == "__main__":
     import cProfile
     import pstats
     import StringIO
-    import multiprocessing as mp
+    import psutil
+    import pathos.multiprocessing as mp
     import hickle as hkl
     import matplotlib.pyplot as plt
     import qp
@@ -100,6 +101,6 @@ if __name__ == "__main__":
 
     all_stats = {}
 
-    nps = mp.cpu_count()
+    nps = psutil.cpu_count()
     pool = mp.Pool(nps)
     final = pool.map(do_case, case_range)
