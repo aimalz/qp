@@ -101,6 +101,8 @@ if __name__ == "__main__":
 
     all_stats = {}
 
-    nps = psutil.cpu_count()
-    pool = mp.Pool(nps)
-    final = pool.map(do_case, case_range)
+    # nps = psutil.cpu_count()
+    # pool = mp.Pool(nps)
+    # final = pool.map(do_case, case_range)
+    for i in case_range:
+        do_case(i)
