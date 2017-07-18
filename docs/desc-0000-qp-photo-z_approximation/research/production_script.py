@@ -72,6 +72,7 @@ if __name__ == "__main__":
     import pstats
     import StringIO
     import hickle as hkl
+    import pathos
     import matplotlib.pyplot as plt
     import qp
 
