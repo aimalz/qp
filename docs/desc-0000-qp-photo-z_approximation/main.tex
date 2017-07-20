@@ -135,15 +135,24 @@ We do not consider the sparse basis representation of \citet{carrasco_kind_spars
 \subsection{Comparison Metrics}
 \label{sec:metrics}
 
-[Lay out all metrics considered, pros and cons]
+%[Lay out all metrics considered, pros and cons]
+
+We use several metrics to quantify how well an approximation of a photo-$z$ PDF reconstructed from a stored format represents the true photo-$z$ PDF before it was compressed.
 
 [\citet{carrasco_kind_sparse_2014} uses histograms and summary statistics of the RMSE distribution.  Should we also do that or is it sufficient to interpret the metrics on $n(z)$ in terms of percent error?]
 
 \subsubsection{RMSE}
 \label{sec:rms}
 
+The root mean square error (RMSE) is a familiar measure of the difference between two functions.  The
+
 \subsubsection{KLD}
 \label{sec:kld}
+
+The Kullback-Leibler divergence quantifies the deviation of one distribution from another, which in our case is the distance to a true distribution $P$ from an approximation thereof $P'$, as in
+\begin{align}
+  D(P' | P) &= \int_{-\infty}^{\infty}\ \log\left[\frac{P(z)}{P'(z)}\right]\ P(z)\ dz.
+\end{align}
 
 %\subsubsection{Moments}
 %\label{sec:moments}

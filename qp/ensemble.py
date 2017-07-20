@@ -149,7 +149,7 @@ class Ensemble(object):
 
         return
 
-    def sample(self, samps=100, infty=100., using=None, vb=True):
+    def sample(self, samps=100, infty=100., using=None, vb=False):
         """
         Samples the pdf in given representation
 
@@ -172,7 +172,7 @@ class Ensemble(object):
         def sample_helper(i):
             # with open(self.logfilename, 'wb') as logfile:
             #     logfile.write('sampling pdf '+str(i)+'\n')
-            return self.pdfs[i].sample(N=samps, infty=infty, using=using, vb=False)
+            return self.pdfs[i].sample(N=samps, infty=infty, using=using, vb=vb)
 
         self.samples = self.pool.map(sample_helper, self.pdf_range)
 
