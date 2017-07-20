@@ -21,8 +21,8 @@ def do_case(i):
     nz_stats['KLD'] = {}
     nz_stats['RMS'] = {}
 
-    # pr = cProfile.Profile()
-    # pr.enable()
+    pr = cProfile.Profile()
+    pr.enable()
 
     E0 = qp.Ensemble(n_pdfs, gridded=(z, pdfs), vb=False)
     samparr = E0.sample(n_samps, vb=False)
@@ -32,23 +32,23 @@ def do_case(i):
 
     P = qp.PDF(gridded=Ef.stack(z, using='mix_mod', vb=False)['mix_mod'], vb=False)
 
-    pr = cProfile.Profile()
-    pr.enable()
+    # pr = cProfile.Profile()
+    # pr.enable()
 
     Eq = qp.Ensemble(n_pdfs, quantiles=Ef.quantize(N=n_params))
     Q = qp.PDF(gridded=Eq.stack(z, using='quantiles', vb=False)['quantiles'], vb=False)
     nz_stats['KLD']['quantiles'] = qp.utils.calculate_kl_divergence(P, Q)
     nz_stats['RMS']['quantiles'] = qp.utils.calculate_rmse(P, Q)
 
-    # Eh = qp.Ensemble(n_pdfs, histogram=Ef.histogramize(N=n_params, binrange=datasets[dirname]['z_ends']))
-    # Q = qp.PDF(gridded=Eh.stack(z, using='histogram', vb=False)['histogram'], vb=False)
-    # nz_stats['KLD']['histogram'] = qp.utils.calculate_kl_divergence(P, Q)
-    # nz_stats['RMS']['histogram'] = qp.utils.calculate_rmse(P, Q)
-    #
-    # Es = qp.Ensemble(n_pdfs, samples=Ef.sample(samps=n_params))
-    # Q = qp.PDF(gridded=Es.stack(z, using='samples', vb=False)['samples'], vb=False)
-    # nz_stats['KLD']['samples'] = qp.utils.calculate_kl_divergence(P, Q)
-    # nz_stats['RMS']['samples'] = qp.utils.calculate_rmse(P, Q)
+    Eh = qp.Ensemble(n_pdfs, histogram=Ef.histogramize(N=n_params, binrange=datasets[dirname]['z_ends']))
+    Q = qp.PDF(gridded=Eh.stack(z, using='histogram', vb=False)['histogram'], vb=False)
+    nz_stats['KLD']['histogram'] = qp.utils.calculate_kl_divergence(P, Q)
+    nz_stats['RMS']['histogram'] = qp.utils.calculate_rmse(P, Q)
+
+    Es = qp.Ensemble(n_pdfs, samples=Ef.sample(samps=n_params))
+    Q = qp.PDF(gridded=Es.stack(z, using='samples', vb=False)['samples'], vb=False)
+    nz_stats['KLD']['samples'] = qp.utils.calculate_kl_divergence(P, Q)
+    nz_stats['RMS']['samples'] = qp.utils.calculate_rmse(P, Q)
 
     pr.disable()
     s = StringIO.StringIO()
@@ -57,7 +57,7 @@ def do_case(i):
     ps.print_stats()
     with open(logfilename, 'wb') as logfile:
         logfile.write('ran case '+str(cases[i])+' with '+str(s.getvalue())+'\n')
-    # print(n_gals_use, n_floats_to_use, s.getvalue())
+    print(n_gals_use, n_floats_to_use, s.getvalue())
 
     all_stats[str(i)] = nz_stats
 
@@ -83,10 +83,10 @@ if __name__ == "__main__":
     logfilename = 'progress.txt'
 
     datasets = {}
-    # datasets['mg'] = {}
-    # datasets['mg']['filename'] = 'bpz_euclid_test_10_2.probs'
-    # datasets['mg']['z_ends'] = (0.01, 3.51)
-    # datasets['mg']['n_comps'] = 3
+    datasets['mg'] = {}
+    datasets['mg']['filename'] = 'bpz_euclid_test_10_2.probs'
+    datasets['mg']['z_ends'] = (0.01, 3.51)
+    datasets['mg']['n_comps'] = 3
     datasets['ss'] = {}
     datasets['ss']['filename'] = 'test_magscat_trainingfile_probs.out'
     datasets['ss']['z_ends'] = (0.005, 2.11)
@@ -96,9 +96,9 @@ if __name__ == "__main__":
             os.makedirs(dirname)
 
     n_samps = 1000
-    n_gals = [100]#[10000]
-    n_params_to_test = [20]#[3, 10, 30, 100]
-    params_to_test = ['quantiles']#['samples', 'histogram', 'quantiles']
+    n_gals = [10000]
+    n_params_to_test = [3, 10, 30, 100]
+    params_to_test = ['samples', 'histogram', 'quantiles']
     cases = list(itertools.product(datasets.keys(), n_gals, n_params_to_test))
     case_range = range(len(cases))
 
