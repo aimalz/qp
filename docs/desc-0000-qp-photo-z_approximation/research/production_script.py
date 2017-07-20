@@ -57,7 +57,7 @@ def do_case(i):
     ps.print_stats()
     with open(logfilename, 'wb') as logfile:
         logfile.write('ran case '+str(cases[i])+' with '+str(s.getvalue())+'\n')
-    print(n_gals_use, n_floats_to_use, s.getvalue())
+    print(n_pdfs, n_params, s.getvalue())
 
     all_stats[str(i)] = nz_stats
 
