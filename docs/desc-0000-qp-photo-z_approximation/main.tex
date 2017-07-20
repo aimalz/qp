@@ -1,4 +1,4 @@
-% 
+%
 % ======================================================================
 \RequirePackage{docswitch}
 % \flag is set by the user, through the makefile:
@@ -16,21 +16,21 @@
 \usepackage{lsstdesc_macros}
 
 \usepackage{graphicx}
-\graphicspath{{./}{./figures/}}
+\graphicspath{{./}{./figures/}{.logos}}
 \bibliographystyle{apj}
 
 % Add your own macros here:
 
 \newcommand{\textul}{\underline}
 
-% 
+%
 % ======================================================================
 
 \begin{document}
 
 \title{ Approximating photo-z PDFs for large surveys }
 
-\maketitlepre
+%\maketitlepre
 
 \begin{abstract}
 
@@ -39,12 +39,12 @@ Upcoming and ongoing galaxy surveys will produce redshift probability distributi
 \end{abstract}
 
 % Keywords are ignored in the LSST DESC Note style:
-\dockeys{latex: templates, papers: awesome}
+\dockeys{methods: data analysis, catalogs, surveys}
 
-\maketitlepost
+%\maketitlepost
 
 % ----------------------------------------------------------------------
-% 
+%
 
 %\begin{figure}
 %\includegraphics[width=0.75\columnwidth]{outline.png}
@@ -62,7 +62,15 @@ Upcoming and ongoing galaxy surveys will produce redshift probability distributi
 %The command \code{make} with no arguments compiles \code{main.tex} using the  \code{lsstdescnote.cls} style.
 %If you want to upgrade your Note into a journal article, just choose a journal name, between \code{make apj} (ApJ preprint format), \code{make apjl} (which uses the \code{emulateapj} style), \code{make prd}, \code{make prl}, and \code{make mnras}.
 
-[Problem statement: photo-zs, LSST]
+Ongoing and upcoming photometric galaxy surveys such as the Large Synoptic Survey Telescope (LSST) will observe tens of billions of galaxies without spectroscopic follow-up to obtain redshifts necessary for studies of cosmology and galaxy evolution.  Such surveys rely on the methods of photometric redshift (photo-$z$) estimation.  Photo-$z$s are subject to a number of systematic errors, some caused by the data analysis procedures and others intrinsic to the data itself.  Due to these issues, the photo-$z$ community favors estimation of redshift probability distributions, or photo-$z$ PDFs, that include information about the potential for such systematic errors for each galaxy in the survey.
+
+Given the tremendous size of the surveys in question, storage of these probability distributions raises a number of nontrivial questions.  Previous treatments of photometric redshifts resulted in each galaxy's catalog entry having one additional floating point number to store, or perhaps a few based on a handful of photo-$z$ codes; how many numbers are necessary to characterize a photo-$z$ PDF to the degree of precision dictated by the survey's science goals?  Photo-$z$ PDF codes do not all produce outputs in the same parametrization; what storage format best preserves the characteristics of a photo-$z$ PDF?
+
+Little attention has been paid to these matters, with a few exceptions.  \citep{carrasco_kind_sparse_2014}
+
+In this work, we outline a method by which a survey team may optimize the choice of parametrization and number of stored parameters for an anticipated catalog of photo-$z$ PDFs.  We also present the publicly available \texttt{qp} Python package for performing this optimization for an arbitrary survey.  The approach is demonstrated for LSST mock data.
+
+%[Problem statement: photo-zs, LSST]
 
 
 % ----------------------------------------------------------------------
@@ -99,10 +107,18 @@ Upcoming and ongoing galaxy surveys will produce redshift probability distributi
 %  \langle f(k) \rangle = \frac{ \sum_{t=0}^{N}f(t,k) }{N}
 %\end{equation}
 
+\texttt{qp} has two functionalities: converting between parametrizations and computing metrics between two parametrizations.
+
 \subsection{Approximation Methods}
 \label{sec:approx}
 
-[Lay out all parametrizations, pros and cons]
+%[Lay out all parametrizations, pros and cons]
+
+\texttt{qp} is capable of converting a one-dimensional probability distribution between four parametrizations: samples, binning, quantiles, and a mixture model.  Storage of all these parametrizations have been used in the literature, except for quantiles, which have never before been investigated for this purpose.
+
+[\citet{carrasco_kind_sparse_2014} also considers point estimators derived from PDFs.  I will need to implement this for the PZ DC1 paper.  Should I include that in this paper?]
+
+We do not consider the sparse basis representation of \citet{carrasco_kind_sparse_2014} for several reasons.  It assumes that the native format of a photo-$z$ PDF is evaluations on a grid, which is not in general true.  There is no guarantee that the resulting combination of basis functions satisfies the definition of a probability distribution (normalization to unity and nonnegativity) -- it does not take advantage of the fact that photo-$z$ PDFs are probability distributions rather than arbitrary functions.  [I also thought it required extensive computational resources, but it appears to be a lot faster than \texttt{qp} making quantiles with the same number of parameters -- recall that calculating quantiles generally requires an optimization.  My reasons are pretty weak; if I had more time I'd have \texttt{qp} employ the \texttt{SparsePz} method as another parametrization, but I don't know when I'll be able to do it!]
 
 \subsubsection{Samples}
 \label{sec:samples}
@@ -110,10 +126,10 @@ Upcoming and ongoing galaxy surveys will produce redshift probability distributi
 \subsubsection{Regular Binning}
 \label{sec:bins}
 
-\subsection{Regular Quantiles}
+\subsubsection{Regular Quantiles}
 \label{sec:quantiles}
 
-\subsection{Mixture Model}
+\subsubsection{Mixture Model}
 \label{sec:gmm}
 
 \subsection{Comparison Metrics}
@@ -121,65 +137,79 @@ Upcoming and ongoing galaxy surveys will produce redshift probability distributi
 
 [Lay out all metrics considered, pros and cons]
 
-\subsubsection{RMS}
+[\citet{carrasco_kind_sparse_2014} uses histograms and summary statistics of the RMSE distribution.  Should we also do that or is it sufficient to interpret the metrics on $n(z)$ in terms of percent error?]
+
+\subsubsection{RMSE}
 \label{sec:rms}
 
 \subsubsection{KLD}
 \label{sec:kld}
 
-\subsubsection{Moments}
-\label{sec:moments}
+%\subsubsection{Moments}
+%\label{sec:moments}
 
-\subsubsection{KS}
-\label{sec:ks}
+%\subsubsection{KS}
+%\label{sec:ks}
 
 % ----------------------------------------------------------------------
 
 \section{Photo-z Test Data}
 \label{sec:data}
 
-\subsection{Simulation}
-\label{sec:mock}
+With the understanding that \texttt{qp} may suggest a different optimal result for different datasets, we apply it to two mock datasets with different data quality properties.
 
-["Observed" $z_{s}$ vs. $z_{p}$ (from Buzzard)]
+[\citet{carrasco_kind_sparse_2014} uses $10^{6}$ galaxies.]
 
-\begin{figure}
-%\includegraphics[width=0.9\columnwidth]{}
-\caption{[plot of $z_{s}$ vs. $z_{p}$]\label{fig:observed}}
-\end{figure}
+\subsection{LSST+Euclid mocks}
+\label{sec:mg}
 
-[Fit $z_{s}$ vs. $z_{p}$ with bivariate GMM]
+\subsection{LSST mocks}
+\label{sec:ss}
 
-\begin{figure}
-%\includegraphics[width=0.9\columnwidth]{}
-\caption{[$z_{s}$ vs. $z_{p}$ contour plot after GMM fit]\label{fig:fit}}
-\end{figure}
+%\subsection{Simulation}
+%\label{sec:mock}
 
-[Specify true $n(z)$]
+%["Observed" $z_{s}$ vs. $z_{p}$ (from Buzzard)]
 
-\begin{figure}
-%\includegraphics[width=0.9\columnwidth]{}
-\caption{[chosen true $n(z)$]\label{fig:nz}}
-\end{figure}
+%\begin{figure}
+%%\includegraphics[width=0.9\columnwidth]{}
+%\caption{[plot of $z_{s}$ vs. $z_{p}$]\label{fig:observed}}
+%\end{figure}
 
-\subsection{Catalog generation}
-\label{sec:catalogs}
+%[Fit $z_{s}$ vs. $z_{p}$ with bivariate GMM]
 
-[Choose catalog size $N$ and sample $z_{s}$ values from true $n(z)$]
+%\begin{figure}
+%%\includegraphics[width=0.9\columnwidth]{}
+%\caption{[$z_{s}$ vs. $z_{p}$ contour plot after GMM fit]\label{fig:fit}}
+%\end{figure}
 
-[Evaluate $N$ "true" $p(z)$s from horizontal cuts in fitted $z_{s}$ vs. $z_{p}$; these are \texttt{qp.catalog} objects comprised of \texttt{qp.PDF} objects defined by original GMM formulae]
+%[Specify true $n(z)$]
 
-\begin{figure}
-%\includegraphics[width=0.9\columnwidth]{}
-\caption{[Some example $p(z)$s]\label{fig:pzs}}
-\end{figure}
+%\begin{figure}
+%%\includegraphics[width=0.9\columnwidth]{}
+%\caption{[chosen true $n(z)$]\label{fig:nz}}
+%\end{figur}
 
-[Convert into parametrizations as separate catalogs]
+%\subsection{Catalog generation}
+%\label{sec:catalogs}
+
+%[Choose catalog size $N$ and sample $z_{s}$ values from true $n(z)$]
+
+%[Evaluate $N$ "true" $p(z)$s from horizontal cuts in fitted $z_{s}$ vs. $z_{p}$; these are \texttt{qp.catalog} objects comprised of \texttt{qp.PDF} objects defined by original GMM formulae]
+
+%\begin{figure}
+%%\includegraphics[width=0.9\columnwidth]{}
+%\caption{[Some example $p(z)$s]\label{fig:pzs}}
+%\end{figure}
+
+%[Convert into parametrizations as separate catalogs]
 
 % ----------------------------------------------------------------------
 
 \section{Science Metrics}
 \label{sec:science}
+
+
 
 \subsection{$n(z)$}
 \label{sec:nz}
@@ -189,20 +219,20 @@ Upcoming and ongoing galaxy surveys will produce redshift probability distributi
 \label{eq:nz}
 \end{align}
 
-\subsection{$\Sigma_{crit}^{-1}$}
-\label{sec:sigma}
+%\subsection{$\Sigma_{crit}^{-1}$}
+%\label{sec:sigma}
 
-\citet{bonnett_redshift_2015}
+%\citet{dark_energy_survey_collaboration_redshift_2016}
 
-\begin{align}
-\Sigma_{crit}^{-1} &= \frac{4\pi G}{c}\frac{D_{ls}D_{l}}{D_{s}}
-\label{eq:sigma}
-\end{align}
+%\begin{align}
+%\Sigma_{crit}^{-1} &= \frac{4\pi G}{c}\frac{D_{ls}D_{l}}{D_{s}}
+%\label{eq:sigma}
+%\end{align}
 
-\begin{align}
-\left\langle\Sigma_{crit}^{-1}\right\rangle(z_{lens}) &= \sum_{i=1}^{N}p(z_{source, i})\Sigma_{crit}^{-1}(z_{lens}, z_{source, i})
-\label{eq:meansigma}
-\end{align}
+%\begin{align}
+%\left\langle\Sigma_{crit}^{-1}\right\rangle(z_{lens}) &= \sum_{i=1}^{N}p(z_{source, i})\Sigma_{crit}^{-1}(z_{lens}, z_{source, i})
+%\label{eq:meansigma}
+%\end{align}
 
 % ----------------------------------------------------------------------
 
@@ -250,12 +280,17 @@ Upcoming and ongoing galaxy surveys will produce redshift probability distributi
 %
 %Here are some parting thoughts.
 
-
 % ----------------------------------------------------------------------
+
+This work addresses the tradeoff between the accuracy of stored photo-$z$ PDFs and the footprint of the data needed to encode the photo-$z$ PDFs.  It does not address the computational resources necessary to perform the storage operation nor to unpack the stored information into the form necessary for science computations.
+
+Further applications of \texttt{qp} functionality for manipulations of photo-$z$ PDFs is demonstrated in the LSST-DESC PZ DC1 paper (in prep.).
 
 \subsection*{Acknowledgments}
 
 %Here is where you should add your specific acknowledgments, remembering that some standard thanks will be added via the \code{acknowledgments.tex} and \code{contributions.tex} files.
+
+We thank Melissa Graham and Sam Schmidt for providing the mock datasets.
 
 \input{acknowledgments}
 
@@ -265,7 +300,8 @@ Upcoming and ongoing galaxy surveys will produce redshift probability distributi
 
 % Include both collaboration papers and external citations:
 \bibliography{lsstdesc,main}
+%\bibliography{qp}
 
 \end{document}
 % ======================================================================
-% 
+%
