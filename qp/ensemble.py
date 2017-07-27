@@ -335,73 +335,73 @@ class Ensemble(object):
         self.stacked[using] = (evaluated[0], stack)
         return self.stacked
 
-    def kld(self, stacked=True, limits=(0., 1.), dx=0.01):
-        """
-        Calculates the KLD for the stacked estimator under different parametrizations
-
-        Parameters
-        ----------
-        stacked: boolean, optional
-            calculate metric on stacked estimator?
-        limits: tuple, float, optional
-
-        dx: float, optional
-
-        Returns
-        -------
-
-        """
-        if self.truth is None:
-            print('Truth must be defined for KLD')
-            return
-        kld = {}
-        if stacked == True:
-            P = qp.PDF(gridded=self.stack['truth'])
-            for est in self.stacked.keys():
-                klds[est] = qp.utils.calculate_kl_divergence(P, self.stacked[est], limits=limits, dx=dx)
-            return klds
-        else:
-            print('KLDs of each PDF not yet supported')
-            return
-
-    def rms(self, limits=(0., 1.), dx=0.01):
-        """
-        Calculates the KLD for the stacked estimator under different parametrizations
-
-        Parameters
-        ----------
-        stacked: boolean, optional
-            calculate metric on stacked estimator?
-        limits: tuple, float, optional
-
-        dx: float, optional
-
-        Returns
-        -------
-
-        """
-        if self.truth is None:
-            print('Truth must be defined for KLD')
-            return
-        kld = {}
-        if stacked == True:
-            P = qp.PDF(gridded=self.stack['truth'])
-            for est in self.stacked.keys():
-                klds[est] = qp.utils.calculate_kl_divergence(P, self.stacked[est], limits=limits, dx=dx)
-            return klds
-        else:
-            print('KLDs of each PDF not yet supported')
-            return
-        return
-
-    def plot(self, vb=True):
-        return
-
-    def read(self, format, location):
-        return
-
-    def write(self, format, location):
-        return
+    # def kld(self, stacked=True, limits=(0., 1.), dx=0.01):
+    #     """
+    #     Calculates the KLD for the stacked estimator under different parametrizations
+    #
+    #     Parameters
+    #     ----------
+    #     stacked: boolean, optional
+    #         calculate metric on stacked estimator?
+    #     limits: tuple, float, optional
+    #
+    #     dx: float, optional
+    #
+    #     Returns
+    #     -------
+    #
+    #     """
+    #     if self.truth is None:
+    #         print('Truth must be defined for KLD')
+    #         return
+    #     kld = {}
+    #     if stacked == True:
+    #         P = qp.PDF(gridded=self.stack['truth'])
+    #         for est in self.stacked.keys():
+    #             klds[est] = qp.utils.calculate_kl_divergence(P, self.stacked[est], limits=limits, dx=dx)
+    #         return klds
+    #     else:
+    #         print('KLDs of each PDF not yet supported')
+    #         return
+    #
+    # def rms(self, limits=(0., 1.), dx=0.01):
+    #     """
+    #     Calculates the KLD for the stacked estimator under different parametrizations
+    #
+    #     Parameters
+    #     ----------
+    #     stacked: boolean, optional
+    #         calculate metric on stacked estimator?
+    #     limits: tuple, float, optional
+    #
+    #     dx: float, optional
+    #
+    #     Returns
+    #     -------
+    #
+    #     """
+    #     if self.truth is None:
+    #         print('Truth must be defined for KLD')
+    #         return
+    #     kld = {}
+    #     if stacked == True:
+    #         P = qp.PDF(gridded=self.stack['truth'])
+    #         for est in self.stacked.keys():
+    #             klds[est] = qp.utils.calculate_kl_divergence(P, self.stacked[est], limits=limits, dx=dx)
+    #         return klds
+    #     else:
+    #         print('KLDs of each PDF not yet supported')
+    #         return
+    #     return
+    #
+    # def plot(self, vb=True):
+    #     return
+    #
+    # def read(self, format, location):
+    #     return
+    #
+    # def write(self, format, location):
+    #     return
 
 # # Total pie in the sky beyond this point!  I'll approach this complication
 # # if and when we need to optimize qp further.
