@@ -7,6 +7,7 @@ import bisect
 import matplotlib.pyplot as plt
 
 epsilon = sys.float_info.epsilon
+global infty
 infty = 100.
 
 def cdf(weights):
