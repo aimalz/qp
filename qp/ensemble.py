@@ -150,33 +150,33 @@ class Ensemble(object):
         return
 
     def sample(self, samps=100, infty=100., using=None, vb=True):
-            """
-            Samples the pdf in given representation
+        """
+        Samples the pdf in given representation
 
-            Parameters
-            ----------
-            N: int, optional
-                number of samples to produce
-            infty: float, optional
-                approximate value at which CDF=1.
-            using: string, optional
-                Parametrization on which to interpolate, defaults to initialization
-            vb: boolean
-                report on progress
+        Parameters
+        ----------
+        N: int, optional
+            number of samples to produce
+        infty: float, optional
+            approximate value at which CDF=1.
+        using: string, optional
+            Parametrization on which to interpolate, defaults to initialization
+        vb: boolean
+            report on progress
 
-            Returns
-            -------
-            samples: ndarray
-                array of sampled values
-            """
-            def sample_helper(i):
-                # with open(self.logfilename, 'wb') as logfile:
-                #     logfile.write('sampling pdf '+str(i)+'\n')
-                return self.pdfs[i].sample(N=samps, infty=infty, using=using, vb=False)
+        Returns
+        -------
+        samples: ndarray
+            array of sampled values
+        """
+        def sample_helper(i):
+            # with open(self.logfilename, 'wb') as logfile:
+            #     logfile.write('sampling pdf '+str(i)+'\n')
+            return self.pdfs[i].sample(N=samps, infty=infty, using=using, vb=False)
 
-            self.samples = self.pool.map(sample_helper, self.pdf_range)
+        self.samples = self.pool.map(sample_helper, self.pdf_range)
 
-            return self.samples
+        return self.samples
 
     def quantize(self, quants=None, percent=10., N=None, infty=100., vb=True):
         """
@@ -305,7 +305,30 @@ class Ensemble(object):
 
         return self.gridded
 
-    # def approximate(self, points, using=None, scheme=None, vb=True):
+    def cdfs(self, limits, using, dx=0.0001):
+        """
+        Computes the integral under the ensemble of PDFs between the given limits.
+        
+        Parameters
+        ----------
+        limits: numpy.ndarray, tuple, float
+            limits of integration, may be different for all PDFs in the ensemble
+        using: string
+            parametrization over which to approximate the integral
+        dx: float, optional
+            granularity of integral
+
+        Returns
+        -------
+        integral: numpy.ndarray, float
+            value of the integral
+        """
+        def integrate_helper(i):
+            return self.pdfs[i].integrate(limits[i], using=using, dx=dx)
+
+        integrals = self.pool.map(integrate_helper, self.pdf_range)
+
+        return integrals
 
     def stack(self, loc, using, vb=True):
         """
