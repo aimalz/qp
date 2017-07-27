@@ -1,4 +1,5 @@
 import numpy as np
+import bisect
 import scipy.stats as sps
 import scipy.interpolate as spi
 import scipy.optimize as spo
@@ -7,6 +8,7 @@ import sklearn as skl
 from sklearn import mixture
 
 import qp
+from qp.utils import infty as default_infty
 
 class PDF(object):
 
@@ -122,27 +124,33 @@ class PDF(object):
 
         return(loc, val)
 
-    def integrate(self, limits):
+    def integrate(self, limits, dx=0.0001, using=None):
         """
         Computes the integral under the PDF between the given limits.
 
         Parameters
         ----------
-        limits: float, tuple
+        limits: tuple, float
             limits of integration
+        dx: float, optional
+            granularity of integral
+        using: string, optional
+            parametrization over which to approximate the integral
 
         Returns
         -------
         integral: float
             value of the integral
-
-        Notes
-        -----
-        This method is not yet operational, and returns `None`.
         """
-        return None
+        lim_range = limits[-1] - limits[0]
+        fine_grid = np.linspace(limits[0], limits[-1], lim_range / dx)
 
-    def quantize(self, quants=None, percent=10., N=None, infty=100., vb=True):
+        evaluated = self.evaluate(fine_grid, vb=True, using=using)
+        integral = np.sum(evaluated[1]) * dx
+
+        return integral
+
+    def quantize(self, quants=None, percent=10., N=None, infty=default_infty, vb=True):
         """
         Computes an array of evenly-spaced quantiles from the truth.
 
@@ -343,7 +351,7 @@ class PDF(object):
         self.mix_mod = qp.composite(components)
         return self.mix_mod
 
-    def sample(self, N=100, infty=100., using=None, vb=True):
+    def sample(self, N=100, infty=default_infty, using=None, vb=True):
         """
         Samples the pdf in given representation
 
