@@ -1,4 +1,7 @@
-scipy
-numpy
+hickle
 matplotlib
+numpy
+pathos
+psutil
+scipy
 sklearn

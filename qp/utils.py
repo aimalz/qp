@@ -123,8 +123,8 @@ def normalize_histogram(in_data, vb=True):
     (x, y) = in_data
     delta = x[1:] - x[:-1]
     # if vb: print(np.sum(y * delta))
-    y[y < 0.] = 0.
-    y /= np.sum(y * delta)
+    y[y < epsilon] = epsilon
+    y /= np.dot(y, delta)
     # if vb: print(np.sum(y * delta))
     return (x, y)
 
