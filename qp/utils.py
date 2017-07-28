@@ -6,6 +6,7 @@ import bisect
 
 import matplotlib.pyplot as plt
 
+global epsilon
 epsilon = sys.float_info.epsilon
 global infty
 infty = 100.

@@ -9,6 +9,7 @@ from sklearn import mixture
 
 import qp
 from qp.utils import infty as default_infty
+from qp.utils import epsilon as default_eps
 
 class PDF(object):
 
@@ -98,8 +99,8 @@ class PDF(object):
 
         Returns
         -------
-        val: float or ndarray
-            the value of the PDF (ot its approximation) at the requested location(s)
+        (loc, val): tuple, float or ndarray
+            the input locations and the value of the PDF (or its approximation) at the requested location(s)
         """
         if using is None:
             using = self.first
@@ -451,7 +452,9 @@ class PDF(object):
         """
         if using is None:
             using = self.first
-        if vb: print('Interpolating the `'+using+'` parametrization')
+
+        if vb:
+            print 'Creating a `'+self.scheme+'` interpolator for the '+using+' parametrization.'
 
         if using == 'truth' or using == 'mix_mod':
             print 'A functional form needs no interpolation.  Try converting to an approximate parametrization first.'
@@ -483,12 +486,11 @@ class PDF(object):
                 self.samples = self.sample()
 
             (x, y) = qp.evaluate_samples(self.samples)
+            if vb: print('interpolator support between '+str(min(x))+' and '+str(max(x))+' with extrapolation of '+str(default_eps))
+            self.interpolator = spi.interp1d(x, y, kind=self.scheme, bounds_error=False, fill_value=default_eps)
+            return self.interpolator
 
-        if vb:
-            print 'Creating a `'+self.scheme+'` interpolator for the '+using+' parametrization.'
-
-        self.interpolator = spi.interp1d(x, y, kind=self.scheme,
-                                         fill_value="extrapolate")
+        self.interpolator = spi.interp1d(x, y, kind=self.scheme, bounds_error=False, fill_value="extrapolate")
 
         return self.interpolator
 
@@ -534,6 +536,7 @@ class PDF(object):
 
         # Now make the interpolation, using the current scheme:
         self.interpolator = self.interpolate(using=using, vb=vb)
+        if vb: print('interpolating between '+str(min(points))+' and '+str(max(points)))
         interpolated = self.interpolator(points)
         interpolated = qp.utils.normalize_gridded((points, interpolated), vb=False)
         # interpolated[interpolated<0.] = 0.
