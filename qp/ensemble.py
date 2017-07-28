@@ -7,6 +7,7 @@ import scipy.interpolate as spi
 import matplotlib.pyplot as plt
 
 import qp
+from qp.utils import infty as default_infty
 
 class Ensemble(object):
 
@@ -42,6 +43,15 @@ class Ensemble(object):
             path to file corresponding to Ensemble, presumed to not yet exist
         procs: int, optional
             limit the number of processors used, otherwise use all available
+
+        Notes
+        -----
+        The qp.Ensemble object is a wrapper for a collection of qp.PDF
+        objects enabling the methods of qp.PDF objects to be applied in parallel.  This is very much a work in progress!  The current version
+        holds a list of qp.PDF objects in place.  (Ultimately, we would like the qp.Ensemble object to be a wrapper for a database of
+        parameters corresponding to a large collection of PDFs.  The excessive
+        quantities of commented code were building toward this ambitious goal
+        but have been temporarily abandoned to meet a deadline.)
         """
         if procs is not None:
             self.n_procs = procs
@@ -83,54 +93,8 @@ class Ensemble(object):
 
         self.make_pdfs()
 
-        # self.logfilename = 'logfile.txt'
-
         self.stacked = {}
 
-        # self.where = where
-        # if os.path.isfile(self.where):
-        #     #something like this, uses connection?
-        #     self.engine = self.read(self.where)
-        # else:
-        #     self.engine = sqlalchemy.create_engine('sql:///'+self.where)
-        #
-        # self.metadata = MetaData(bind=self.engine)
-        #
-        # parametrizations_table =Table('parametrizations', metadata,)
-
-    #
-    #
-    # def read(self):
-    #
-    # def write(self):
-    #
-    # def make_db(self, where):
-    #     """
-    #     Makes a fresh set of ensemble tables
-    #     """
-    #     return
-    #
-    # def __add__(self, ensemble):
-    #
-    # def add_PDFs(self, PDFs):
-    #     """
-    #     Adds qp.PDF objects to the ensemble
-    #
-    #     Parameters
-    #     ----------
-    #     PDFs: list, qp.PDF object
-    #         list of PDF objects to add to the ensemble
-    #     """
-    #     pdf_range = range(len(PDFs))
-    #     def add_one(i):
-    #
-    #
-    #     self.pdfs = self.pool.map(add_one, pdf_range)
-    #
-    #     return(self)
-    #
-    # def add_parameterization(self, type, parameters):
-    #
 
     def make_pdfs(self):
         """
@@ -149,7 +113,7 @@ class Ensemble(object):
 
         return
 
-    def sample(self, samps=100, infty=100., using=None, vb=True):
+    def sample(self, samps=100, infty=default_infty, using=None, vb=True):
         """
         Samples the pdf in given representation
 
@@ -178,7 +142,7 @@ class Ensemble(object):
 
         return self.samples
 
-    def quantize(self, quants=None, percent=10., N=None, infty=100., vb=True):
+    def quantize(self, quants=None, percent=10., N=None, infty=default_infty, vb=True):
         """
         Computes an array of evenly-spaced quantiles for each PDF
 
@@ -332,7 +296,7 @@ class Ensemble(object):
 
     def stack(self, loc, using, vb=True):
         """
-        Produces a stack of the PDFs
+        Produces an average of the PDFs in the ensemble
 
         Parameters
         ----------
@@ -348,6 +312,10 @@ class Ensemble(object):
         self.stacked: tuple, ndarray, float
             pair of arrays for locations where approximations were evaluated
             and the values of the stacked PDFs at those points
+
+        Notes
+        -----
+        Stacking refers to taking the sum of PDFs evaluated on a shared grid and normalizing it such that it integrates to unity.  This is equivalent to calculating an average probability (based on the PDFs in the ensemble) over the grid.  This probably should be done in a script and not by qp!  The right way to do it would be to call qp.Ensemble.evaluate() and sum those outputs appropriately.
         """
         loc_range = max(loc) - min(loc)
         delta = loc_range / len(loc)
@@ -358,162 +326,7 @@ class Ensemble(object):
         self.stacked[using] = (evaluated[0], stack)
         return self.stacked
 
-    # def kld(self, stacked=True, limits=(0., 1.), dx=0.01):
-    #     """
-    #     Calculates the KLD for the stacked estimator under different parametrizations
-    #
-    #     Parameters
-    #     ----------
-    #     stacked: boolean, optional
-    #         calculate metric on stacked estimator?
-    #     limits: tuple, float, optional
-    #
-    #     dx: float, optional
-    #
-    #     Returns
-    #     -------
-    #
-    #     """
-    #     if self.truth is None:
-    #         print('Truth must be defined for KLD')
-    #         return
-    #     kld = {}
-    #     if stacked == True:
-    #         P = qp.PDF(gridded=self.stack['truth'])
-    #         for est in self.stacked.keys():
-    #             klds[est] = qp.utils.calculate_kl_divergence(P, self.stacked[est], limits=limits, dx=dx)
-    #         return klds
-    #     else:
-    #         print('KLDs of each PDF not yet supported')
-    #         return
-    #
-    # def rms(self, limits=(0., 1.), dx=0.01):
-    #     """
-    #     Calculates the KLD for the stacked estimator under different parametrizations
-    #
-    #     Parameters
-    #     ----------
-    #     stacked: boolean, optional
-    #         calculate metric on stacked estimator?
-    #     limits: tuple, float, optional
-    #
-    #     dx: float, optional
-    #
-    #     Returns
-    #     -------
-    #
-    #     """
-    #     if self.truth is None:
-    #         print('Truth must be defined for KLD')
-    #         return
-    #     kld = {}
-    #     if stacked == True:
-    #         P = qp.PDF(gridded=self.stack['truth'])
-    #         for est in self.stacked.keys():
-    #             klds[est] = qp.utils.calculate_kl_divergence(P, self.stacked[est], limits=limits, dx=dx)
-    #         return klds
-    #     else:
-    #         print('KLDs of each PDF not yet supported')
-    #         return
-    #     return
-    #
-    # def plot(self, vb=True):
-    #     return
-    #
-    # def read(self, format, location):
-    #     return
-    #
-    # def write(self, format, location):
-    #     return
-
-# # Total pie in the sky beyond this point!  I'll approach this complication
-# # if and when we need to optimize qp further.
-
-# class Ensemble(object):
-#
-#     def __init__(self, pdfs=None, nprocs=1, vb=True):
-#         """
-#         An object containing an ensemble of qp.PDF objects
-#
-#         Parameters
-#         ----------
-#         pdfs: list, qp.PDF, optional
-#             list of qp.PDF objects to turn into an ensemble
-#         nprocs: int, optional
-#             number of processors to use, defaults to 1
-#         vb: boolean, optional
-#             report on progress
-#
-#         Notes
-#         -----
-#         The qp.Ensemble object is basically a front-end to a qp.Catalog
-#         that just stores parameter values.  This will keep the qp.Ensemble from
-#         consuming too much memory by holding very large qp.PDF objects.
-#         """
-#         # all possible parametrizations will be columns
-#         self.parametrizations = ['mm', 'gridded', 'histogram', 'quantiles', 'samples']
-#         self.metadata = {}
-#         for p in self.parametrizations:
-#             self.metadata[p] = {}
-#
-#         if pdfs is None:
-#             self.pdfs = []
-#             self.pdfids = []
-#         else:
-#             pdf0 = pdfs[0]
-#             pdfids = []
-#             for p in self.parametrizations:
-#                 pdfids.append()
-#                 assert(np.all([]) == True)
-#             self.pdfs = pdfs
-#
-#         self.catalog = qp.Catalog(self)
-#
-#         self.n_procs = nprocs
-#         self.pool = Pool(self.n_procs)
-#
-#     def __add__(self, other):
-#         """
-#         Combines two or more ensembles using "+" if parametrizations are the
-#         same
-#
-#         Parameters
-#         ----------
-#         other: qp.Ensemble
-#             the qp.Enseble object to be combined with this one
-#
-#         Returns
-#         -------
-#         new_ensemble: qp.Ensemble
-#             returns a new ensemble that is the combination of this one and other
-#         """
-#         if other.metadata != self.metadata:
-#             for p in parametrizations:
-#                 if other.metadata[p] != {} and self.metadata[p] != {} and other.metadata[p] != self.metadata[p]:
-#                     print(p + ' metadata is not the same!')
-#             return
-#         else:
-#             new_catalog = self.catalog.merge(other.catalog)
-#             new_ensemble = qp.Ensemble(catalog = new_catalog)
-#             return new_ensemble
-
-# from sqlalchemy import Column, Integer, String
-# from sqlalchemy.ext.declarative import declarative_base
-#
-# Base = declarative_base()
-#
-# class PDF(Base):
-#     __tablename__ = 'PDF'
-#     id = Column(Integer, primary_key=True)
-#
-# class parametrization(Base):
-#     __tablename__ = 'parametrization'
-#     id = Column(Integer, primary_key=True)
-#
-# class metaparameters(Base):
-#     __tablename__ = 'metaparameters'
-#     id = Column(Integer, primary_key=True)
-#
-# class representation(Base):
-#     __tablename__ = 'representation'
-#     id = Column(Integer, primary_key=True)
+# Note: A copious quantity of commented code has been removed in this commit!
+# For future reference, it can still be found here:
+#  https://github.com/aimalz/qp/blob/d8d145af9514e29c76e079e869b8b4923f592f40/qp/ensemble.py
+# Critical additions still remain.  Metrics of individual qp.PDF objects collected in aggregate over a qp.Ensemble are still desired.
