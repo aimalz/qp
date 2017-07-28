@@ -305,10 +305,10 @@ class Ensemble(object):
 
         return self.gridded
 
-    def cdfs(self, limits, using, dx=0.0001):
+    def integrate(self, limits, using, dx=0.0001):
         """
         Computes the integral under the ensemble of PDFs between the given limits.
-        
+
         Parameters
         ----------
         limits: numpy.ndarray, tuple, float
