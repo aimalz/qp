@@ -322,7 +322,7 @@ class PDF(object):
             stdevs = popt[2]
         else:
             if self.samples is None:
-                self.samples = self.sample(using=using)
+                self.samples = self.sample(using=using, vb=vb)
 
             estimator = skl.mixture.GaussianMixture(n_components=n_components)
             estimator.fit(self.samples.reshape(-1, 1))
@@ -372,7 +372,7 @@ class PDF(object):
             array of sampled values
         """
         if using is None:
-            using = self.last
+            using = self.first
 
         if vb: print 'Sampling from '+using+' parametrization.'
 
@@ -400,7 +400,7 @@ class PDF(object):
 
                 endpoints = np.append(np.array([-1.*infty]), self.quantiles[1])
                 endpoints = np.append(endpoints,np.array([infty]))
-                weights = qp.utils.evaluate_quantiles(self.quantiles)[1]# self.evaluate((endpoints[1:]+endpoints[:-1])/2.)
+                weights = qp.utils.evaluate_quantiles(self.quantiles, infty=infty)[1]# self.evaluate((endpoints[1:]+endpoints[:-1])/2.)
 
             if using == 'histogram':
                 # First find the histogram if none exists:
