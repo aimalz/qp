@@ -22,6 +22,7 @@
 % Add your own macros here:
 
 \newcommand{\textul}{\underline}
+\newcommand{\qp}{\texttt{qp}}
 
 %
 % ======================================================================
@@ -34,7 +35,7 @@
 
 \begin{abstract}
 
-Upcoming and ongoing galaxy surveys will produce redshift probability distribution functions (PDFs) in addition to traditional photometric redshift (photo-$z$) point estimates.  However, the storage of photo-$z$ PDFs may present a challenge as the dataset size increases, as we face a trade-off between the accuracy of subsequent science measurements and the storage cost. We investigate a number of different PDF approximations, using metrics that quantify performance in both large scale structure and weak gravitational lensing studies. In the process, we present \texttt{qp}, a Python library enabling the evaluation of various approximations of 1-dimensional PDFs, as suitable for photometric redshifts.
+Upcoming and ongoing galaxy surveys will produce redshift probability distribution functions (PDFs) in addition to traditional photometric redshift (photo-$z$) point estimates.  However, the storage of photo-$z$ PDFs may present a challenge as the dataset size increases, as we face a trade-off between the accuracy of subsequent science measurements and the storage cost. We investigate a number of different PDF approximations, using metrics that quantify performance in both large scale structure and weak gravitational lensing studies. In the process, we present \qp, a Python library enabling the evaluation of various approximations of 1-dimensional PDFs, as suitable for photometric redshifts.
 
 \end{abstract}
 
@@ -43,7 +44,7 @@ Upcoming and ongoing galaxy surveys will produce redshift probability distributi
 
 %\maketitlepost
 
-\FIXME{There's a bug in \texttt{start\_paper} causing the title/authors/abstract to not be rendered.}
+\FIXME{There's a bug with \texttt{start\_paper} causing the title/authors/abstract to not be rendered.  Also, it is a problem that it requires internet access to compile.}
 
 % ----------------------------------------------------------------------
 %
@@ -70,7 +71,7 @@ Given the tremendous size of the surveys in question, storage of these probabili
 
 Little attention has been paid to these matters, with a few exceptions.  \citep{carrasco_kind_sparse_2014}
 
-In this work, we outline a method by which a survey team may optimize the choice of parametrization and number of stored parameters for an anticipated catalog of photo-$z$ PDFs.  We also present the publicly available \texttt{qp} Python package for performing this optimization for an arbitrary survey.  The approach is demonstrated for LSST mock data.
+In this work, we outline a method by which a survey team may optimize the choice of parametrization and number of stored parameters for an anticipated catalog of photo-$z$ PDFs.  We also present the publicly available \qp Python package for performing this optimization for an arbitrary survey.  The approach is demonstrated for LSST mock data.
 
 %[Problem statement: photo-zs, LSST]
 
@@ -109,39 +110,61 @@ In this work, we outline a method by which a survey team may optimize the choice
 %  \langle f(k) \rangle = \frac{ \sum_{t=0}^{N}f(t,k) }{N}
 %\end{equation}
 
-\texttt{qp} has two main functionalities: converting between parametrizations and computing metrics between two parametrizations.
+\qp has two main functionalities: converting between parametrizations of photo-$z$ PDFs and computing metrics of parametrizations of photo-$z$ PDFs relative to perfectly accurate representations thereof.
 
 \subsection{Approximation Methods}
 \label{sec:approx}
 
 %[Lay out all parametrizations, pros and cons]
 
-\texttt{qp} is capable of converting a one-dimensional probability distribution between four parametrizations: samples, binning, quantiles, and a mixture model.  Storage of all these parametrizations have been used in the literature, except for quantiles, which have never before been investigated for this purpose.
+\qp is capable of converting a one-dimensional probability distribution between four parametrizations that have been used in the literature as well as one that has not: step functions, samples, grid evaluations, a mixture model, and quantiles.  These parametrizations will be described below in terms of the number $N_{p}$ of parameters $i$.
 
-\COMMENT{}\citet{carrasco_kind_sparse_2014} also considers point estimators derived from PDFs.  I will need to implement this for the PZ DC1 paper.  Should I include that in this paper?}
-
-We do not consider the sparse basis representation of \citet{carrasco_kind_sparse_2014} for several reasons.  It assumes that the native format of a photo-$z$ PDF is evaluations on a grid, which is not in general true.  There is no guarantee that the resulting combination of basis functions satisfies the definition of a probability distribution (normalization to unity and nonnegativity) -- it does not take advantage of the fact that photo-$z$ PDFs are probability distributions rather than arbitrary functions.  \COMMENT{I also thought it required extensive computational resources, but it appears to be a lot faster than \texttt{qp} making quantiles with the same number of parameters -- recall that calculating quantiles generally requires an optimization.  My reasons are pretty weak; if I had more time I'd have \texttt{qp} employ the \texttt{SparsePz} method as another parametrization, but I don't know when I'll be able to do it!}
-
-\subsubsection{Samples}
-\label{sec:samples}
+\COMMENT{I need to hunt down citations for the assertion that these formats have been used before!}
 
 \subsubsection{Regular Binning}
 \label{sec:bins}
 
+By far the most common parametrization of photo-$z$ PDFs is that of a piecewise constant step function, also called a histogram binning.  \citep{tanaka_photometric_2017}
+
+\subsubsection{Samples}
+\label{sec:samples}
+
+Some surveys store samples of a photo-$z$ PDF.
+
+\subsubsection{Evaluation on a Regular Grid}
+\label{sec:grid}
+
+\subsubsection{Mixture Model}
+\label{sec:mm}
+
+There is some history of using a mixture model parametrization for photo-$z$ PDFs.  Though mixtures of Gaussian distributions have been used more often, other functions have been investigated as well \citep{carrasco_kind_sparse_2014}.
+
+In this work, we consider only the common Gaussian mixture model, though the \qp framework can accommodate mixtures of all probability distribution functions that have been implemented as \texttt{scipy.stats.rv_continous} objects.
+
+Though the sparse basis representation of \citet{carrasco_kind_sparse_2014} has promising compression properties, we do not consider it in this work for several reasons.  The sparse basis representation of \citet{carrasco_kind_sparse_2014} does not guarantee that the stored parametrization be a probability distribution in a mathematical sense, which we consider a necessary condition both for use of photo-$z$ PDFs in research and for comparison to other methods using the \qp metrics.   The sparse basis representation also assumes that the native format of a photo-$z$ PDF is evaluations on a grid; if this is not true, then the photo-$z$ PDF may undergo additional conversions that introduce loss of information with each approximation.
+
+\COMMENT{I also thought it required extensive computational resources, but it appears to be a lot faster than \qp making quantiles with the same number of parameters -- recall that calculating quantiles generally requires an optimization.  My reasons are pretty weak; if I had more time I'd have \qp employ the \texttt{SparsePz} method as another parametrization, but I don't know when I'll be able to do it!}
+
 \subsubsection{Regular Quantiles}
 \label{sec:quantiles}
 
-\subsubsection{Mixture Model}
-\label{sec:gmm}
+One parametrization that has not previously been implemented is that of quantiles, which are defined in terms of the cumulative distribution function (CDF)
+\begin{align}
+  \label{eq:cdf}
+  CDF &= \int_{-\infty}^{z}\ p(z)\ dz.
+\end{align}
+Under the quantile parametrization, an ensemble of photo-$z$ PDFs shares a set of $N$ values $0<q_{1}<q_{2}<\dots<q_{N-1}<q_{N_{p}}<1$.  Each galaxy's catalog entry is the $N_{p}$ values $z_{i}$ satisfying $CDF=q_{i}$.  In our tests, the quantiles obey a regular binning $q_{i}\equiv i\bar{q}$, where $\bar{q}\equiv(N_{p}+1)^{-1}$, but there is no requirement that this be so.
 
 \subsection{Comparison Metrics}
 \label{sec:metrics}
 
 %[Lay out all metrics considered, pros and cons]
 
-We use several metrics to quantify how well an approximation of a photo-$z$ PDF reconstructed from a stored format represents the true photo-$z$ PDF before it was compressed.
+We use several metrics to quantify how well an approximation of a photo-$z$ PDF reconstructed from a stored format represents the original photo-$z$ PDF before it was compressed.
 
 \COMMENT{\citet{carrasco_kind_sparse_2014} uses histograms and summary statistics of the RMSE distribution.  Should we also do that or is it sufficient to interpret the metrics on $\hat{n}(z)$ in terms of percent error?}
+
+\COMMENT{\citet{carrasco_kind_sparse_2014} and others also consider metrics on point estimators derived from PDFs which I implement for the PZ DC1 paper.  Should I include that in this paper?}
 
 \subsubsection{RMSE}
 \label{sec:rms}
@@ -167,12 +190,16 @@ The Kullback-Leibler divergence quantifies the deviation of one distribution fro
 \section{Photo-z Test Data}
 \label{sec:data}
 
-With the understanding that \texttt{qp} may suggest a different optimal result for different datasets, we apply it to two mock datasets with different data quality properties.
+With the expectation that \qp may suggest a different optimal result for different datasets, we apply it to two mock datasets with different data quality properties.  Both datasets were fit using Bayesian Photometric Redshift (BPZ) estimation \citep{benitez_bayesian_2000}, which employs spectral energy distribution (SED) fitting to a template set.  However, the choice of photo-$z$ PDF estimation method is not relevant to this study; so long as the mock photo-$z$ PDFs are of realistic complexity, it does not matter how accurately they describe the probability distribution of galaxy redshifts given their photometric data.  We only seek to optimize the fidelity of the stored photo-$z$ PDF relative to the photo-$z$ PDF output by a representative photo-$z$ PDF fitting code.  (Other work has been done to compare the accuracy of photo-$z$ PDFs produced by different methods; see Schmidt, et al. 2017 (in prep.), \citet{tanaka_photometric_2017}.)
 
-\COMMENT{\citet{carrasco_kind_sparse_2014} uses $10^{6}$ galaxies.}
+As BPZ is a widely used and well established method, we assume that the photo-$z$ PDFs produced by it are of realistic complexity, meaning they take shapes we expect to see in accurate photo-$z$ PDFs from datasets with similar photometric properties.
+
+\COMMENT{\citet{carrasco_kind_sparse_2014} uses $N_{g}=10^{6}$ galaxies.}
 
 \subsection{LSST+Euclid mocks}
 \label{sec:mg}
+
+
 
 \subsection{LSST mocks}
 \label{sec:ss}
@@ -220,15 +247,18 @@ With the understanding that \texttt{qp} may suggest a different optimal result f
 \section{Science Metrics}
 \label{sec:science}
 
-
+Though the use of photo-$z$ PDFs could potentially extend to all areas of astronomy in which redshifts are used, photo-$z$ PDFs have thus far been used almost exclusively to estimate the redshift distribution function $n(z)$ necessary for calculating correlation functions used in many cosmological probes.  The most common way to estimaate the redshift distribution function is to "stack" the photo-$z$ PDFs.
 
 \subsection{$\hat{n}(z)$}
 \label{sec:nz}
 
+Though we do not recommend this approach to estimating the redshift distribution (see Malz, et al. (in prep.) for a mathematically motivated alternative), we also calculate the metrics of Sec. \ref{sec:metrics} on the stacked estimator
 \begin{align}
-\hat{n}(z) &= \frac{1}{N}\sum_{i=1}^{N}p_{i}(z)
-\label{eq:nz}
+  \label{eq:nz}
+  \hat{n}(z) &= \frac{1}{N_{g}}\sum_{j=1}^{N_{g}}
+ p_{j}(z)
 \end{align}
+of the redshift distribution function.
 
 %\subsection{$\Sigma_{crit}^{-1}$}
 %\label{sec:sigma}
@@ -245,7 +275,7 @@ With the understanding that \texttt{qp} may suggest a different optimal result f
 %\label{eq:meansigma}
 %\end{align}
 
-% ----------------------------------------------------------------------
+% ---------------------------------------------------------------------
 
 \section{Results}
 \label{sec:results}
@@ -257,11 +287,26 @@ With the understanding that \texttt{qp} may suggest a different optimal result f
 %\caption{An example figure: the LSST DESC logo, copied from \code{.logos/desc-logo.png} into \code{figures/example.png}. \label{fig:example}}
 %\end{figure}
 
-[Multipanel key plot commentary]
+\subsection{Individual photo-$z$ PDFs}
+\label{sec:individual}
+
+Parametrizations are compared on the basis of the distributions of the metrics of Sec. \ref{sec:metrics} calculated over the ensemble.
 
 \begin{figure}
 %\includegraphics[width=0.9\columnwidth]{}
-\caption{[number of stored floats $N_{f}$ vs. metric, one curve per approximation method]\label{fig:results}}
+  \caption{[number of stored floats $N$ vs. metric value, one curve per approximation method, one panel per combination of metric (horizontal) and $N$ (vertical)]
+  \label{fig:individual}}
+\end{figure}
+
+\subsection{Stacked $\hat{n}(z)$ estimator}
+\label{sec:stacked}
+
+Parametrizations are also compared by the accuracy of their stacked redshift distribution estimator $\hat{n}(z)$ relative to that of the photo-$z$ PDFs in their original format.
+
+\begin{figure}
+%\includegraphics[width=0.9\columnwidth]{}
+  \caption{[number of stored floats $N$ vs. metric value, one curve per approximation method, one panel per combination of metric (horizontal) and $N$ (vertical)]
+  \label{fig:stacked}}
 \end{figure}
 
 % ----------------------------------------------------------------------
@@ -295,13 +340,13 @@ With the understanding that \texttt{qp} may suggest a different optimal result f
 
 This work addresses the tradeoff between the accuracy of stored photo-$z$ PDFs and the footprint of the data needed to encode the photo-$z$ PDFs.  It does not address the computational resources necessary to perform the storage operation nor to unpack the stored information into the form necessary for science computations.
 
-Further applications of \texttt{qp} functionality for manipulations of photo-$z$ PDFs is demonstrated in the LSST-DESC PZ DC1 paper (in prep.).
+Further applications of \qp functionality for manipulations of photo-$z$ PDFs is demonstrated in the LSST-DESC PZ DC1 paper (in prep.).
 
 \subsection*{Acknowledgments}
 
 %Here is where you should add your specific acknowledgments, remembering that some standard thanks will be added via the \code{acknowledgments.tex} and \code{contributions.tex} files.
 
-We thank Melissa Graham and Sam Schmidt for providing the mock datasets.
+We thank Melissa Graham and Sam Schmidt for providing the mock datasets.  This work was incubated at the 2016 LSST-DESC Hack Week.
 
 \input{acknowledgments}
 
