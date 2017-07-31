@@ -177,8 +177,9 @@ $\bar{q}\equiv(N_{p}+1)^{-1}$, but there is no requirement that this be so.
 
 
 We use several metrics to quantify how well an approximation of a photo-$z$ PDF 
-reconstructed from a stored format represents the original photo-$z$ PDF before 
-it was compressed.
+extracted from a stored format represents the original photo-$z$ PDF, 
+characterized by many more parameters than are available for storage, before it 
+was compressed.
 
 \COMMENT{\citet{carrasco_kind_sparse_2014} uses histograms and summary 
 statistics of the RMSE distribution.  Should we also do that or is it 
@@ -235,15 +236,31 @@ photo-$z$ PDFs produced by it are of realistic complexity, meaning they take
 shapes we expect to see in accurate photo-$z$ PDFs from datasets with similar 
 photometric properties.
 
+The datasets considered here have already been transformed into a gridded 
+parametrization, as we did not run the photo-$z$ PDF code ourselves to get the 
+raw output.  To create a realistically complex testbed catalog, we fit these 
+high-resolution, gridded photo-$z$ PDFs with a Gaussian mixture model so that 
+our catalog has a notion of "true" underlying photo-$z$ PDFs.
+
 \subsection{LSST+Euclid mocks}
 \label{sec:mg}
 
 \COMMENT{Should we invite Melissa to write this section?}
 
+The photo-$z$ PDFs were provided in the form of $N_{p}=351$ floating point 
+numbers represing the probability on a regular grid of redshifts $0.01 < z < 
+3.51$.  We produced true underlying PDFs by fitting a two-component Gaussian 
+mixture model to each photo-$z$ PDF.
+
 \subsection{LSST mocks}
 \label{sec:ss}
 
 \COMMENT{Should we invite Sam to write this section?}
+
+The photo-$z$ PDFs were provided in the form of $N_{p}=211$ floating point 
+numbers represing the probability on a regular grid of redshifts $0.005 < z < 
+2.11$.  We produced true underlying PDFs by fitting a five-component Gaussian 
+mixture model to each photo-$z$ PDF.
 
 
 
@@ -302,9 +319,8 @@ Parametrizations are compared on the basis of the distributions of the metrics
 of Sec. \ref{sec:metrics} calculated over all galaxies in the ensemble.
 
 \begin{figure}
-  \caption{[number of stored floats $N$ vs. metric value, one curve per 
-approximation method, one panel per combination of metric (horizontal) and $N$ 
-(vertical)]
+  \caption{[histograms of each metric for different numbers of parameters, one 
+panel per combination of metric (horizontal) and $N_{p}$ (vertical)]
   \label{fig:individual}}
 \end{figure}
 
@@ -316,9 +332,9 @@ distribution estimator $\hat{n}(z)$ relative to that of the photo-$z$ PDFs in
 their original format.
 
 \begin{figure}
-  \caption{[number of stored floats $N$ vs. metric value, one curve per 
-approximation method, one panel per combination of metric (horizontal) and $N$ 
-(vertical)]
+  \caption{[number of stored floats $N_{p}$ vs. metric value, one curve per 
+approximation method, one panel per combination of metric (horizontal) and 
+$N_{p}$ (vertical)]
   \label{fig:stacked}}
 \end{figure}
 
@@ -329,13 +345,24 @@ approximation method, one panel per combination of metric (horizontal) and $N$
 \section{Conclusions \& Future Directions}
 \label{sec:conclusions}
 
+We have presented a method for determining the most appropriate compression 
+formats and number of stored parameters for large catalogs of photo-$z$ PDFs 
+produced by surveys with limited storage capacity.   In the case of 
+well-behaved photo-$z$ PDFs, we observe [RESULTS].  In the case of photo-$z$ 
+PDFs from lower quality data, we observe [RESULTS].  Given the constraint that 
+LSST will be able to store 200 floating point numbers to quantify the redshift 
+of each galaxy and intends to include several photo-$z$ PDF codes, we recommend 
+the [RECOMMENDATION] parametrization.
+
 
 
 This work addresses the tradeoff between the accuracy of stored photo-$z$ PDFs 
 and the footprint of the data needed to encode the photo-$z$ PDFs.  It does not 
 address the computational resources necessary to perform the storage operation 
 nor to unpack the stored information into the form necessary for science 
-computations.
+computations.  There may be other issues with the loss of information when 
+extracting compressed photo-$z$ PDFs for use in science, with impacts that may 
+differ for each science case.
 
 Further applications of \qp functionality for manipulations of photo-$z$ PDFs 
 is demonstrated in the LSST-DESC PZ DC1 paper (in prep.).
