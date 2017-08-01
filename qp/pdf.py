@@ -323,7 +323,7 @@ class PDF(object):
             stdevs = popt[2]
         else:
             if self.samples is None:
-                self.samples = self.sample(using=using)
+                self.samples = self.sample(using=using, vb=vb)
 
             estimator = skl.mixture.GaussianMixture(n_components=n_components)
             estimator.fit(self.samples.reshape(-1, 1))
@@ -397,7 +397,7 @@ class PDF(object):
             if using == 'quantiles':
                 # First find the quantiles if none exist:
                 if self.quantiles is None:
-                    self.quantiles = self.quantize()
+                    self.quantiles = self.quantize(vb=vb)
 
                 endpoints = np.append(np.array([-1.*infty]), self.quantiles[1])
                 endpoints = np.append(endpoints,np.array([infty]))
@@ -406,7 +406,7 @@ class PDF(object):
             if using == 'histogram':
                 # First find the histogram if none exists:
                 if self.histogram is None:
-                    self.histogram = self.histogramize()
+                    self.histogram = self.histogramize(vb=vb)
 
                 endpoints = self.histogram[0]
                 weights = self.histogram[1]
@@ -463,14 +463,14 @@ class PDF(object):
         if using == 'quantiles':
             # First find the quantiles if none exist:
             if self.quantiles is None:
-                self.quantiles = self.quantize()
+                self.quantiles = self.quantize(vb=vb)
 
             (x, y) = qp.utils.evaluate_quantiles(self.quantiles)
 
         if using == 'histogram':
             # First find the histogram if none exists:
             if self.histogram is None:
-                self.histogram = self.histogramize()
+                self.histogram = self.histogramize(vb=vb)
 
             (x, y) = qp.utils.evaluate_histogram(self.histogram)
 
@@ -483,7 +483,7 @@ class PDF(object):
         if using == 'samples':
             # First sample if not already done:
             if self.samples is None:
-                self.samples = self.sample()
+                self.samples = self.sample(vb=vb)
 
             (x, y) = qp.evaluate_samples(self.samples)
             if vb: print('interpolator support between '+str(min(x))+' and '+str(max(x))+' with extrapolation of '+str(default_eps))
