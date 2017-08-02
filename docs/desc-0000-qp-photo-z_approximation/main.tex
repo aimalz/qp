@@ -283,17 +283,15 @@ quantile parametrization is a new option that merits careful consideration.
 \label{sec:metrics}
 
 
-We use several metrics to quantify how well an approximation of a \pz  
-extracted from a stored format represents the original \pz , characterized by 
-many more parameters than are available for storage, before it was compressed.
+We use several metrics to quantify how well an approximation of a \pz\ 
+extracted from a stored format represents the original \pz, characterized by 
+many more parameters than are available for storage, before it was compressed.  
+Given the stored parameters, we perform an interpolation to evaluations on a 
+fine grid to calculate metrics against the original format on that same grid.
 
 \COMMENT{\citet{carrasco_kind_sparse_2014} uses histograms and summary 
 statistics of the RMSE distribution.  Should we also do that or is it 
 sufficient to interpret the metrics on $\hat{n}(z)$ in terms of percent error?}
-
-\COMMENT{\citet{carrasco_kind_sparse_2014} and others also consider metrics on 
-point estimators derived from PDFs which I implement for the PZ DC1 paper.  
-Should I include that in this paper?}
 
 \subsubsection{RMSE}
 \label{sec:rms}
@@ -302,7 +300,7 @@ The root mean square error (RMSE) is a familiar measure of the difference
 between two functions $P$ and $P'$,
 \begin{align}
   \label{eq:rmse}
-  RMSE &= (P - P')^{2}.
+  RMSE &= \frac{1}{N'}\ \sum_{i'}(p_{i'} - p'_{i'})^{2}.
 \end{align}
 
 \subsubsection{KLD}
@@ -323,16 +321,16 @@ P(z)\ dz.
 \section{Photo-z Test Data}
 \label{sec:data}
 
-With the expectation that \qp may suggest a different optimal result for 
+With the expectation that \qp\  may suggest a different optimal result for 
 different datasets, we apply it to two mock datasets with different data 
 quality properties.  Both datasets were fit using Bayesian Photometric Redshift 
 (BPZ) estimation \citep{benitez_bayesian_2000}, which employs spectral energy 
-distribution (SED) fitting to a template set.  However, the choice of \pz  
+distribution (SED) fitting to a template set.  However, the choice of \pz\ 
 estimation method is not relevant to this study; so long as the mock \pz s are 
 of realistic complexity, it does not matter how accurately they describe the 
 probability distribution of galaxy redshifts given their photometric data.  We 
-only seek to optimize the fidelity of the stored \pz  relative to the \pz  
-output by a representative \pz  fitting code.  (Other work has been done to 
+only seek to optimize the fidelity of the stored \pz\ relative to the \pz\ 
+output by a representative \pz\ fitting code.  (Other work has been done to 
 compare the accuracy of \pz s produced by different methods; see Schmidt, et 
 al. 2017 (in prep.), \citet{tanaka_photometric_2017}.)
 
@@ -341,7 +339,7 @@ produced by it are of realistic complexity, meaning they take shapes we expect
 to see in accurate \pz s from datasets with similar photometric properties.
 
 The datasets considered here have already been transformed into a gridded 
-parametrization, as we did not run the \pz  code ourselves to get the raw 
+parametrization, as we did not run the \pz\ code ourselves to get the raw 
 output.  To create a realistically complex testbed catalog, we fit these 
 high-resolution, gridded \pz s with a Gaussian mixture model so that our 
 catalog has a notion of "true" underlying \pz s.
@@ -354,7 +352,7 @@ catalog has a notion of "true" underlying \pz s.
 The \pz s were provided in the form of $N_{f}=351$ floating point numbers 
 represing the probability on a regular grid of redshifts $0.01 < z < 3.51$.  We 
 produced true underlying PDFs by fitting a two-component Gaussian mixture model 
-to each \pz .
+to each \pz.
 
 \subsection{LSST mocks}
 \label{sec:ss}
@@ -364,7 +362,7 @@ to each \pz .
 The \pz s were provided in the form of $N_{f}=211$ floating point numbers 
 represing the probability on a regular grid of redshifts $0.005 < z < 2.11$.  
 We produced true underlying PDFs by fitting a five-component Gaussian mixture 
-model to each \pz .
+model to each \pz.
 
 
 
@@ -454,7 +452,7 @@ surveys with limited storage capacity.   In the case of well-behaved \pz s, we
 observe [RESULTS].  In the case of \pz s from lower quality data, we observe 
 [RESULTS].  Given the constraint that LSST will be able to store 200 floating 
 point numbers to quantify the redshift of each galaxy and intends to include 
-several \pz  codes, we recommend the [RECOMMENDATION] parametrization.
+several \pz\ codes, we recommend the [RECOMMENDATION] parametrization.
 
 
 
@@ -466,7 +464,7 @@ unpack the stored information into the form necessary for science computations.
 compressed \pz s for use in science, with impacts that may differ for each 
 science case.
 
-Further applications of \qp functionality for manipulations of \pz s is 
+Further applications of \qp\ functionality for manipulations of \pz s is 
 demonstrated in the LSST-DESC PZ DC1 paper (in prep.).
 
 \subsection*{Acknowledgments}
