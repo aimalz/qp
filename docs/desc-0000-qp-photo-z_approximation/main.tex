@@ -65,16 +65,16 @@ probability distributions raises a number of nontrivial questions.  Previous
 treatments of photometric redshifts resulted in each galaxy's catalog entry 
 having one additional floating point number to store, or perhaps a few based on 
 a handful of photo-$z$ codes; how many numbers are necessary to characterize a 
-\pz to the degree of precision dictated by the survey's science goals?  \Pz  
+\pz\ to the degree of precision dictated by the survey's science goals?  \Pz\  
 codes do not all produce outputs in the same parametrization; what storage 
-format best preserves the characteristics of a \pz ?
+format best preserves the characteristics of a \pz?
 
 Little attention has been paid to these matters, with a few exceptions.  
 \citep{carrasco_kind_sparse_2014}
 
 In this work, we outline a method by which a survey team may optimize the 
 choice of parametrization and number of stored parameters for an anticipated 
-catalog of \pz s.  We also present the publicly available \qp Python package 
+catalog of \pz s.  We also present the publicly available \qp\ Python package 
 for performing this optimization for an arbitrary survey.  The approach is 
 demonstrated for LSST mock data.
 
@@ -88,8 +88,6 @@ demonstrated for LSST mock data.
 \section{Methods}
 \label{sec:methods}
 
-[Describe possible interpolation schemes used in conversions for both 
-approximations and metrics]
 
 
 \qp\ has two main functionalities: converting between parametrizations of \pz s 
@@ -105,23 +103,28 @@ between four parametrizations that have been used in the literature as well as
 one that has not: step functions, samples, grid evaluations, a mixture model, 
 and quantiles.  These parametrizations will be described below in terms of the 
 number $N_{f}$ of parameters $i$, which are presumed to be floating point 
-numbers.  We will use "the native output format" of \pz  codes to mean the 
+numbers.  We will use "the native output format" of \pz\ codes to mean the 
 natural product of the algorithm by which \pz s are derived from photometry by 
-a given method.
+a given method.  For each, we address the following questions:
 
-\COMMENT{I need to hunt down citations for the assertion that these formats 
-have been used before!}
+\begin{itemize}
+  \item When/where has this format appeared in the literature as a published 
+catalog format, native \pz code output format, and science application input 
+format?
+  \item What exactly is stored under this format, per galaxy and per catalog?
+  \item In what ways is this format advantageous, and what are its weaknesses?
+\end{itemize}
 
 \subsubsection{Regular Binning}
 \label{sec:bins}
 
 By far the most popular parametrization of \pz s is that of a piecewise 
 constant step function, also called a histogram binning.  It is the only format 
-that has been used for public release of \pz  catalogs 
+that has been used for public release of \pz\ catalogs 
 \citep{tanaka_photometric_2017, sheldon_photometric_2012}; it is unclear 
 whether this is a consequence or a cause of the fact that it is the most common 
 format for using \pz s in cosmological inference, as tomographic binning is a 
-universal step between the redshift catalog and calculation of any two-point 
+universal step between the \pz\ catalog and calculation of any two-point 
 correlation function.
 
 The binned parametrization is defined by an ordered list of redshifts $(z_{1}, 
@@ -137,30 +140,58 @@ p_{i} dz = 1$ and $\sum_{i}p_{i}\neq1$.
 
 All known native \pz\ formats are easy to convert to the histogram 
 representation.  However, the corrolary to this statement is that it is an 
-inherently lossy format.  A \pz with features smaller than the bin width may 
+inherently lossy format.  A \pz\ with features smaller than the bin width may 
 not accurately represent the underlying probability distribution, as 
 significant structure may be stored as a single bin value.
 
 The binned parametrization may also be considered wasteful in terms of data 
-storage.  A \pz  with a compact probability distribution, with much of the 
+storage.  A \pz\ with a compact probability distribution, with much of the 
 probability contained within a region far narrower than the redshift range 
 $z_{N_{f}+1} - z_{1}$, may have most of its catalog entries (the elements of 
-$\vec{p}$) being trivial.  
+$\vec{p}$) being trivial.
+
+Finally, the binned parametrization requires the researcher to choose the 
+minimum and maximum possible redshifts of the galaxy sample.  These are 
+physical quantities that are unknown, so it would be preferable to not have to 
+choose them at the stage of producing the \pz\ catalog.
 
 \subsubsection{Samples}
 \label{sec:samples}
 
-Some surveys store samples of a \pz, defining a .  \COMMENT{Cite upcoming DES 
-paper.}  Samples are also the native output format of many machine learning 
-algorithms dependent on random choices, such as random forests.
+Samples $(z_{1}, z_{2}, \dots, z_{N_{f}-1}, z_{N_{f}})$ are another common 
+storage format for \pz s.  \COMMENT{Cite upcoming DES paper.}  Samples are the 
+native output format of many machine learning algorithms dependent on random 
+choices, such as random forests.
+
+Such approaches typically produce large numbers of samples, far more than can 
+realistically be stored by any survey, so a subsample is commonly stored.  A 
+small number of samples from a broad \pz may not be representative of the 
+overall shape, but it can be appropriate for \pz s with narrow features.  
+Though it is possible to construct a catalog where each galaxy has a different 
+number $N_{f}$ of stored samples, optimizing the choice of $N_{f}$ given the 
+shape of the \pz\ in its native format is nontrivial.  As this has not been 
+done in the literature, we leave its investigation to future work.
 
 \subsubsection{Evaluation on a Regular Grid}
 \label{sec:grid}
 
-Some \pz  codes produce an evaluation of a continuous function on a regular 
-grid as their native output format.  \COMMENT{Apparently BPZ does this because 
-that's what Melissa and Sam gave me, but I don't have anything to cite saying 
-this.}
+Another storage option is evaluations of a continuous functional form of a \pz\ 
+at $N_{f}$ redshifts $z_{1}, z_{2}, \dots, z_{N_{f}-1}, z_{N_{f}}$.  Thus far, 
+only a regular grid of redshifts (i.e. $z_{i+1}=z_{i}+\Delta$ for a constant 
+$\Delta$) shared among the entire catalog have been used in the literature, so 
+we do not consider irregular grids or grids that are not homogeneous over the 
+catalog.   In some cases, this is the native output format of a \pz\ code.  
+\COMMENT{Apparently BPZ does this because that's what Melissa and Sam gave me, 
+but I don't have anything to cite saying this.}
+
+The gridded parametrization is in some ways similar to the histogram format of 
+\ref{sec:bins}, suffering from the same risks of losing small-scale features, 
+wasting a substantial fraction of the $N_{f}$ allocated parameters, and 
+choosing the grid endpoints.  Unlike the piecewise constant parametrization, 
+the grid evaluations are not necessarily normalized, which can be a challenge 
+for null tests and science use cases.  Additionally, it is not in general easy 
+to convert to this format from the native format of a \pz\ code, as it requires 
+a continuous function for the \pz.
 
 \subsubsection{Mixture Model}
 \label{sec:mm}
@@ -170,7 +201,7 @@ Though mixtures of Gaussian distributions have been used more often, other
 functions have been investigated as well \citep{carrasco_kind_sparse_2014}.
 
 In this work, we consider only the common Gaussian mixture model, though the 
-\qp framework can accommodate mixtures of all probability distribution 
+\qp\ framework can accommodate mixtures of all probability distribution 
 functions that have been implemented as \texttt{scipy.stats.rv\_continous} 
 objects.
 
