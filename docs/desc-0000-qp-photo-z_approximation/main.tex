@@ -90,22 +90,39 @@ demonstrated for LSST mock data.
 
 
 
-\qp\ has two main functionalities: converting between parametrizations of \pz s 
-and computing metrics of parametrizations of \pz s relative to perfectly 
-accurate representations thereof.
+We have developed the \qp\ Python library to facilitate manipulation of \pz s.  
+A \texttt{qp.PDF} object is defined by its parametrizations.  By way of 
+interpolation, \qp\ can convert a representation of a \pz\ under one 
+parametrization to a representation of that \pz\ under a different 
+parametrization.  The supported parametrizations are described in Sec. 
+\ref{sec:approx}.  \qp\ also includes a few built-in metrics of the accuracy of 
+a representation of a \pz\ if its value under a given parametrization is 
+designated as "true."  The included metrics are described in Sec. 
+\ref{sec:metrics}.
 
 \subsection{Approximation Methods}
 \label{sec:approx}
 
 
-\qp\ is capable of converting a one-dimensional probability distribution 
-between four parametrizations that have been used in the literature as well as 
-one that has not: step functions, samples, grid evaluations, a mixture model, 
-and quantiles.  These parametrizations will be described below in terms of the 
-number $N_{f}$ of parameters $i$, which are presumed to be floating point 
-numbers.  We will use "the native output format" of \pz\ codes to mean the 
-natural product of the algorithm by which \pz s are derived from photometry by 
-a given method.  For each, we address the following questions:
+First, we establish a vocabulary for the definitions of approximation methods.  
+Each \textit{parametrization} of a \pz\ is defined in terms of the 
+\textit{format} $\mathcal{F}$, \textit{metaparameters} comprising $\vec{C}$, 
+and \textit{parameters} comprising $\vec{c}$.  Each parametrization in turn 
+corresponds to a \textit{representation}
+\begin{align}
+  \hat{p}_{\mathcal{F}, \vec{C}}(z) &\equiv \mathcal{F}(z;\vec{C}, \vec{c})
+\end{align}
+of the \pz, denoted as $\hat{p}(z)$ for brevity.
+
+\qp\ is capable of converting a \pz\ between the following five formats: step 
+functions, samples, grid evaluations, mixture models, and quantiles.  These 
+formats are described below in terms of the number $N_{f}$ of stored parameters 
+$c_{i}$ per \pz, which are presumed to be floating point numbers.  The 
+metaparameters are set of $N_{M}$ numbers $C_{m}$ necessary to convert the 
+stored \pz\ parameters $\vec{c}$ into a probability distribution function over 
+redshift.  Because the metaparameters for a catalog of \pz s released by a 
+survey will only need to be stored once, it does not matter how large $N_{M}$ 
+is.  For each format, we address the following questions:
 
 \begin{itemize}
   \item When/where has this format appeared in the literature as a published 
@@ -119,25 +136,28 @@ and per catalog (the metaparameters)?
 \subsubsection{Regular Binning}
 \label{sec:bins}
 
-By far the most popular parametrization of \pz s is that of a piecewise 
-constant step function, also called a histogram binning.  It is the only format 
-that has been used for public release of \pz\ catalogs 
-\citep{tanaka_photometric_2017, sheldon_photometric_2012}; it is unclear 
-whether this is a consequence or a cause of the fact that it is the most common 
-format for using \pz s in cosmological inference, as tomographic binning is a 
-universal step between the \pz\ catalog and calculation of any two-point 
-correlation function.
+By far the most popular format for \pz s is that of a piecewise constant step 
+function, also called a histogram binning.  It is the only format that has been 
+used for public release of \pz\ catalogs \citep{tanaka_photometric_2017, 
+sheldon_photometric_2012}; it is unclear whether this is a consequence or a 
+cause of the fact that it is the most common format for using \pz s in 
+cosmological inference, as tomographic binning is a universal step between the 
+\pz\ catalog and calculation of any two-point correlation function.
 
-The binned parametrization is defined by an ordered list of redshifts $(z_{1}, 
-z_{2}, \dots, z_{N_{f}}, z_{N_{f}+1})$ with $z_{1} < z_{2} < \dots < z_{N_{f}} 
-< z_{N_{f}+1}$ serving as endpoints shared by all galaxies in the catalog, each 
-of which is associated with a list of values $\vec{p} = (p_{1}, p_{2}, \dots, 
-p_{N_{f}-1}, p_{N_{f}})$ that are the integrated probabilities over the bin in 
-question.  If the binning is "regular," then $z_{i+1}=z_{i}+\Delta$ for some 
-constant scalar $\Delta$.  As this is the only type of binning that has been 
-used in the literature, it is the only one we consider.  Note that the catalog 
-entries integrate to unity but in general will not sum to unity, i.e. $\int 
-p_{i} dz = 1$ and $\sum_{i}p_{i}\neq1$.
+The metaparameters of the binned parametrization are the ordered list of 
+$N_{M}=N_{f}+1$ redshifts $(z_{1}, z_{2}, \dots, z_{N_{M}-1}, z_{N_{M}})$ with 
+$z_{1} < z_{2} < \dots < z_{N_{M}-1} < z_{N_{M}}$ and 
+$z_{m+1}=z_{m}+\Delta_{m}$ serving as endpoints shared by all galaxies in the 
+catalog, each adjacent pair of which is associated with a parameter 
+$c_{i}=\int_{z_{i}}^{z_{i+1}}\ p(z)\ dz$.  If the binning is "regular," then 
+$z_{i+1}=z_{i}+\Delta$ for some constant scalar $\Delta\equiv$.  As this is the 
+only type of binning that has been used in the literature, it is the only one 
+we consider.
+
+The standard assumption that $p(z)=0$ when $z<z_{1}$ or $z>z_{N_{M}}$ implies 
+that the $c_{i}$ are normalized according to $\Delta \sum_{i} c_{i} = 1$.  Note 
+that this is not equivalent to the erroneous normalization condition $\sum_{i} 
+c_{i} = 1$, that commonly appears in the literature.
 
 All known native \pz\ formats are easy to convert to the histogram 
 representation.  However, the corrolary to this statement is that it is an 
@@ -151,8 +171,10 @@ the \pz\ in question.
 The binned parametrization may also be considered wasteful in terms of data 
 storage.  A \pz\ with a compact probability distribution, with much of the 
 probability contained within a region far narrower than the redshift range 
-$z_{N_{f}+1} - z_{1}$, may have most of its catalog entries (the elements of 
-$\vec{p}$) being trivial.
+$z_{N_{M}} - z_{1}$, may have many of its catalog entries $c_{i}$ being 
+identically zero.  The storage footprint of this data is wasted in that it is 
+redundant, with each $c_{i}$ requiring the same space even though 
+$c_{i}=c_{i'}$ for many pairs $(i, i')$.
 
 Finally, the binned parametrization requires the researcher to choose the 
 minimum and maximum possible redshifts of the galaxy sample.  These are 
@@ -283,39 +305,46 @@ quantile parametrization is a new option that merits careful consideration.
 \label{sec:metrics}
 
 
-We use several metrics to quantify how well an approximation of a \pz\ 
-extracted from a stored format represents the original \pz, characterized by 
-many more parameters than are available for storage, before it was compressed.  
-Given the stored parameters, we perform an interpolation to evaluations on a 
-fine grid to calculate metrics against the original format on that same grid.
-
-\COMMENT{\citet{carrasco_kind_sparse_2014} uses histograms and summary 
-statistics of the RMSE distribution.  Should we also do that or is it 
-sufficient to interpret the metrics on $\hat{n}(z)$ in terms of percent error?}
+We use two metrics to quantify how well an approximation of a \pz\ extracted 
+from a stored format represents the original \pz, characterized by many more 
+parameters than are available for storage, before it was compressed.  Given the 
+stored parameters, we perform an interpolation to evaluations of the 
+approximated \pz\ $\hat{p}(z)$ on a fine grid $(z_{1}, z_{2}, \dots, 
+z_{N_{ff}-1}, z_{N_{ff}})$ to calculate metrics against the original format 
+$p_{0}(z)$.  The distributions of metric values for each parametrization are 
+compared in Sec. \ref{sec:individual}.  The metrics are also calculated for a 
+science application of \pz s in Sec. \ref{sec:stacked}.
 
 \subsubsection{RMSE}
 \label{sec:rms}
 
 The root mean square error (RMSE) is a familiar measure of the difference 
-between two functions $P$ and $P'$,
+between two functions $p(z)$ and $\hat{p}(z)$,
 \begin{align}
   \label{eq:rmse}
-  RMSE &= \frac{1}{N'}\ \sum_{i'}(p_{i'} - p'_{i'})^{2}.
+  RMSE &= \frac{1}{N_{ff}}\ \sum_{i=1}^{N_{ff}} (p(z_{i}) - \hat{p}(z_{i}))^{2}.
 \end{align}
+The RMSE is symmetric in that it is simply about the difference between the 
+functions, not some distance from one to the other.  The RMSE is also not 
+specific to probability distributions.  The RMSE is always positive, and a 
+smaller value indicates better agreement between the approximation and the 
+truth.
 
 \subsubsection{KLD}
 \label{sec:kld}
 
-The Kullback-Leibler divergence quantifies the deviation of one distribution 
-from another, which in our case is the distance to a true distribution $P$ from 
-an approximation thereof $P'$, as in
+The Kullback-Leibler divergence (KLD)
 \begin{align}
   \label{eq:kld}
-  D(P' | P) &= \int_{-\infty}^{\infty}\ \log\left[\frac{P(z)}{P'(z)}\right]\ 
-P(z)\ dz.
+  D(p_{0}(z) || \hat{p}(z)) &= \int_{-\infty}^{\infty}\ p_{0}(z)\ 
+\log\left[\frac{p_{0}(z)}{\hat{p}(z)}\right]\ dz
 \end{align}
-
-
+quantifies the loss of information of an approximation of a probability 
+distribution from the true probability distribution.  Note that the KLD is not 
+symmetric and requires not only that both functions be true probability 
+distributions but also that there must be some notion of a true reference 
+distribution.  The KLD is always positive, and a smaller value indicates better 
+agreement between the approximation and the truth.
 
 
 \section{Photo-z Test Data}
@@ -336,45 +365,58 @@ al. 2017 (in prep.), \citet{tanaka_photometric_2017}.)
 
 As BPZ is a widely used and well established method, we assume that the \pz s 
 produced by it are of realistic complexity, meaning they take shapes we expect 
-to see in accurate \pz s from datasets with similar photometric properties.
+to see in accurate \pz s from real datasets with similar photometric 
+properties.  The mock datasets considered here have already been transformed 
+into a gridded parametrization, as we did not run the \pz\ code ourselves to 
+get the raw output.  To create a realistically complex testbed catalog, we fit 
+these high-resolution, gridded \pz s with a Gaussian mixture model so that our 
+catalog has a notion of "true" underlying \pz s.  \COMMENT{At this point, the 
+only reason to do this is the suboptimal implementation of 
+\texttt{qp.PDF.truth}.  It would not be impossible to eliminate this last step.}
 
-The datasets considered here have already been transformed into a gridded 
-parametrization, as we did not run the \pz\ code ourselves to get the raw 
-output.  To create a realistically complex testbed catalog, we fit these 
-high-resolution, gridded \pz s with a Gaussian mixture model so that our 
-catalog has a notion of "true" underlying \pz s.
-
-\subsection{LSST+Euclid mocks}
-\label{sec:mg}
-
-\COMMENT{Should we invite Melissa to write this section?}
-
-The \pz s were provided in the form of $N_{f}=351$ floating point numbers 
-represing the probability on a regular grid of redshifts $0.01 < z < 3.51$.  We 
-produced true underlying PDFs by fitting a two-component Gaussian mixture model 
-to each \pz.
+\COMMENT{\citet{carrasco_kind_sparse_2014} uses $N_{g}=10^{6}$ galaxies.  How 
+many should we use for the paper?}
 
 \subsection{LSST mocks}
 \label{sec:ss}
 
 \COMMENT{Should we invite Sam to write this section?}
 
-The \pz s were provided in the form of $N_{f}=211$ floating point numbers 
-represing the probability on a regular grid of redshifts $0.005 < z < 2.11$.  
-We produced true underlying PDFs by fitting a five-component Gaussian mixture 
-model to each \pz.
+LSST will provide six-band optical photometry to a depth of 27.5 magnitudes.  
+\COMMENT{Is this consistent with Buzzard?}  The Buzzard simulations The \pz s 
+were provided in the form of $N_{ff}=211$ floating point numbers represing the 
+probability on a regular grid of redshifts $0.005 < z < 2.11$.  Due to the 
+small number of photometric filters, LSST-only \pz s are expected to be 
+multimodal; some examples are shown in Fig. \ref{fig:ss}.  We produced true 
+underlying PDFs by fitting a five-component Gaussian mixture model to each \pz.
 
+\begin{figure}
+  \caption{[single-panel plot with a few examples of what the LSST-only \pz s 
+look like]
+  \label{fig:ss}}
+\end{figure}
 
+\subsection{LSST+Euclid mocks}
+\label{sec:mg}
 
+\COMMENT{Should we invite Melissa to write this section?}
 
+While LSST will provide six-band optical photometry to a depth of 27.5 
+magnitudes, Euclid will provide three-band near infrared photometry to a depth 
+of 24 magnitudes.  The \pz s were provided in the form of $N_{ff}=351$ floating 
+point numbers represing the probability on a regular grid of redshifts $0.01 < 
+z < 3.51$.  With even three additional photometric filters, \pz s derived from 
+LSST+Euclid photometry are expected to be narrow and in most cases unimodal.  A 
+few examples of those with nontrivial shapes are shown in Fig. \ref{fig:mg}, 
+but these represent a small fraction of the galaxies in the sample.  We 
+produced true underlying PDFs by fitting a two-component Gaussian mixture model 
+to each \pz.
 
-
-
-
-
-
-
-
+\begin{figure}
+  \caption{[single-panel plot with a few examples of what the LSST+Euclid \pz s 
+look like]
+  \label{fig:mg}}
+\end{figure}
 
 
 \section{Science Metrics}
@@ -383,19 +425,20 @@ model to each \pz.
 Though the use of \pz s could potentially extend to all areas of astronomy in 
 which redshifts are used, \pz s have thus far been used almost exclusively to 
 estimate the redshift distribution function $n(z)$ necessary for calculating 
-correlation functions used by many cosmological probes.
-
-
+the correlation functions used by many cosmological probes.
 The most common way to estimate the redshift distribution function is to sum 
 the \pz s according to
 \begin{align}
   \label{eq:nz}
-  \hat{n}(z) &= \frac{1}{N_{g}}\ \sum_{j=1}^{N_{g}}\ p_{j}(z).
+  \hat{n}(z) &\equiv \frac{1}{N_{g}}\ \sum_{j=1}^{N_{g}}\ \hat{p}_{j}(z),
 \end{align}
-Though we do not recommend this approach to estimating the redshift 
-distribution (see Malz and Hogg, et al. (in prep.) for a mathematically 
-motivated alternative), we also calculate the metrics of Sec. \ref{sec:metrics} 
-on this "stacked estimator" of the redshift distribution function.
+where the estimator is normalized so that it, too, is a probability 
+distribution.  Though we do not recommend this approach to estimating the 
+redshift distribution (see Malz and Hogg, et al. (in prep.) for a 
+mathematically consistent alternative), we also calculate the metrics of Sec. 
+\ref{sec:metrics} on this "stacked estimator" of the redshift distribution 
+function under the assumption that inaccuracy and imprecision of a \pz\ 
+parametrization in th
 
 
 
@@ -406,12 +449,10 @@ on this "stacked estimator" of the redshift distribution function.
 \label{sec:results}
 
 
-\COMMENT{\citet{carrasco_kind_sparse_2014} uses $N_{g}=10^{6}$ galaxies.  How 
-many should we use for the paper?}
-
 In this study, we perform tests comparing the parametrizations of Sec. 
-\ref{sec:approx} as a function of the number of parameters per galaxy.  We use 
-an ensemble of $N_{g}=?$ galaxies
+\ref{sec:approx} as a function of the number of parameters per galaxy.  The 
+tests are conducted using the functionality of the \texttt{qp.Ensemble} class 
+that is a wrapper for collections of \texttt{qp.PDF} objects.
 
 \subsection{Individual \pz s}
 \label{sec:individual}
