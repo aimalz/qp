@@ -66,10 +66,12 @@ they are commonly written simply as $p(z)$.
 Given the tremendous size of the surveys in question, storage of these 
 probability distributions involves making difficult decisions.  Each survey 
 seeks to create a catalog of \pz s balancing accuracy against storage 
-footprint.  These matters were first addressed in 
-\citet{carrasco_kind_sparse_2014} in the context of a single galaxy survey, a 
-limited set of storage formats, and metrics restricted to that survey's 
-intended \pz\ use case.  The number of stored parameters and the 
+footprint.  For example, the \pz\ catalog that LSST will release is limited to 
+200 floating point numbers per galaxy, with plans to store \pz s derived by 
+multiple methods.  \COMMENT{Cite the whitepaper.}  These matters were first 
+addressed in \citet{carrasco_kind_sparse_2014} in the context of a single 
+galaxy survey, a limited set of storage formats, and metrics restricted to that 
+survey's intended \pz\ use case.  The number of stored parameters and the 
 parametrization optimizing this choice, however, depend on the science 
 requirements of the survey and the characteristics of the data.  This paper 
 answers the question of \textit{how} these choices should be made in general, 
@@ -337,6 +339,9 @@ that merits careful consideration.
 \subsection{Comparison Metrics}
 \label{sec:metrics}
 
+\COMMENT{I will remove RMSE soon, as it is not as appropriate nor much more 
+interpretable than KLD.}
+
 We use two metrics to quantify how well an approximation of a \pz\ extracted 
 from a stored format represents the original \pz, characterized by many more 
 parameters than are available for storage, before it was compressed.  In 
@@ -402,17 +407,31 @@ The Kullback-Leibler divergence (KLD)
 \begin{align}
   \label{eq:kld}
   D(p_{0}(z) || \hat{p}(z)) &= \int_{-\infty}^{\infty}\ p_{0}(z)\ 
-\log\left[\frac{p_{0}(z)}{\hat{p}(z)}\right]\ dz
+\log\left[\frac{p_{0}(z)}{\hat{p}(z)}\right]\ dz\\
+  &\approx \sum_{z_{1}}^{z_{N_{ff}}}\ p_{0}(z)\ 
+\log\left[\frac{p_{0}(z)}{\hat{p}(z)}\right]\ \cdot\ \Delta
 \end{align}
 quantifies the loss of information of an approximation of a probability 
-distribution from the true probability distribution.  Note that the KLD is not 
-symmetric and requires not only that both functions be true probability 
-distributions but also that there must be some notion of a true reference 
-distribution.  The former condition is particularly important for The KLD is 
-always positive, and a smaller value indicates better agreement between the 
-approximation and the truth.
+distribution from the true probability distribution.  The KLD is the most 
+natural metric for comparing an approximation of a PDF to a true PDF and so is 
+ideal for this application.
 
-Regarding the interpretation of the KLD,
+Note that the KLD is not symmetric and requires not only that both functions be 
+true probability distributions but also that there must be some notion of a 
+true reference distribution.  The former condition is not always satisfied for 
+the binned, gridded, and mixture model formats produced by \pz\ codes; while 
+\qp\ checks these conditions before attempting to calculate any metric, 
+enforcing them on an approximate \pz is not always well-defined.
+
+Though the KLD is hardly unheard of in astronomy, it is far from established.  
+It is obvious that the KLD is always positive, and a smaller value indicates 
+better agreement between the approximation and the truth.  The following 
+discussion, however, is intended to deepen the reader's intuition for this 
+metric, as it is central to the proposed procedure for choosing the best 
+storage parameters for \pz\ catalogs.
+
+\COMMENT{I will soon add the discussion of "precision" and "tension" for single 
+Gaussians as outlined in the KLD Jupyter notebook in the documentation.}
 
 
 \section{Photo-z Test Data}
@@ -453,15 +472,15 @@ designate as $p_{0}(z)$.
 \subsection{LSST mocks}
 \label{sec:ss}
 
-\COMMENT{Should we invite Sam to write this section?}
+\COMMENT{Invite Sam to add to this section.}
 
-LSST will provide six-band optical photometry to a depth of 27.5 magnitudes.  
-\COMMENT{Is this consistent with Buzzard?}  The Buzzard simulations The \pz s 
-were provided in the form of $N_{ff}=211$ floating point numbers represing the 
-probability on a regular grid of redshifts $0.005 < z < 2.11$.  Due to the 
-small number of photometric filters, LSST-only \pz s are expected to be 
-multimodal; some examples are shown in Fig. \ref{fig:ss}.  We produced true 
-underlying PDFs by fitting a five-component Gaussian mixture model to each \pz.
+LSST will provide six-band optical photometry to a depth of 27.5 
+magnitudes\dots  The Buzzard simulations The \pz s were provided in the form of 
+$N_{ff}=211$ floating point numbers represing the probability on a regular grid 
+of redshifts $0.005 < z < 2.11$.  Due to the small number of photometric 
+filters, LSST-only \pz s are expected to be multimodal; some examples are shown 
+in Fig. \ref{fig:ss}.  We produced true underlying PDFs by fitting a 
+five-component Gaussian mixture model to each \pz.
 
 \begin{figure}
   \caption{[single-panel plot with a few examples of what the LSST-only \pz s 
@@ -472,18 +491,18 @@ look like]
 \subsection{LSST+Euclid mocks}
 \label{sec:mg}
 
-\COMMENT{Should we invite Melissa to write this section?}
+\COMMENT{Invite Melissa to add to this section.}
 
 While LSST will provide six-band optical photometry to a depth of 27.5 
 magnitudes, Euclid will provide three-band near infrared photometry to a depth 
-of 24 magnitudes.  The \pz s were provided in the form of $N_{ff}=351$ floating 
-point numbers represing the probability on a regular grid of redshifts $0.01 < 
-z < 3.51$.  With even three additional photometric filters, \pz s derived from 
-LSST+Euclid photometry are expected to be narrow and in most cases unimodal.  A 
-few examples of those with nontrivial shapes are shown in Fig. \ref{fig:mg}, 
-but these represent a small fraction of the galaxies in the sample.  We 
-produced true underlying PDFs by fitting a two-component Gaussian mixture model 
-to each \pz.
+of 24 magnitudes\dots  The \pz s were provided in the form of $N_{ff}=351$ 
+floating point numbers represing the probability on a regular grid of redshifts 
+$0.01 < z < 3.51$.  With even three additional photometric filters, \pz s 
+derived from LSST+Euclid photometry are expected to be narrow and in most cases 
+unimodal.  A few examples of those with nontrivial shapes are shown in Fig. 
+\ref{fig:mg}, but these represent a small fraction of the galaxies in the 
+sample.  We produced true underlying PDFs by fitting a two-component Gaussian 
+mixture model to each \pz.
 
 \begin{figure}
   \caption{[single-panel plot with a few examples of what the LSST+Euclid \pz s 
@@ -505,42 +524,60 @@ that is a wrapper for collections of \texttt{qp.PDF} objects.
 \label{sec:individual}
 
 Parametrizations are compared on the basis of the distributions of the metrics 
-of Sec. \ref{sec:metrics} calculated over all galaxies in the ensemble.  
-\COMMENT{Review relative performance and absolute differences of metric values.}
+of Sec. \ref{sec:metrics} calculated over all galaxies in the ensemble.  An 
+example of the distribution of the KLD for $N_{f}=10$ is shown in Fig. 
+\ref{fig:individual}.
 
 \begin{figure}
-  \caption{[histograms of each metric for different numbers of parameters, one 
-panel per combination of metric (horizontal) and $N_{f}$ (vertical)]
+  \caption{[one panel per dataset, histograms of one metric (log scale) for one 
+number of parameters $N_{f}$, one color per format]
+  \label{fig:individual}}
+\end{figure}
+
+As viewing the histograms of metric values is not especially informative, we 
+compare the moments of the distributions of metric values for the individual 
+\pz s under each parametrization.
+
+\begin{figure}
+  \caption{[$N_{f}$ (horizontal) vs. first few moment values each with separate 
+vertical scale(?), one color per format, one linestyle per moment (might be too 
+confusing with many moments, will need to see which are most informative)]
   \label{fig:individual-ss}}
 \end{figure}
 
 \begin{figure}
-  \caption{[histograms of each metric for different numbers of parameters, one 
-panel per combination of metric (horizontal) and $N_{f}$ (vertical)]
+  \caption{[$N_{f}$ (horizontal) vs. first few moment values each with separate 
+vertical scale(?), one color per format, one linestyle per moment (might be too 
+confusing with many moments, will need to see which are most informative)]
   \label{fig:individual-mg}}
 \end{figure}
+
+\COMMENT{How does moment behavior differ between datsets?}
 
 \subsection{Stacked $\hat{n}(z)$ estimator}
 \label{sec:stacked}
 
 Parametrizations are also compared by the accuracy of their stacked redshift 
 distribution estimator $\hat{n}(z)$ relative to that of the \pz s in their 
-original format.  \COMMENT{Review relative performance and absolute differences 
-of metric values.}
+original format.
 
 \begin{figure}
-  \caption{[number of stored floats $N_{f}$ vs. metric value, one curve per 
-approximation method, one panel per combination of metric (horizontal) and 
-$N_{f}$ (vertical)]
+  \caption{[$N_{f}$ (horizontal) vs. metric value (vertical), one color per 
+format, curves from many instantiations of the subsample of galaxies (or error 
+bars derived from instantiations)]
   \label{fig:stacked-ss}}
 \end{figure}
 
 \begin{figure}
-  \caption{[number of stored floats $N_{f}$ vs. metric value, one curve per 
-approximation method, one panel per combination of metric (horizontal) and 
-$N_{f}$ (vertical)]
+  \caption{[$N_{f}$ (horizontal) vs. metric value (vertical), one color per 
+format, curves from many instantiations of the subsample of galaxies (or error 
+bars derived from instantiations)]
   \label{fig:stacked-mg}}
 \end{figure}
+
+\COMMENT{Review relative performance and absolute differences of metric values. 
+ Note $N_{f}$ at which asymptotic behavior is achieved for each format and rate 
+of convergence to asymptote.}
 
 Further recommendations can be made if the requirements on the science products 
 derived from the \pz\ catalog are known.  If the information loss tolerance on 
@@ -562,36 +599,46 @@ cosmological parameter constraints, which has not yet been developed.
 \section{Conclusions \& Future Directions}
 \label{sec:conclusions}
 
-We have presented a method for determining the most appropriate compression 
-formats and number of stored parameters for large catalogs of \pz s produced by 
-surveys with limited storage capacity.   In the case of well-behaved \pz s, we 
-observe [RESULTS].  In the case of \pz s from lower quality data, we observe 
-[RESULTS].
 
-Given the constraint that LSST will be able to store 200 floating point numbers 
-to quantify the redshift of each galaxy and intends to include several \pz\ 
-codes \COMMENT{Find the whitepaper to cite this, possibly put it in Sec 
-\ref{sec:intro}.}, we can safely say that LSST can store the output of more 
-than one \pz\ code without any significant risk of loss of information.
+This work addresses how one may go about choosing a storage format and 
+resolution for a catalog of \pz s for a survey of known data quality to balance 
+the accuracy of the stored \pz s and the science metrics derived from them 
+against the available storage resources.  We demonstrate the recommended method 
+on two realistic mock datasets representative of upcoming \pz\ catalogs and 
+draw the following conclusions:
+\begin{itemize}
+  \item \COMMENT{Insert observations of Sec. \ref{sec:results} here, 
+emphasizing \pz\ data quality differences.}
+  \item As indicated by the KLD, the quantile parametrization is a promising 
+option for minimizing loss of information in \pz\ storage.
+  \item Given the constraint that LSST will be able to store 200 floating point 
+numbers to quantify the redshift of each galaxy and intends to include several 
+\pz\ codes, we can safely say that LSST can store the output of more than one 
+\pz\ code without any significant risk of loss of information.
+\end{itemize}
 
+We also make publicly available the \qp\ Python package central to this 
+procedure and invite the community to contribute additional formats and metrics 
+to the project.  \qp\ is a tool that can be used to optimize the choice of 
+stored parametrization and number of stored parameters of a catalog of \pz s 
+based on the accuracy needs of the use cases of the catalog.  Further 
+applications of \qp\ functionality for manipulations of \pz s is demonstrated 
+in the LSST-DESC PZ DC1 paper (in prep.).
 
+We do not advocate for a one-size-fits-all solution to the problem and 
+emphasize that the optimal choice must depend on the requirements of the 
+science metric(s) and characteristics of the underlying \pz\ catalog.  
+Furthermore, this procedure does not address the computational resources that 
+may be necessary to perform the storage operation and to reconstruct \pz s into 
+the format necessary for science calculations.
 
-This work addresses the tradeoff between the accuracy of stored \pz s and the 
-footprint of the data needed to encode the \pz s.  It does not address the 
-computational resources necessary to perform the storage operation nor to 
-unpack the stored information into the form necessary for science computations. 
- There may be other issues with the loss of information when extracting 
-compressed \pz s for use in science, with impacts that may differ for each 
-science case.
+\dots
 
-Further applications of \qp\ functionality for manipulations of \pz s is 
-demonstrated in the LSST-DESC PZ DC1 paper (in prep.).
 
 \subsection*{Acknowledgments}
 
 
-We thank Melissa Graham and Sam Schmidt for providing the mock datasets.  This 
-work was incubated at the 2016 LSST-DESC Hack Week.
+This work was incubated at the 2016 LSST-DESC Hack Week.
 
 \input{acknowledgments}
 
