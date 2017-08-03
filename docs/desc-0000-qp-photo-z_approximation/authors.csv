@@ -29,5 +29,5 @@
 #
 # =============================================================================
 Lastname,Firstname,Authorname,AuthorType,Affiliation,Contribution,Email
-Malz,Alex,"Alex Malz",Contact,"New York University","Initiated project, led development work.","aimalz@nyu.edu"
+Malz,Alex,"Alex Malz",Contact,"Center for Cosmology and Particle Physics, New York University, 726 Broadway, New York, 10003","Initiated project, led development work.","aimalz@nyu.edu"
 Marshall,Phil,P.J.~Marshall,Contributor,"SLAC National Accelerator Laboratory, Menlo Park, CA 94025, USA","advised on statistics, and project design and management.",dr.phil.marshall@gmail.com
