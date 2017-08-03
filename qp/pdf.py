@@ -9,6 +9,7 @@ from sklearn import mixture
 
 import qp
 from qp.utils import infty as default_infty
+from qp.utils import epsilon as default_eps
 
 class PDF(object):
 
@@ -98,8 +99,8 @@ class PDF(object):
 
         Returns
         -------
-        val: float or ndarray
-            the value of the PDF (ot its approximation) at the requested location(s)
+        (loc, val): tuple, float or ndarray
+            the input locations and the value of the PDF (or its approximation) at the requested location(s)
         """
         if using is None:
             using = self.first
@@ -322,7 +323,7 @@ class PDF(object):
             stdevs = popt[2]
         else:
             if self.samples is None:
-                self.samples = self.sample(using=using)
+                self.samples = self.sample(using=using, vb=vb)
 
             estimator = skl.mixture.GaussianMixture(n_components=n_components)
             estimator.fit(self.samples.reshape(-1, 1))
@@ -396,7 +397,7 @@ class PDF(object):
             if using == 'quantiles':
                 # First find the quantiles if none exist:
                 if self.quantiles is None:
-                    self.quantiles = self.quantize()
+                    self.quantiles = self.quantize(vb=vb)
 
                 endpoints = np.append(np.array([-1.*infty]), self.quantiles[1])
                 endpoints = np.append(endpoints,np.array([infty]))
@@ -405,7 +406,7 @@ class PDF(object):
             if using == 'histogram':
                 # First find the histogram if none exists:
                 if self.histogram is None:
-                    self.histogram = self.histogramize()
+                    self.histogram = self.histogramize(vb=vb)
 
                 endpoints = self.histogram[0]
                 weights = self.histogram[1]
@@ -451,7 +452,9 @@ class PDF(object):
         """
         if using is None:
             using = self.first
-        if vb: print('Interpolating the `'+using+'` parametrization')
+
+        if vb:
+            print 'Creating a `'+self.scheme+'` interpolator for the '+using+' parametrization.'
 
         if using == 'truth' or using == 'mix_mod':
             print 'A functional form needs no interpolation.  Try converting to an approximate parametrization first.'
@@ -460,14 +463,14 @@ class PDF(object):
         if using == 'quantiles':
             # First find the quantiles if none exist:
             if self.quantiles is None:
-                self.quantiles = self.quantize()
+                self.quantiles = self.quantize(vb=vb)
 
             (x, y) = qp.utils.evaluate_quantiles(self.quantiles)
 
         if using == 'histogram':
             # First find the histogram if none exists:
             if self.histogram is None:
-                self.histogram = self.histogramize()
+                self.histogram = self.histogramize(vb=vb)
 
             (x, y) = qp.utils.evaluate_histogram(self.histogram)
 
@@ -480,15 +483,14 @@ class PDF(object):
         if using == 'samples':
             # First sample if not already done:
             if self.samples is None:
-                self.samples = self.sample()
+                self.samples = self.sample(vb=vb)
 
             (x, y) = qp.evaluate_samples(self.samples)
+            if vb: print('interpolator support between '+str(min(x))+' and '+str(max(x))+' with extrapolation of '+str(default_eps))
+            self.interpolator = spi.interp1d(x, y, kind=self.scheme, bounds_error=False, fill_value=default_eps)
+            return self.interpolator
 
-        if vb:
-            print 'Creating a `'+self.scheme+'` interpolator for the '+using+' parametrization.'
-
-        self.interpolator = spi.interp1d(x, y, kind=self.scheme,
-                                         fill_value="extrapolate")
+        self.interpolator = spi.interp1d(x, y, kind=self.scheme, bounds_error=False, fill_value="extrapolate")
 
         return self.interpolator
 
@@ -534,6 +536,7 @@ class PDF(object):
 
         # Now make the interpolation, using the current scheme:
         self.interpolator = self.interpolate(using=using, vb=vb)
+        if vb: print('interpolating between '+str(min(points))+' and '+str(max(points)))
         interpolated = self.interpolator(points)
         interpolated = qp.utils.normalize_gridded((points, interpolated), vb=False)
         # interpolated[interpolated<0.] = 0.
