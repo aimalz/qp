@@ -146,8 +146,9 @@ compression/reconstruction properties?
 
 \begin{figure}
   \includegraphics[width=0.9\columnwidth]{figures/qp_placeholder.png}
-  \caption{Placeholder! [single-panel plot with $\hat{p}(z)$ of one 
-\texttt{qp.PDF} object under all available formats with a set $N_{f}$]
+  \caption{Placeholder! [all available $\hat{p}(z)$ for one \texttt{qp.PDF} 
+object and given $N_{f}$; show multiple \texttt{qp.PDF} objects? multiple 
+$N_{f}$? realistically complex or simple Gaussian?]
   \label{fig:qp}}
 \end{figure}
 
@@ -232,6 +233,8 @@ done in the literature, we leave its investigation to future work.
 \subsubsection{Evaluation on a Regular Grid}
 \label{sec:grid}
 
+\COMMENT{Should I discuss this since it isn't one of the three I test?}
+
 Another storage option is evaluations of a continuous functional form of a \pz\ 
 at $N_{f}$ redshifts $(z_{1}, z_{2}, \dots, z_{N_{f}-1}, z_{N_{f}})$.  Thus 
 far, only a regular grid of redshifts (i.e. $z_{i+1}=z_{i}+\Delta$ for a 
@@ -255,6 +258,8 @@ values.  In this paper we use linear interpolation.  \COMMENT{Expand on this.}
 
 \subsubsection{Mixture Model}
 \label{sec:mm}
+
+\COMMENT{Should I discuss this since it isn't one of the three I test?}
 
 There is some history of using a mixture model parametrization for \pz s.  
 \COMMENT{I'm still seeking something to cite here -- I thought the native 
@@ -346,9 +351,6 @@ that merits careful consideration.
 \subsection{Comparison Metrics}
 \label{sec:metrics}
 
-\COMMENT{I will remove RMSE soon, as it is not as appropriate nor much more 
-interpretable than KLD.}
-
 We use two metrics to quantify how well an approximation of a \pz\ extracted 
 from a stored format represents the original \pz, characterized by many more 
 parameters than are available for storage, before it was compressed.  In 
@@ -395,6 +397,8 @@ redshift distribution function of a survey may be found in Sec.
 \subsubsection{RMSE}
 \label{sec:rms}
 
+\COMMENT{Remove this metric?}
+
 The root mean square error (RMSE) is a familiar measure of the difference 
 between two functions $p(z)$ and $\hat{p}(z)$,
 \begin{align}
@@ -437,8 +441,8 @@ discussion, however, is intended to deepen the reader's intuition for this
 metric, as it is central to the proposed procedure for choosing the best 
 storage parameters for \pz\ catalogs.
 
-\COMMENT{I will soon add the discussion of "precision" and "tension" for single 
-Gaussians as outlined in the KLD Jupyter notebook in the documentation.}
+\COMMENT{Add the discussion of "precision" and "tension" for single Gaussians 
+as outlined in the KLD Jupyter notebook in the documentation.}
 
 
 \section{Photo-z Test Data}
@@ -479,7 +483,7 @@ designate as $p_{0}(z)$.
 \begin{figure}
   \includegraphics[width=0.9\columnwidth]{figures/pz_placeholder.png}
   \caption{Placeholder! [plot with a few examples of what the \pz s look like, 
-one panel per dataset (vertical)]
+one panel per dataset (vertical); random sample? cherrypick weirdest? how many?]
   \label{fig:pzs}}
 \end{figure}
 
