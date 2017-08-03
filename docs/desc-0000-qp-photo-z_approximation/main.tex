@@ -469,6 +469,13 @@ is itself a high-resolution approximation, we fit each \pz\ in the catalog of
 densely evaluated gridded evaluations with a Gaussian mixture model, which we 
 designate as $p_{0}(z)$.
 
+\begin{figure}
+  \includegraphics[width=0.9\columnwidth]{figures/pz_placeholder.png}
+  \caption{Placeholder! [plot with a few examples of what the \pz s look like, 
+one panel per dataset (vertical)]
+  \label{fig:pzs}}
+\end{figure}
+
 \subsection{LSST mocks}
 \label{sec:ss}
 
@@ -479,14 +486,8 @@ magnitudes\dots  The Buzzard simulations The \pz s were provided in the form of
 $N_{ff}=211$ floating point numbers represing the probability on a regular grid 
 of redshifts $0.005 < z < 2.11$.  Due to the small number of photometric 
 filters, LSST-only \pz s are expected to be multimodal; some examples are shown 
-in Fig. \ref{fig:ss}.  We produced true underlying PDFs by fitting a 
-five-component Gaussian mixture model to each \pz.
-
-\begin{figure}
-  \caption{[single-panel plot with a few examples of what the LSST-only \pz s 
-look like]
-  \label{fig:ss}}
-\end{figure}
+in the lefthand panel of Fig. \ref{fig:pzs}.  We produced true underlying PDFs 
+by fitting a five-component Gaussian mixture model to each \pz.
 
 \subsection{LSST+Euclid mocks}
 \label{sec:mg}
@@ -503,12 +504,6 @@ unimodal.  A few examples of those with nontrivial shapes are shown in Fig.
 \ref{fig:mg}, but these represent a small fraction of the galaxies in the 
 sample.  We produced true underlying PDFs by fitting a two-component Gaussian 
 mixture model to each \pz.
-
-\begin{figure}
-  \caption{[single-panel plot with a few examples of what the LSST+Euclid \pz s 
-look like]
-  \label{fig:mg}}
-\end{figure}
 
 
 \section{Results \& Discussion}
@@ -529,8 +524,10 @@ example of the distribution of the KLD for $N_{f}=10$ is shown in Fig.
 \ref{fig:individual}.
 
 \begin{figure}
-  \caption{[one panel per dataset, histograms of one metric (log scale) for one 
-number of parameters $N_{f}$, one color per format]
+  \includegraphics[width=0.9\columnwidth]{figures/individual_placeholder.png}
+  \caption{Placeholder! [histogram of log-metric for one number of parameters 
+$N_{f}$, one color per format, one panel per dataset (vertical) per metric 
+(horizontal), panel title of (dataset, metric, $N_{f}$)]
   \label{fig:individual}}
 \end{figure}
 
@@ -539,17 +536,12 @@ compare the moments of the distributions of metric values for the individual
 \pz s under each parametrization.
 
 \begin{figure}
-  \caption{[$N_{f}$ (horizontal) vs. first few moment values each with separate 
-vertical scale(?), one color per format, one linestyle per moment (might be too 
-confusing with many moments, will need to see which are most informative)]
-  \label{fig:individual-ss}}
-\end{figure}
-
-\begin{figure}
-  \caption{[$N_{f}$ (horizontal) vs. first few moment values each with separate 
-vertical scale(?), one color per format, one linestyle per moment (might be too 
-confusing with many moments, will need to see which are most informative)]
-  \label{fig:individual-mg}}
+  \caption{\COMMENT{Make a placeholder!} [$N_{f}$ (horizontal) vs. first few 
+moment values each with separate vertical scale(?), one linestyle per moment 
+(might be too confusing with many moments, will need to see which are most 
+informative), one color per format, one panel per dataset (vertical) per metric 
+(horizontal), panel title of (dataset, metric)]
+  \label{fig:moments}}
 \end{figure}
 
 \COMMENT{How does moment behavior differ between datsets?}
@@ -562,35 +554,30 @@ distribution estimator $\hat{n}(z)$ relative to that of the \pz s in their
 original format.
 
 \begin{figure}
-  \caption{[$N_{f}$ (horizontal) vs. metric value (vertical), one color per 
-format, curves from many instantiations of the subsample of galaxies (or error 
-bars derived from instantiations)]
-  \label{fig:stacked-ss}}
-\end{figure}
-
-\begin{figure}
-  \caption{[$N_{f}$ (horizontal) vs. metric value (vertical), one color per 
-format, curves from many instantiations of the subsample of galaxies (or error 
-bars derived from instantiations)]
-  \label{fig:stacked-mg}}
+  \includegraphics[width=0.9\columnwidth]{figures/stacked_placeholder.png}
+  \caption{Placeholder! [$N_{f}$ (horizontal) vs. metric value (vertical), one 
+color per format, curves from many instantiations of the subsample of galaxies 
+(or error bars derived from those instantiations), one panel per dataset 
+(vertical) per metric (horizontal), panel title of (dataset, metric)]
+  \label{fig:stacked}}
 \end{figure}
 
 \COMMENT{Review relative performance and absolute differences of metric values. 
  Note $N_{f}$ at which asymptotic behavior is achieved for each format and rate 
-of convergence to asymptote.}
+of convergence to asymptote, across datasets.}
 
 Further recommendations can be made if the requirements on the science products 
 derived from the \pz\ catalog are known.  If the information loss tolerance on 
 $n(z)$ for a given survey mission is specified, it would correspond to a 
-horizontal line in Figs. \ref{fig:stacked-ss, fig:stacked-mg}; the optimal 
-format would be the one that drops below that line at the lowest value of 
-$N_{f}$, which would be the optimal number of parameters to store.  We 
-encourage the community to specify the requirements on estimators of science 
-products like $n(z)$ in terms of information theoretic quantities such as 
-entropy, as these are naturally relatable to \pz s.  We do not attempt to 
-convert traditional percent error-based requirements to such a framework 
-because it would require a fully probabilistic pipeline from \pz s to 
-cosmological parameter constraints, which has not yet been developed.
+horizontal line in Fig. \ref{fig:stacked}; the optimal format would be the one 
+that drops below that line at the lowest value of $N_{f}$, which would be the 
+optimal number of parameters to store.  We encourage the community to specify 
+the requirements on estimators of science products like $n(z)$ in terms of 
+information theoretic quantities such as entropy, as these are naturally 
+relatable to \pz s.  We do not attempt to convert traditional percent 
+error-based requirements to such a framework because it would require a fully 
+probabilistic pipeline from \pz s to cosmological parameter constraints, which 
+has not yet been developed.
 
 
 
