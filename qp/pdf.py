@@ -670,7 +670,7 @@ class PDF(object):
         Example::
             d = p.kld(limits=(-1., 1.), dx=1./100))
         """
-
+        print('This function is deprecated; use `qp.utils.calculate_kl_divergence`.')
         if self.truth is None:
             print('Truth not available for comparison.')
             return
@@ -701,7 +701,7 @@ class PDF(object):
         Example::
             d = p.rms(limits=(-1., 1.), dx=1./100))
         """
-
+        print('This function is deprecated; use `qp.utils.calculate_rmse`.')
         if self.truth is None:
             print('Truth not available for comparison.')
             return
