@@ -287,6 +287,7 @@ class PDF(object):
             number of components to consider
         using: string, optional
             which existing approximation to use, defaults to first approximation
+            actually, not used at all now, should fix that!
         vb: boolean
             Report progress on stdout?
 

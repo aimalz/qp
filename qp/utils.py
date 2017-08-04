@@ -197,12 +197,14 @@ def evaluate_samples(x):
     y = kde(sx)
     return ((sx, y))
 
-def calculate_moment(p, N, limits=(-10.0,10.0), dx=0.01, vb=True):
+def calculate_moment(p, N, using=None, limits=(-10.0,10.0), dx=0.01, vb=True):
     """
     Calculates moments of a distribution
 
     Parameters
     ----------
+    p: qp.PDF object
+        the PDF whose moment will be calculated
     N: int
         order of the moment to be calculated
     limits: tuple of floats
@@ -215,11 +217,13 @@ def calculate_moment(p, N, limits=(-10.0,10.0), dx=0.01, vb=True):
     M: float
         values of the moment
     """
+    if using is None:
+        using = p.first
     # Make a grid from the limits and resolution
     grid = np.linspace(limits[0], limits[1], int((limits[1]-limits[0])/dx))
     grid_to_N = grid ** N
     # Evaluate the functions on the grid
-    pe = p.evaluate(grid, vb=vb)
+    pe = p.evaluate(grid, using=using, vb=vb)[1]
     # pe = normalize_gridded(pe)[1]
     # calculate the moment
     M = dx * np.dot(grid_to_N, pe)
