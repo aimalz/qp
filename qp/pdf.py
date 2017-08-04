@@ -114,7 +114,7 @@ class PDF(object):
                 raise ValueError('true PDF is not set, use an approximation instead (the most recent one was '+self.last+')')
         elif using == 'mix_mod':
             if self.mix_mod is None:
-                self.mix_mod = self.mix_mod_fit()
+                self.mix_mod = self.mix_mod_fit(vb=vb)
             if vb: print 'Evaluating the fitted mixture model distribution.'
             val = self.mix_mod.pdf(loc)
             self.evaluated = (loc, val)

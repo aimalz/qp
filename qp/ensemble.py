@@ -7,6 +7,7 @@ import scipy.interpolate as spi
 import matplotlib.pyplot as plt
 
 import qp
+import qp.utils as u
 from qp.utils import infty as default_infty
 
 class Ensemble(object):
@@ -119,8 +120,9 @@ class Ensemble(object):
 
         Parameters
         ----------
-        N: int, optional
+        samps: int, optional
             number of samples to produce
+            fix this inconsistent syntax!
         infty: float, optional
             approximate value at which CDF=1.
         using: string, optional
@@ -240,7 +242,7 @@ class Ensemble(object):
 
         return self.mix_mod
 
-    def evaluate(self, loc, using=None, vb=True):
+    def evaluate(self, loc, using=None, vb=False):
         """
         Evaluates all PDFs
 
@@ -262,7 +264,7 @@ class Ensemble(object):
         def evaluate_helper(i):
             # with open(self.logfilename, 'wb') as logfile:
             #     logfile.write('evaluating pdf '+str(i)+'\n')
-            return self.pdfs[i].evaluate(loc=loc, using=using, vb=False)
+            return self.pdfs[i].evaluate(loc=loc, using=using, vb=vb)
         self.gridded = self.pool.map(evaluate_helper, self.pdf_range)
         self.gridded = np.swapaxes(np.array(self.gridded), 0, 1)
         self.gridded = (self.gridded[0][0], self.gridded[1])
@@ -336,8 +338,8 @@ class Ensemble(object):
             return
 
         def kld_helper(i):
-            P = P_func(pdfs[i])
-            Q = Q_func(pdfs[i])
+            P = P_func(self.pdfs[i])
+            Q = Q_func(self.pdfs[i])
             return u.calculate_kl_divergence(P, Q, limits=limits, dx=dx)
 
         klds = self.pool.map(kld_helper, self.pdf_range)
