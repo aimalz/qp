@@ -42,6 +42,8 @@ estimator of the overall redshift distribution function.
 
 \maketitlepost
 
+\COMMENT{Consider alternative title.}
+
 
 
 
@@ -481,6 +483,7 @@ densely evaluated gridded evaluations with a Gaussian mixture model, which we
 designate as $p_{0}(z)$.
 
 \begin{figure}
+  \includegraphics[width=0.9\columnwidth]{figures/pz_placeholder.png}\\
   \includegraphics[width=0.9\columnwidth]{figures/pz_placeholder.png}
   \caption{Placeholder! [plot with a few examples of what the \pz s look like, 
 one panel per dataset (vertical); random sample? cherrypick weirdest? how many?]
@@ -490,31 +493,64 @@ one panel per dataset (vertical); random sample? cherrypick weirdest? how many?]
 \subsection{LSST mocks}
 \label{sec:ss}
 
-\COMMENT{Invite Sam to add to this section.}
+In order to simulate the expected LSST galaxy sample, we use the 
+Buzzard-highres-v1.0 mock galaxy catalog (NOTE: how do we cite this?  Ask Joe 
+DeRose!), which adds galaxies with SEDs drawn from an empirical library of 
+\sim500,000 SEDs from the Sloan Digital Sky Survey  (SDSS) (NOTE: I need to 
+look up the spec-z sample reference, we should ask Joe DeRose to make sure we 
+have the right one!).  Given an SED, redshift, and absolute r-band magnitude 
+for each galaxy, we compute the expected apparent magnitudes and magnitude 
+errors in the six broadband LSST filters (ugrizy), assuming full 10-year depth 
+of the survey using the simple model of \citet{ivezic_lsst:_2008}.  The catalog 
+contains 111,171 galaxies to a depth of $i<26.9$, 1.5 magnitudes deeper than 
+the expected "LSST Gold sample'' of galaxies that will have S/N$\gtrsim$30 in 
+multiple bands.
 
-LSST will provide six-band optical photometry to a depth of 27.5 
-magnitudes\dots  The Buzzard simulations The \pz s were provided in the form of 
-$N_{ff}=211$ floating point numbers represing the probability on a regular grid 
-of redshifts $0.005 < z < 2.11$.  Due to the small number of photometric 
-filters, LSST-only \pz s are expected to be multimodal; some examples are shown 
-in the lefthand panel of Fig. \ref{fig:pzs}.  We produced true underlying PDFs 
-by fitting a five-component Gaussian mixture model to each \pz.
+To obtain redshift posteriors, we use the publicly available code 
+\texttt{BPZ}\footnote{available at \url{http://www.stsci.edu/~dcoe/BPZ}} 
+\citep[Bayesian Photometric-z,see][for details]{benitez_bayesian_2000}.  We 
+create a custom Bayesian prior using a subset of the Buzzard-highres-v1.0 
+catalog, and create a spanning template set via a simple k-means clustering 
+algorithm, selection 100 of the SDSS SEDs used in creating the Buzzard catalog. 
+ BPZ outputs the marginalized redshift posterior on a regular grid of test 
+redshifts, in this case we have 211 points spanning $0.005\leqz\leq2.105$.
 
-\subsection{LSST+Euclid mocks}
+Even with six filters spanning the optical, there are known degeneracies 
+(e.~g.~the Lyman/Balmer break degeneracy) that lead us to expect the presence 
+of multi-modal \pz's; some examples are shown in the left panel of 
+Fig.~\ref{fig:pzs}.  We produce "true'' underlying PDFs by fitting a 
+five-component Gaussian mixture model to each \pz output by BPZ.
+
+
+\subsection{Euclid mocks}
 \label{sec:mg}
 
-\COMMENT{Invite Melissa to add to this section.}
+We start with a 30000 object subset of the same simulated galaxy catalog used 
+for LSST photometric redshift experiments by Graham, et al. (in prep.), which 
+is based on the Millennium simulation \citep{springel_simulations_2005}, in 
+particular the LC DEEP Gonzalez2014a \COMMENT{Fix this reference.} catalog 
+based on the galaxy formation models of \cite{gonzalez-perez_how_2014}, and was 
+created using the lightcone construction techniques described by 
+\cite{merson_lightcone_2013}. We limit the sample to galaxies with a catalog 
+$i$-band magnitude of $i<25$ and true redshifts $z<3.5$. As in Graham et al. we 
+simulate observed apparent magnitudes from the true catalog magnitudes by 
+adding a normal random scatter with a standard deviation equal to the predicted 
+magnitude error for each galaxy (from Section 3.2.1. of 
+\citealt{ivezic_lsst:_2008}, using the software of 
+\citealt{connolly_end--end_2014}, assuming a mean airmass of 1.2 and a 10-year 
+accumulation of 56, 80, 184, 184, 160, and 160 visits in filters $ugrizy$). We 
+also ignore any magnitudes fainter than the predicted 10-year limiting 
+magnitudes in each filter, $u<26.1$, $g<27.4$, $r<27.5$, $z<26.1$, and 
+$y<24.9$, as a realistic simulation of non-detections. We estimate photometric 
+redshifts for this simulated catalog using the Bayesian Photometric Redshift 
+Estimator (BPZ; \citealt{benitez_bayesian_2000}), using the CFHTLS set of 
+spectra \citep{ilbert_accurate_2006} and all of the default parameter settings 
+for BPZ, except that we impose a maximum photometric redshift of 3.5 and allow 
+BPZ to use the $i$-band as a magnitude prior during the photo-$z$ fit. The 
+photo-z PDFs from BPZ are in the form of $N_{ff} = 351$ floating point numbers 
+represing the probability on a regular grid of redshifts $0.01 < z_{\rm phot} < 
+3.51$.
 
-While LSST will provide six-band optical photometry to a depth of 27.5 
-magnitudes, Euclid will provide three-band near infrared photometry to a depth 
-of 24 magnitudes\dots  The \pz s were provided in the form of $N_{ff}=351$ 
-floating point numbers represing the probability on a regular grid of redshifts 
-$0.01 < z < 3.51$.  With even three additional photometric filters, \pz s 
-derived from LSST+Euclid photometry are expected to be narrow and in most cases 
-unimodal.  A few examples of those with nontrivial shapes are shown in Fig. 
-\ref{fig:mg}, but these represent a small fraction of the galaxies in the 
-sample.  We produced true underlying PDFs by fitting a two-component Gaussian 
-mixture model to each \pz.
 
 
 \section{Results \& Discussion}
@@ -538,7 +574,7 @@ example of the distribution of the KLD for $N_{f}=10$ is shown in Fig.
   \includegraphics[width=0.9\columnwidth]{figures/individual_placeholder.png}
   \caption{Placeholder! [histogram of log-metric for one number of parameters 
 $N_{f}$, one color per format, one panel per dataset (vertical) per metric 
-(horizontal), panel title of (dataset, metric, $N_{f}$)]
+(horizontal), panel title of (dataset, metric, $N_{f}$), or single panel?]
   \label{fig:individual}}
 \end{figure}
 
@@ -565,6 +601,7 @@ distribution estimator $\hat{n}(z)$ relative to that of the \pz s in their
 original format.
 
 \begin{figure}
+  \includegraphics[width=0.9\columnwidth]{figures/stacked_placeholder.png}\\
   \includegraphics[width=0.9\columnwidth]{figures/stacked_placeholder.png}
   \caption{Placeholder! [$N_{f}$ (horizontal) vs. metric value (vertical), one 
 color per format, curves from many instantiations of the subsample of galaxies 
