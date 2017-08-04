@@ -53,6 +53,8 @@ class Ensemble(object):
         parameters corresponding to a large collection of PDFs.  The excessive
         quantities of commented code were building toward this ambitious goal
         but have been temporarily abandoned to meet a deadline.)
+        TO DO: change dx --> dz (or delta)
+        TO DO: standardize n/N
         """
         if procs is not None:
             self.n_procs = procs
@@ -122,7 +124,6 @@ class Ensemble(object):
         ----------
         samps: int, optional
             number of samples to produce
-            fix this inconsistent syntax!
         infty: float, optional
             approximate value at which CDF=1.
         using: string, optional
@@ -134,6 +135,10 @@ class Ensemble(object):
         -------
         samples: ndarray
             array of sampled values
+
+        Notes
+        -----
+        TODO: change syntax samps --> N
         """
         def sample_helper(i):
             # with open(self.logfilename, 'wb') as logfile:
@@ -242,7 +247,7 @@ class Ensemble(object):
 
         return self.mix_mod
 
-    def evaluate(self, loc, using=None, vb=False):
+    def evaluate(self, loc, using=None, vb=True):
         """
         Evaluates all PDFs
 
@@ -264,7 +269,7 @@ class Ensemble(object):
         def evaluate_helper(i):
             # with open(self.logfilename, 'wb') as logfile:
             #     logfile.write('evaluating pdf '+str(i)+'\n')
-            return self.pdfs[i].evaluate(loc=loc, using=using, vb=vb)
+            return self.pdfs[i].evaluate(loc=loc, using=using, vb=False)
         self.gridded = self.pool.map(evaluate_helper, self.pdf_range)
         self.gridded = np.swapaxes(np.array(self.gridded), 0, 1)
         self.gridded = (self.gridded[0][0], self.gridded[1])
@@ -392,7 +397,7 @@ class Ensemble(object):
         def rmse_helper(i):
             P = P_func(pdfs[i])
             Q = Q_func(pdfs[i])
-            return u.calculate_rmse(P, Q, limits=limits, dx=dx)
+            return utils.calculate_rmse(P, Q, limits=limits, dx=dx)
 
         rmses = self.pool.map(rmse_helper, self.pdf_range)
 

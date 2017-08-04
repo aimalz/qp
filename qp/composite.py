@@ -17,6 +17,10 @@ class composite(object):
             aggregation of dicts defining component functions and their coefficients
         vb: boolean
             report on progress to stdout?
+
+        Notes
+        -----
+        TO DO: change x --> z
         """
         self.components = components
         self.n_components = len(self.components)

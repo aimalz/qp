@@ -40,6 +40,12 @@ class PDF(object):
             name of interpolation scheme to use.
         vb: boolean
             report on progress to stdout?
+
+        Notes
+        -----
+        TO DO: enable truth to be any parametrization
+        TO DO: change dx --> dz (or delta)
+        TO DO: consider changing quantiles input to just be the z-values since interpolation gives the p(z) values anyway
         """
         self.truth = truth
         self.quantiles = quantiles
@@ -287,7 +293,6 @@ class PDF(object):
             number of components to consider
         using: string, optional
             which existing approximation to use, defaults to first approximation
-            actually, not used at all now, should fix that!
         vb: boolean
             Report progress on stdout?
 
@@ -299,29 +304,36 @@ class PDF(object):
         Notes
         -----
         Currently only supports mixture of Gaussians
+        TO DO: change syntax n_components --> N
         """
         comp_range = range(n_components)
+        if using == None:
+            using = self.first
 
-        if self.gridded is not None:
-            (x, y) = self.gridded
-            ival_weights = np.ones(n_components) / n_components
-            ival_means = min(x) + (max(x) - min(x)) * np.arange(n_components) / n_components
-            ival_stdevs = np.sqrt((max(x) - min(x)) * np.ones(n_components) / n_components)
-            ivals = np.array([ival_weights, ival_means, ival_stdevs]).T.flatten()
-            def gmm(x, *args):
-                y = 0.
-                args = np.array(args).reshape((n_components, 3))
-                for c in comp_range:
-                    # index = c * n_components
-                    y += args[c][0] *  sps.norm(loc = args[c][1], scale = args[c][2]).pdf(x)
-                return y
-            low_bounds = np.array([np.zeros(n_components), min(x) * np.ones(n_components), np.ones(n_components) * (max(x) - min(x)) / len(x)]).T.flatten()
-            high_bounds = np.array([np.ones(n_components), max(x) * np.ones(n_components), np.ones(n_components) * (max(x) - min(x))]).T.flatten()
-            popt, pcov = spo.curve_fit(gmm, self.gridded[0], self.gridded[1], ivals, bounds = (low_bounds, high_bounds))
-            popt = popt.reshape((n_components, 3)).T
-            weights = popt[0]
-            means = popt[1]
-            stdevs = popt[2]
+        if using == 'gridded':
+            if self.gridded is not None:
+                (x, y) = self.gridded
+                ival_weights = np.ones(n_components) / n_components
+                ival_means = min(x) + (max(x) - min(x)) * np.arange(n_components) / n_components
+                ival_stdevs = np.sqrt((max(x) - min(x)) * np.ones(n_components) / n_components)
+                ivals = np.array([ival_weights, ival_means, ival_stdevs]).T.flatten()
+                def gmm(x, *args):
+                    y = 0.
+                    args = np.array(args).reshape((n_components, 3))
+                    for c in comp_range:
+                        # index = c * n_components
+                        y += args[c][0] *  sps.norm(loc = args[c][1], scale = args[c][2]).pdf(x)
+                    return y
+                low_bounds = np.array([np.zeros(n_components), min(x) * np.ones(n_components), np.ones(n_components) * (max(x) - min(x)) / len(x)]).T.flatten()
+                high_bounds = np.array([np.ones(n_components), max(x) * np.ones(n_components), np.ones(n_components) * (max(x) - min(x))]).T.flatten()
+                popt, pcov = spo.curve_fit(gmm, self.gridded[0], self.gridded[1], ivals, bounds = (low_bounds, high_bounds))
+                popt = popt.reshape((n_components, 3)).T
+                weights = popt[0]
+                means = popt[1]
+                stdevs = popt[2]
+            else:
+                print('No gridded parametrization available.  Try using a different format.')
+                return
         else:
             if self.samples is None:
                 self.samples = self.sample(using=using, vb=vb)
@@ -450,6 +462,7 @@ class PDF(object):
         [`scipy.interpolate.interp1d`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interp1d.html)
         to carry out the interpolation, using the internal
         `self.scheme` attribute to choose the interpolation scheme.
+        TO DO: change histogram to evaluate as piecewise constant
         """
         if using is None:
             using = self.first
@@ -544,13 +557,15 @@ class PDF(object):
 
         return interpolated#(points, interpolated)
 
-    def plot(self, vb=True):
+    def plot(self, loc='plot.png', vb=True):
         """
         Plots the PDF, in various ways.
 
         Parameters
         ----------
-        vb: boolean
+        loc: string
+            filepath/name for saving the plot, optional
+        vb: boolean, optional
             report on progress to stdout?
 
         Notes
@@ -561,13 +576,21 @@ class PDF(object):
         """
         extrema = [0., 0.]
 
+        colors = {}
+        colors['truth'] = 'k'
+        colors['mix_mod'] = 'k'
+        colors['gridded'] = 'k'
+        colors['quantiles'] = 'b'
+        colors['histogram'] = 'r'
+        colors['samples'] = 'g'
+
         if self.truth is not None:
             min_x = self.truth.ppf(np.array([0.001]))
             max_x = self.truth.ppf(np.array([0.999]))
             x = np.linspace(min_x, max_x, 100)
             extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
             y = self.truth.pdf(x)
-            plt.plot(x, y, color='k', linestyle='-', lw=1.0, alpha=1.0, label='True PDF')
+            plt.plot(x, y, color=colors['truth'], linestyle='-', lw=1.0, alpha=1.0, label='True PDF')
             if vb:
                 print 'Plotted truth.'
 
@@ -577,7 +600,7 @@ class PDF(object):
             x = np.linspace(min_x, max_x, 100)
             extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
             y = self.mix_mod.pdf(x)
-            plt.plot(x, y, color='k', linestyle=':', lw=2.0, alpha=1.0, label='Mixture Model PDF')
+            plt.plot(x, y, color=colors['mix_mod'], linestyle=':', lw=2.0, alpha=1.0, label='Mixture Model PDF')
             if vb:
                 print 'Plotted mixture model.'
 
@@ -589,11 +612,11 @@ class PDF(object):
                        np.zeros(len(self.quantiles[1])),
                        self.evaluate(self.quantiles[1],
                                      using='quantiles', vb=False)[1],
-                       color='b', linestyle=':', lw=1.0, alpha=1.0,
+                       color=colors['quantiles'], linestyle=':', lw=1.0, alpha=1.0,
                        label='Quantiles')
             (grid, qinterpolated) = self.approximate(x, vb=vb,
                                                      using='quantiles')
-            plt.plot(grid, qinterpolated, color='b', lw=2.0, alpha=1.0,
+            plt.plot(grid, qinterpolated, color=colors['quantiles'], lw=2.0, alpha=1.0,
                      linestyle=(0,(5,10)),
                      label='Quantile Interpolated PDF')
             extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
@@ -605,11 +628,10 @@ class PDF(object):
             max_x = self.histogram[0][-1]
             x = np.linspace(min_x, max_x, 100)
             plt.hlines(self.histogram[1], self.histogram[0][:-1],
-                       self.histogram[0][1:], color='r', linestyle=':',
-                       lw=1.0, alpha=1., label='Histogram')
+                       self.histogram[0][1:], color=colors['histogram'], linestyle=':', lw=1.0, alpha=1., label='Histogram')
             (grid, hinterpolated) = self.approximate(x, vb=vb,
                                                      using='histogram')
-            plt.plot(grid, hinterpolated, color='r', lw=2.0, alpha=1.0,
+            plt.plot(grid, hinterpolated, color=colors['histogram'], lw=2.0, alpha=1.0,
                      linestyle=(5,(5,10)),
                      label='Histogram Interpolated PDF')
             extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
@@ -620,7 +642,7 @@ class PDF(object):
             min_x = min(self.gridded[0])
             max_x = max(self.gridded[0])
             (x, y) = self.gridded
-            plt.plot(x, y, color='k', lw=2.0, alpha=0.5,
+            plt.plot(x, y, color=colors['gridded'], lw=2.0, alpha=0.5,
                      linestyle='--', label='Gridded PDF')
             extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
             if vb:
@@ -631,21 +653,21 @@ class PDF(object):
             max_x = max(self.samples)
             x = np.linspace(min_x, max_x, 100)
             plt.plot(self.samples, np.zeros(np.shape(self.samples)),
-                     'g+', ms=20, label='Samples')
+                     colors['samples']+'+', ms=20, label='Samples')
             (grid, sinterpolated) = self.approximate(x, vb=vb,
                                                      using='samples')
-            plt.plot(grid, sinterpolated, color='g', lw=2.0, alpha=1.0,
-                     linestyle=(10,(5,10)),
-                     label='Samples Interpolated PDF')
+            plt.plot(grid, sinterpolated, color=colors['samples'], lw=2.0,
+                        alpha=1.0, linestyle=(10,(5,10)),
+                        label='Samples Interpolated PDF')
             extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
             if vb:
                 print('Plotted samples')
 
         plt.xlim(extrema[0], extrema[-1])
         plt.legend(fontsize='small')
-        plt.xlabel('x')
+        plt.xlabel('z')
         plt.ylabel('Probability density')
-        plt.savefig('plot.png')
+        plt.savefig(loc, dpi=250)
 
         return
 

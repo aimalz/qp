@@ -1,3 +1,9 @@
+"""
+Notes
+-----
+TO DO: change dx --> dz (or delta)
+"""
+
 import numpy as np
 import scipy as sp
 from scipy import stats as sps
@@ -144,6 +150,10 @@ def evaluate_quantiles((qs, xs)):
     -------
     (x, y): tuple, float
         quantile values and corresponding PDF
+
+    Notes
+    -----
+    TO DO: make this use linear interpolation instead of piecewise constant
     """
     # q = np.append(q, np.array([1.]))
     # qs = np.append(np.array([0.]), q)
@@ -173,6 +183,10 @@ def evaluate_histogram((xp, y)):
     -------
     (x, y): tuple, float
         bin midpoints and CDFs over bins
+
+    Notes
+    -----
+    This shouldn't be necessary at all, see qp.PDF.interpolate notes
     """
     x = (xp[1:] + xp[:-1]) / 2.
     return((x, y))
@@ -250,6 +264,10 @@ def calculate_kl_divergence(p, q, limits=(-10.0,10.0), dx=0.01, vb=True):
     -------
     Dpq: float
         the value of the Kullback-Leibler Divergence from `q` to `p`
+
+    Notes
+    -----
+    TO DO: change this to calculate_kld
     """
     # Make a grid from the limits and resolution
     grid = np.linspace(limits[0], limits[1], int((limits[1]-limits[0])/dx))
