@@ -293,19 +293,10 @@ mathematical sense of always being positive semidefinite and integrating to
 unity, which is a necessary condition for \qp.  While normalizing a positive 
 semidefinite function to integrate to unity is always possible, one can devise 
 multiple schemes for enforcing nonnegativity that result in different 
-reconstructions $\hat{p}(z)$.   The sparse basis representation also assumes 
-that the native format of a \pz\ is evaluations on a grid; if this is not true, 
-then the \pz\ may undergo additional conversions that introduce loss of 
-information with each approximation.  We anticipate including the sparse basis 
+reconstructions $\hat{p}(z)$.   We anticipate including the sparse basis 
 representation in \qp\ in future work when we can justify a choice of how to 
 handle negative values and avoid compounding format conversions.
 
-\COMMENT{I also thought it required extensive computational resources, but it 
-appears to be a lot faster than \qp\ making quantiles with the same number of 
-parameters -- recall that calculating quantiles generally requires an 
-optimization.  My reasons are pretty weak; if I had more time I'd have \qp\ 
-employ the \texttt{SparsePz} method as another parametrization, but I don't 
-know when I'll be able to do it!}
 
 \subsubsection{Regular Quantiles}
 \label{sec:quantiles}
@@ -399,7 +390,7 @@ redshift distribution function of a survey may be found in Sec.
 \subsubsection{RMSE}
 \label{sec:rms}
 
-\COMMENT{Remove this metric?}
+\COMMENT{I will remove this metric from the final version.}
 
 The root mean square error (RMSE) is a familiar measure of the difference 
 between two functions $p(z)$ and $\hat{p}(z)$,
@@ -461,19 +452,19 @@ demonstrate the procedure for making a good choice of format and number of
 parameters on a pair of mock datasets intended to be realistic projections of 
 anticipated data from upcoming surveys with different data quality.
 
-Both datasets were fit using Bayesian Photometric Redshift (BPZ) estimation 
-\citep{benitez_bayesian_2000}, which employs spectral energy distribution (SED) 
-fitting to a template set.  However, the choice of \pz\ estimation method is 
-not relevant to this study; so long as the mock \pz s are realistically 
-complex, meaning they take shapes we expect to see in accurate \pz s from real 
-datasets with similar photometric properties, it does not matter how accurately 
-they describe the probability distribution of galaxy redshifts given their 
-photometric data.  We only seek to optimize the fidelity of the stored \pz\ 
-relative to the \pz\ output by a representative \pz\ fitting code.  (Other work 
-has been done to compare the accuracy of \pz s produced by different methods; 
-see Schmidt, et al. (in prep.), \citet{tanaka_photometric_2017}.)  As BPZ is a 
-widely used and well established method, we assume that the \pz s produced by 
-it are of realistic complexity.
+Both datasets were fit using the publicly available Bayesian Photometric 
+Redshift (BPZ) code \citep{benitez_bayesian_2000}, which employs spectral 
+energy distribution (SED) fitting to a template set.  However, the choice of 
+\pz\ estimation method is not relevant to this study; so long as the mock \pz s 
+are realistically complex, meaning they take shapes we expect to see in 
+accurate \pz s from real datasets with similar photometric properties, it does 
+not matter how accurately they describe the probability distribution of galaxy 
+redshifts given their photometric data.  We only seek to optimize the fidelity 
+of the stored \pz\ relative to the \pz\ output by a representative \pz\ fitting 
+code.  (Other work has been done to compare the accuracy of \pz s produced by 
+different methods; see Schmidt, et al. (in prep.), 
+\citet{tanaka_photometric_2017}.)  As BPZ is a widely used and well established 
+method, we assume that the \pz s produced by it are of realistic complexity.
 
 The mock datasets considered here begin in a gridded parametrization.  Because 
 we believe that each galaxy has a true redshift interim posterior probability 
@@ -490,66 +481,67 @@ one panel per dataset (vertical); random sample? cherrypick weirdest? how many?]
   \label{fig:pzs}}
 \end{figure}
 
-\subsection{LSST mocks}
-\label{sec:ss}
+\subsection{LSST-like mock data}
+\label{sec:LSST}
 
 In order to simulate the expected LSST galaxy sample, we use the 
-Buzzard-highres-v1.0 mock galaxy catalog (NOTE: how do we cite this?  Ask Joe 
-DeRose!), which adds galaxies with SEDs drawn from an empirical library of 
-\sim500,000 SEDs from the Sloan Digital Sky Survey  (SDSS) (NOTE: I need to 
-look up the spec-z sample reference, we should ask Joe DeRose to make sure we 
-have the right one!).  Given an SED, redshift, and absolute r-band magnitude 
-for each galaxy, we compute the expected apparent magnitudes and magnitude 
-errors in the six broadband LSST filters (ugrizy), assuming full 10-year depth 
-of the survey using the simple model of \citet{ivezic_lsst:_2008}.  The catalog 
-contains 111,171 galaxies to a depth of $i<26.9$, 1.5 magnitudes deeper than 
-the expected "LSST Gold sample'' of galaxies that will have S/N$\gtrsim$30 in 
-multiple bands.
+Buzzard-highres-v1.0 mock galaxy catalog \COMMENT{How do we cite this?}, which 
+adds galaxies with SEDs drawn from an empirical library of \sim500,000 SEDs 
+from the Sloan Digital Sky Survey  (SDSS) \COMMENT{Look up the spec-z sample 
+reference.}  \COMMENT{Invite Joe DeRose (and Buzzard team) to review and 
+contribute to this section.}  Given an SED, redshift, and absolute r-band 
+magnitude for each galaxy, we compute the expected apparent magnitudes and 
+magnitude errors in the six broadband LSST filters (ugrizy), assuming full 
+10-year depth of the survey using the simple model of 
+\citet{ivezic_lsst:_2008}.  The catalog contains 111,171 galaxies to a depth of 
+$i<26.9$, 1.5 magnitudes deeper than the expected "LSST Gold sample'' of 
+galaxies that will have S/N$\gtrsim$30 in multiple bands.
 
-To obtain redshift posteriors, we use the publicly available code 
-\texttt{BPZ}\footnote{available at \url{http://www.stsci.edu/~dcoe/BPZ}} 
-\citep[Bayesian Photometric-z,see][for details]{benitez_bayesian_2000}.  We 
-create a custom Bayesian prior using a subset of the Buzzard-highres-v1.0 
-catalog, and create a spanning template set via a simple k-means clustering 
-algorithm, selection 100 of the SDSS SEDs used in creating the Buzzard catalog. 
- BPZ outputs the marginalized redshift posterior on a regular grid of test 
-redshifts, in this case we have 211 points spanning $0.005\leqz\leq2.105$.
+In implementing BPZ, we create a custom Bayesian prior using a subset of the 
+Buzzard-highres-v1.0 catalog, and create a spanning template set via a simple 
+k-means clustering algorithm, selection 100 of the SDSS SEDs used in creating 
+the Buzzard catalog.  BPZ outputs the marginalized redshift posterior on a 
+regular grid of test redshifts, in this case we have 211 points spanning 
+$0.005\leqz\leq2.105$.
 
 Even with six filters spanning the optical, there are known degeneracies 
 (e.~g.~the Lyman/Balmer break degeneracy) that lead us to expect the presence 
-of multi-modal \pz's; some examples are shown in the left panel of 
-Fig.~\ref{fig:pzs}.  We produce "true'' underlying PDFs by fitting a 
+of multi-modal \pz's; some examples are shown in the top panel of 
+Fig.~\ref{fig:pzs}.  We produce "true" underlying \pz s by fitting a 
 five-component Gaussian mixture model to each \pz output by BPZ.
 
 
-\subsection{Euclid mocks}
-\label{sec:mg}
+\subsection{Euclid-like mock data}
+\label{sec:Euclid}
 
-We start with a 30000 object subset of the same simulated galaxy catalog used 
+\COMMENT{Ask for larger subset comparable to Sec. \ref{sec:LSST}.}
+
+We start with a 30,000 object subset of the same simulated galaxy catalog used 
 for LSST photometric redshift experiments by Graham, et al. (in prep.), which 
 is based on the Millennium simulation \citep{springel_simulations_2005}, in 
 particular the LC DEEP Gonzalez2014a \COMMENT{Fix this reference.} catalog 
 based on the galaxy formation models of \cite{gonzalez-perez_how_2014}, and was 
 created using the lightcone construction techniques described by 
-\cite{merson_lightcone_2013}. We limit the sample to galaxies with a catalog 
-$i$-band magnitude of $i<25$ and true redshifts $z<3.5$. As in Graham et al. we 
-simulate observed apparent magnitudes from the true catalog magnitudes by 
-adding a normal random scatter with a standard deviation equal to the predicted 
-magnitude error for each galaxy (from Section 3.2.1. of 
+\cite{merson_lightcone_2013}.  We limit the sample to galaxies with a catalog 
+$i$-band magnitude of $i<25$ and true redshifts $z<3.5$. As in Graham, et al. 
+(in prep.) we simulate observed apparent magnitudes from the true catalog 
+magnitudes by adding a normal random scatter with a standard deviation equal to 
+the predicted magnitude error for each galaxy (from Section 3.2.1. of 
 \citealt{ivezic_lsst:_2008}, using the software of 
 \citealt{connolly_end--end_2014}, assuming a mean airmass of 1.2 and a 10-year 
-accumulation of 56, 80, 184, 184, 160, and 160 visits in filters $ugrizy$). We 
-also ignore any magnitudes fainter than the predicted 10-year limiting 
-magnitudes in each filter, $u<26.1$, $g<27.4$, $r<27.5$, $z<26.1$, and 
-$y<24.9$, as a realistic simulation of non-detections. We estimate photometric 
-redshifts for this simulated catalog using the Bayesian Photometric Redshift 
-Estimator (BPZ; \citealt{benitez_bayesian_2000}), using the CFHTLS set of 
-spectra \citep{ilbert_accurate_2006} and all of the default parameter settings 
-for BPZ, except that we impose a maximum photometric redshift of 3.5 and allow 
-BPZ to use the $i$-band as a magnitude prior during the photo-$z$ fit. The 
-photo-z PDFs from BPZ are in the form of $N_{ff} = 351$ floating point numbers 
-represing the probability on a regular grid of redshifts $0.01 < z_{\rm phot} < 
-3.51$.
+accumulation of 56, 80, 184, 184, 160, and 160 visits in filters $ugrizy$, 
+respectively).  We also ignore any magnitudes fainter than the predicted 
+10-year limiting magnitudes in each filter, $u<26.1$, $g<27.4$, $r<27.5$, 
+$z<26.1$, and $y<24.9$, as a realistic simulation of non-detections.
+
+The \pz s for this simulated catalog use the CFHTLS set of spectra 
+\citep{ilbert_accurate_2006} and all of the default parameter settings for BPZ, 
+except that we impose a maximum photometric redshift of 3.5 and allow BPZ to 
+use the $i$-band as a magnitude prior during the photo-$z$ fit. The \pz s from 
+BPZ are in the form of $N_{ff} = 351$ floating point numbers represing the 
+probability on a regular grid of redshifts $0.01 < z_{\rm phot} < 3.51$.  We 
+produce "true" underlying \pz s by fitting a three-component Gaussian mixture 
+model to each \pz output by BPZ.
 
 
 
@@ -673,7 +665,8 @@ the format necessary for science calculations.
 \subsection*{Acknowledgments}
 
 
-This work was incubated at the 2016 LSST-DESC Hack Week.
+This work was incubated at the 2016 LSST-DESC Hack Week.  We invite the 
+following people to be co-authors: Melissa Graham, Sam Schmidt, [Buzzard team].
 
 \input{acknowledgments}
 
