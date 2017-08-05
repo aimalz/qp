@@ -114,7 +114,7 @@ class PDF(object):
                 raise ValueError('true PDF is not set, use an approximation instead (the most recent one was '+self.last+')')
         elif using == 'mix_mod':
             if self.mix_mod is None:
-                self.mix_mod = self.mix_mod_fit()
+                self.mix_mod = self.mix_mod_fit(vb=vb)
             if vb: print 'Evaluating the fitted mixture model distribution.'
             val = self.mix_mod.pdf(loc)
             self.evaluated = (loc, val)
@@ -287,6 +287,7 @@ class PDF(object):
             number of components to consider
         using: string, optional
             which existing approximation to use, defaults to first approximation
+            actually, not used at all now, should fix that!
         vb: boolean
             Report progress on stdout?
 
@@ -670,7 +671,7 @@ class PDF(object):
         Example::
             d = p.kld(limits=(-1., 1.), dx=1./100))
         """
-
+        print('This function is deprecated; use `qp.utils.calculate_kl_divergence`.')
         if self.truth is None:
             print('Truth not available for comparison.')
             return
@@ -701,7 +702,7 @@ class PDF(object):
         Example::
             d = p.rms(limits=(-1., 1.), dx=1./100))
         """
-
+        print('This function is deprecated; use `qp.utils.calculate_rmse`.')
         if self.truth is None:
             print('Truth not available for comparison.')
             return

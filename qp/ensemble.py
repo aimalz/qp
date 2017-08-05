@@ -7,6 +7,7 @@ import scipy.interpolate as spi
 import matplotlib.pyplot as plt
 
 import qp
+import qp.utils as u
 from qp.utils import infty as default_infty
 
 class Ensemble(object):
@@ -119,8 +120,9 @@ class Ensemble(object):
 
         Parameters
         ----------
-        N: int, optional
+        samps: int, optional
             number of samples to produce
+            fix this inconsistent syntax!
         infty: float, optional
             approximate value at which CDF=1.
         using: string, optional
@@ -240,7 +242,7 @@ class Ensemble(object):
 
         return self.mix_mod
 
-    def evaluate(self, loc, using=None, vb=True):
+    def evaluate(self, loc, using=None, vb=False):
         """
         Evaluates all PDFs
 
@@ -262,7 +264,7 @@ class Ensemble(object):
         def evaluate_helper(i):
             # with open(self.logfilename, 'wb') as logfile:
             #     logfile.write('evaluating pdf '+str(i)+'\n')
-            return self.pdfs[i].evaluate(loc=loc, using=using, vb=False)
+            return self.pdfs[i].evaluate(loc=loc, using=using, vb=vb)
         self.gridded = self.pool.map(evaluate_helper, self.pdf_range)
         self.gridded = np.swapaxes(np.array(self.gridded), 0, 1)
         self.gridded = (self.gridded[0][0], self.gridded[1])
@@ -293,6 +295,110 @@ class Ensemble(object):
         integrals = self.pool.map(integrate_helper, self.pdf_range)
 
         return integrals
+
+    def kld(self, using=None, limits=(-10.0,10.0), dx=0.01):
+        """
+        Calculates the KLD for each PDF in the ensemble
+
+        Parameters
+        ----------
+        using: string
+            which parametrization to use
+        limits: tuple of floats
+            endpoints of integration interval in which to calculate KLD
+        dx: float
+            resolution of integration grid
+
+        Returns
+        -------
+        klds: numpy.ndarray, float
+            KLD values of each PDF under the using approximation relative to the truth
+        """
+        if self.truth is None:
+            print('Metrics can only be calculated relative to the truth.')
+            return
+        else:
+            def P_func(pdf):
+                return qp.PDF(truth=pdf.truth, vb=False)
+
+        if using == 'quantiles':
+            def Q_func(pdf):
+                return qp.PDF(quantiles=pdf.quantiles, vb=False)
+        elif using == 'histogram':
+            def Q_func(pdf):
+                return qp.PDF(histogram=pdf.histogram, vb=False)
+        elif using == 'samples':
+            def Q_func(pdf):
+                return qp.PDF(samples=pdf.samples, vb=False)
+        elif using == 'gridded':
+            def Q_func(pdf):
+                return qp.PDF(quantiles=pdf.gridded, vb=False)
+        else:
+            print(using + ' not available; try a different parametrization.')
+            return
+
+        def kld_helper(i):
+            P = P_func(self.pdfs[i])
+            Q = Q_func(self.pdfs[i])
+            return u.calculate_kl_divergence(P, Q, limits=limits, dx=dx)
+
+        klds = self.pool.map(kld_helper, self.pdf_range)
+
+        klds = np.array(klds)
+
+        return klds
+
+    def rmse(self, using=None, limits=(-10.0,10.0), dx=0.01):
+        """
+        Calculates the RMSE for each PDF in the ensemble
+
+        Parameters
+        ----------
+        using: string
+            which parametrization to use
+        limits: tuple of floats
+            endpoints of integration interval in which to calculate RMSE
+        dx: float
+            resolution of integration grid
+
+        Returns
+        -------
+        rmses: numpy.ndarray, float
+            RMSE values of each PDF under the using approximation relative to the truth
+        """
+        if self.truth is None:
+            print('Metrics can only be calculated relative to the truth.')
+            return
+        else:
+            def P_func(pdf):
+                return qp.PDF(truth=pdf.truth, vb=False)
+
+        if using == 'quantiles':
+            def Q_func(pdfs):
+                return qp.PDF(quantiles=pdf.quantiles, vb=False)
+        elif using == 'histogram':
+            def Q_func(pdfs):
+                return qp.PDF(histogram=pdf.histogram, vb=False)
+        elif using == 'samples':
+            def Q_func(pdfs):
+                return qp.PDF(samples=pdf.samples, vb=False)
+        elif using == 'gridded':
+            def Q_func(pdfs):
+                return qp.PDF(quantiles=pdf.gridded, vb=False)
+        else:
+            print(using + ' not available; try a different parametrization.')
+            return
+
+        def rmse_helper(i):
+            P = P_func(pdfs[i])
+            Q = Q_func(pdfs[i])
+            return u.calculate_rmse(P, Q, limits=limits, dx=dx)
+
+        rmses = self.pool.map(rmse_helper, self.pdf_range)
+
+        rmses = np.array(rmses)
+
+        return rmses
 
     def stack(self, loc, using, vb=True):
         """
