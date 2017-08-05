@@ -70,10 +70,11 @@ probability distributions involves making difficult decisions.  Each survey
 seeks to create a catalog of \pz s balancing accuracy against storage 
 footprint.  For example, the \pz\ catalog that LSST will release is limited to 
 200 floating point numbers per galaxy, with plans to store \pz s derived by 
-multiple methods.  \COMMENT{Cite the whitepaper.}  These matters were first 
-addressed in \citet{carrasco_kind_sparse_2014} in the context of a single 
-galaxy survey, a limited set of storage formats, and metrics restricted to that 
-survey's intended \pz\ use case.  The number of stored parameters and the 
+multiple methods.  \citep{juric_data_2017}  \COMMENT{Review Tab. 5 of this 
+reference.}  These matters were first addressed in 
+\citet{carrasco_kind_sparse_2014} in the context of a single galaxy survey, a 
+limited set of storage formats, and metrics restricted to that survey's 
+intended \pz\ use case.  The number of stored parameters and the 
 parametrization optimizing this choice, however, depend on the science 
 requirements of the survey and the characteristics of the data.  This paper 
 answers the question of \textit{how} these choices should be made in general, 
@@ -243,8 +244,9 @@ far, only a regular grid of redshifts (i.e. $z_{i+1}=z_{i}+\Delta$ for a
 constant $\Delta$) shared among the entire catalog have been used in the 
 literature, so we do not consider irregular grids or grids that are not 
 homogeneous over the catalog.   In some cases, this is the native output format 
-of a \pz\ code.  \COMMENT{Apparently BPZ does this because that's what Melissa 
-and Sam gave me, but I don't have anything to cite saying this.}
+of a \pz\ code.  For example. template-fitting codes may populate the template 
+library with colors of each SED evaluated on a regular grid of redshifts for 
+computational efficiency.
 
 The gridded parametrization is in some ways similar to the histogram format of 
 \ref{sec:bins}, suffering from the same risks of losing small-scale features 
@@ -264,31 +266,27 @@ values.  In this paper we use linear interpolation.  \COMMENT{Expand on this.}
 \COMMENT{Should I discuss this since it isn't one of the three I test?}
 
 There is some history of using a mixture model parametrization for \pz s.  
-\COMMENT{I'm still seeking something to cite here -- I thought the native 
-output of BPZ was the means and standard deviations of the top three Gaussian 
-components, but this does not appear to be so, based on the data sent by Sam 
-and Melissa.}  In this work, we consider only the common Gaussian mixture 
-model, though the \qp\ framework can accommodate mixtures of all probability 
-distribution functions that have been implemented as 
+\COMMENT{Seek citation.}  In this work, we consider only the common Gaussian 
+mixture model, though the \qp\ framework can accommodate mixtures of all 
+probability distribution functions that have been implemented as 
 \texttt{scipy.stats.rv\_continous} objects.
 
 A Gaussian mixture model may be a natural choice for the native output of a 
 template-fitting code or one based on a distance metric in the space of 
-photometry, and it is easy to convert it to the previously discussed 
-parametrizations.  However, it may be difficult to fit a mixture model to \pz s 
-in other native formats, and the mixture model is only an accurate 
-approximation of the \pz s are actually comprised of components of the included 
-parametrizations.  As with the gridded approximation, the difficulty of 
-compressing an original $p_{0}(z)$ into this format is balanced by the ease of 
-reconstructing an estimated $\hat{p}(z)$ from its stored parameters, as no 
-interpolation is even necessary.
+photometry because the \pz s could be weighted sums of Gaussians by 
+construction; for many other methods, however, there is no such guarantee.  The 
+mixture model is only an accurate approximation of the \pz s are actually 
+comprised of components of the included parametrizations.  As with the gridded 
+approximation, the challenge of compressing an original $p_{0}(z)$ into this 
+format is balanced by the ease of reconstructing an estimated $\hat{p}(z)$ from 
+its stored parameters, as no interpolation is even necessary.
 
 Besides the mixture of Gaussians, other functions have been investigated before 
 in the sparse basis representation of \citet{carrasco_kind_sparse_2014}, which 
 uses a mixture model of members of a library of $N_{M}\sim10^{4}$ functions.  
 Though it has promising compression properties, we do not consider it in this 
 work for several reasons.  Decomposition with \texttt{SparsePZ} does not 
-guarantee that the stored parametrization be a probability distribution in the 
+enforce that the stored parametrization be a probability distribution in the 
 mathematical sense of always being positive semidefinite and integrating to 
 unity, which is a necessary condition for \qp.  While normalizing a positive 
 semidefinite function to integrate to unity is always possible, one can devise 
@@ -390,7 +388,7 @@ redshift distribution function of a survey may be found in Sec.
 \subsubsection{RMSE}
 \label{sec:rms}
 
-\COMMENT{I will remove this metric from the final version.}
+\COMMENT{Remove this metric from the final version after some restructuring.}
 
 The root mean square error (RMSE) is a familiar measure of the difference 
 between two functions $p(z)$ and $\hat{p}(z)$,
@@ -564,9 +562,9 @@ example of the distribution of the KLD for $N_{f}=10$ is shown in Fig.
 
 \begin{figure}
   \includegraphics[width=0.9\columnwidth]{figures/individual_placeholder.png}
-  \caption{Placeholder! [histogram of log-metric for one number of parameters 
-$N_{f}$, one color per format, one panel per dataset (vertical) per metric 
-(horizontal), panel title of (dataset, metric, $N_{f}$), or single panel?]
+  \caption{Placeholder! [histogram of log-KLD for one number of parameters 
+$N_{f}$, one color per format, one panel per dataset (vertical), panel title of 
+(dataset, $N_{f}$)]
   \label{fig:individual}}
 \end{figure}
 
@@ -576,10 +574,10 @@ compare the moments of the distributions of metric values for the individual
 
 \begin{figure}
   \caption{\COMMENT{Make a placeholder!} [$N_{f}$ (horizontal) vs. first few 
-moment values each with separate vertical scale(?), one linestyle per moment 
+moment values each with separate vertical scale(?), one marker shape per moment 
 (might be too confusing with many moments, will need to see which are most 
-informative), one color per format, one panel per dataset (vertical) per metric 
-(horizontal), panel title of (dataset, metric)]
+informative), one color per format, one panel per dataset (vertical), panel 
+title of dataset]
   \label{fig:moments}}
 \end{figure}
 
@@ -598,7 +596,7 @@ original format.
   \caption{Placeholder! [$N_{f}$ (horizontal) vs. metric value (vertical), one 
 color per format, curves from many instantiations of the subsample of galaxies 
 (or error bars derived from those instantiations), one panel per dataset 
-(vertical) per metric (horizontal), panel title of (dataset, metric)]
+(vertical), panel title of dataset]
   \label{fig:stacked}}
 \end{figure}
 
