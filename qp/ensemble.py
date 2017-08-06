@@ -63,10 +63,14 @@ class Ensemble(object):
         else:
             self.n_procs = psutil.cpu_count()
         self.pool = Pool(self.n_procs)
-        print('made the pool in '+str(timeit.default_timer() - start_time))
+        print('made the pool of '+str(self.n_procs)+' in '+str(timeit.default_timer() - start_time))
 
         self.n_pdfs = N
         self.pdf_range = range(N)
+
+        if truth is None and quantiles is None and histogram is None and gridded is None and samples is None:
+            print 'Warning: initializing an Ensemble object without inputs'
+            return
 
         if truth is None:
             self.truth = [None] * N
@@ -93,11 +97,7 @@ class Ensemble(object):
 
         self.scheme = scheme
 
-        if self.truth is None and self.quantiles is None and self.histogram is None and self.gridded is None and self.samples is None:
-            print 'Warning: initializing an Ensemble object without inputs'
-            return
-        else:
-            self.make_pdfs()
+        self.make_pdfs()
 
         self.stacked = {}
 
@@ -114,7 +114,9 @@ class Ensemble(object):
                             gridded=self.gridded[i], samples=self.samples[i],
                             scheme=self.scheme, vb=False)
 
+        start_time = timeit.default_timer()
         self.pdfs = self.pool.map(make_pdfs_helper, self.pdf_range)
+        print('made the catalog in '+str(timeit.default_timer() - start_time))
 
         return
 
