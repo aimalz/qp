@@ -384,6 +384,12 @@ class PDF(object):
         -------
         samples: ndarray
             array of sampled values
+
+        Notes
+        -----
+        TO DO: have quantiles use linear interpolator to get inverse CDF, then sample uniform in "bins"
+        TO DO: change infty to upper and lower bounds to use for quantiles
+        TO DO: check for existence of parametrization before using it
         """
         if using is None:
             using = self.first
@@ -412,9 +418,10 @@ class PDF(object):
                 if self.quantiles is None:
                     self.quantiles = self.quantize(vb=vb)
 
-                endpoints = np.append(np.array([-1.*infty]), self.quantiles[1])
-                endpoints = np.append(endpoints,np.array([infty]))
+                endpoints = np.concatenate((np.array([-1.*infty]),  self.quantiles[1], np.array([infty])))
                 weights = qp.utils.evaluate_quantiles(self.quantiles)[1]# self.evaluate((endpoints[1:]+endpoints[:-1])/2.)
+                # interpolator = self.interpolate(using='quantiles', vb=False)
+
 
             if using == 'histogram':
                 # First find the histogram if none exists:
@@ -462,7 +469,7 @@ class PDF(object):
         [`scipy.interpolate.interp1d`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interp1d.html)
         to carry out the interpolation, using the internal
         `self.scheme` attribute to choose the interpolation scheme.
-        TO DO: change histogram to evaluate as piecewise constant
+        TO DO: There's got to be a better to do quantile interpolation!  Maybe use inverse CDF?
         """
         if using is None:
             using = self.first

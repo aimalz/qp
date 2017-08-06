@@ -157,7 +157,7 @@ def evaluate_quantiles((qs, xs)):
     """
     # q = np.append(q, np.array([1.]))
     # qs = np.append(np.array([0.]), q)
-    norm = max(qs) - min(qs)
+    # norm = max(qs) - min(qs)
     dq = qs[1:] - qs[:-1]
     # xs = np.append(x, np.array([infty]))
     # xs = np.append(np.array([-1. * infty]), x)
