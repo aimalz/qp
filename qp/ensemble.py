@@ -1,6 +1,7 @@
 import numpy as np
 from pathos.multiprocessing import ProcessingPool as Pool
 import psutil
+import timeit
 import os
 # import sqlalchemy
 import scipy.interpolate as spi
@@ -12,7 +13,7 @@ from qp.utils import infty as default_infty
 
 class Ensemble(object):
 
-    def __init__(self, N, pdfs=None, truth=None, quantiles=None, histogram=None, gridded=None, samples=None, scheme='linear', vb=True, procs=None):# where='ensemble.db', procs=None):#
+    def __init__(self, N, truth=None, quantiles=None, histogram=None, gridded=None, samples=None, scheme='linear', vb=True, procs=None):# where='ensemble.db', procs=None):#
         """
         Creates an object comprised of many qp.PDF objects to efficiently
         perform operations on all of them
@@ -56,11 +57,13 @@ class Ensemble(object):
         TO DO: change dx --> dz (or delta)
         TO DO: standardize n/N
         """
+        start_time = timeit.default_timer()
         if procs is not None:
             self.n_procs = procs
         else:
             self.n_procs = psutil.cpu_count()
         self.pool = Pool(self.n_procs)
+        print('made the pool in '+str(timeit.default_timer() - start_time))
 
         self.n_pdfs = N
         self.pdf_range = range(N)
@@ -90,11 +93,11 @@ class Ensemble(object):
 
         self.scheme = scheme
 
-        if vb and self.truth is None and self.quantiles is None and self.histogram is None and self.gridded is None and self.samples is None:
+        if self.truth is None and self.quantiles is None and self.histogram is None and self.gridded is None and self.samples is None:
             print 'Warning: initializing an Ensemble object without inputs'
             return
-
-        self.make_pdfs()
+        else:
+            self.make_pdfs()
 
         self.stacked = {}
 
@@ -112,7 +115,6 @@ class Ensemble(object):
                             scheme=self.scheme, vb=False)
 
         self.pdfs = self.pool.map(make_pdfs_helper, self.pdf_range)
-        self.pdf_range = range(len(self.pdfs))
 
         return
 
@@ -430,7 +432,7 @@ class Ensemble(object):
         """
         loc_range = max(loc) - min(loc)
         delta = loc_range / len(loc)
-        evaluated = self.evaluate(loc, using=using, vb=True)
+        evaluated = self.evaluate(loc, using=using, vb=False)
         stack = np.mean(evaluated[1], axis=0)
         stack /= np.sum(stack) * delta
         assert(np.isclose(np.sum(stack) * delta, 1.))

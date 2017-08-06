@@ -125,7 +125,7 @@ class PDF(object):
             val = self.mix_mod.pdf(loc)
             self.evaluated = (loc, val)
         else:
-            if vb: print 'Evaluating a `'+self.scheme+'` interpolation of the '+using+' parametrization.'
+            # if vb: print 'Evaluating a `'+self.scheme+'` interpolation of the '+using+' parametrization.'
             evaluated = self.approximate(loc, using=using, vb=vb)
             val = evaluated[1]
 
@@ -414,7 +414,7 @@ class PDF(object):
 
                 endpoints = np.append(np.array([-1.*infty]), self.quantiles[1])
                 endpoints = np.append(endpoints,np.array([infty]))
-                weights = qp.utils.evaluate_quantiles(self.quantiles, infty=infty)[1]# self.evaluate((endpoints[1:]+endpoints[:-1])/2.)
+                weights = qp.utils.evaluate_quantiles(self.quantiles)[1]# self.evaluate((endpoints[1:]+endpoints[:-1])/2.)
 
             if using == 'histogram':
                 # First find the histogram if none exists:
@@ -467,9 +467,6 @@ class PDF(object):
         if using is None:
             using = self.first
 
-        if vb:
-            print 'Creating a `'+self.scheme+'` interpolator for the '+using+' parametrization.'
-
         if using == 'truth' or using == 'mix_mod':
             print 'A functional form needs no interpolation.  Try converting to an approximate parametrization first.'
             return
@@ -486,7 +483,45 @@ class PDF(object):
             if self.histogram is None:
                 self.histogram = self.histogramize(vb=vb)
 
-            (x, y) = qp.utils.evaluate_histogram(self.histogram)
+            y_ext = np.array([default_eps])
+            extra_y = np.concatenate((y_ext, self.histogram[1], y_ext))
+
+            def histogram_interpolator(xf):
+                nx = len(xf)
+                yf = np.ones(nx) * default_eps
+                for n in range(nx):
+                    i = bisect.bisect(self.histogram[0], xf[n])
+                    yf[n] = extra_y[i]
+                return(yf)
+
+            #(x, y) = qp.utils.evaluate_histogram(self.histogram)
+
+            self.interpolator = histogram_interpolator#qp.utils.evaluate_histogram()
+
+            if vb:
+                print 'Created a piecewise constant interpolator for the '+using+' parametrization.'
+
+            return self.interpolator
+
+        if using == 'samples':
+            # First sample if not already done:
+            if self.samples is None:
+                self.samples = self.sample(vb=vb)
+
+            def samples_interpolator(xf):
+                kde = sps.gaussian_kde(self.samples)# , bw_method=bandwidth)
+                yf = kde(xf)
+                return (yf)
+
+            # (x, y) = qp.evaluate_samples(self.samples)
+            # if vb: print('interpolator support between '+str(min(x))+' and '+str(max(x))+' with extrapolation of '+str(default_eps))
+            # self.interpolator = spi.interp1d(x, y, kind=self.scheme, bounds_error=False, fill_value=default_eps)
+            self.interpolator = samples_interpolator
+
+            if vb:
+                print 'Created a KDE interpolator for the '+using+' parametrization.'
+
+            return self.interpolator
 
         if using == 'gridded':
             if self.gridded is None:
@@ -494,17 +529,10 @@ class PDF(object):
                 return
             (x, y) = self.gridded
 
-        if using == 'samples':
-            # First sample if not already done:
-            if self.samples is None:
-                self.samples = self.sample(vb=vb)
-
-            (x, y) = qp.evaluate_samples(self.samples)
-            if vb: print('interpolator support between '+str(min(x))+' and '+str(max(x))+' with extrapolation of '+str(default_eps))
-            self.interpolator = spi.interp1d(x, y, kind=self.scheme, bounds_error=False, fill_value=default_eps)
-            return self.interpolator
-
         self.interpolator = spi.interp1d(x, y, kind=self.scheme, bounds_error=False, fill_value="extrapolate")
+
+        if vb:
+            print 'Created a `'+self.scheme+'` interpolator for the '+using+' parametrization.'
 
         return self.interpolator
 
