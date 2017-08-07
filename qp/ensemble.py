@@ -56,6 +56,7 @@ class Ensemble(object):
         but have been temporarily abandoned to meet a deadline.)
         TO DO: change dx --> dz (or delta)
         TO DO: standardize n/N
+        TO DO: add an option to carry around ID numbers
         """
         start_time = timeit.default_timer()
         if procs is not None:

@@ -536,7 +536,7 @@ class PDF(object):
                 return
             (x, y) = self.gridded
 
-        self.interpolator = spi.interp1d(x, y, kind=self.scheme, bounds_error=False, fill_value="extrapolate")
+        self.interpolator = spi.interp1d(x, y, kind=self.scheme, fill_value="extrapolate")# bounds_error=False)
 
         if vb:
             print 'Created a `'+self.scheme+'` interpolator for the '+using+' parametrization.'
