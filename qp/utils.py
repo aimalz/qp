@@ -211,7 +211,7 @@ def evaluate_samples(x):
     y = kde(sx)
     return ((sx, y))
 
-def calculate_moment(p, N, using=None, limits=(-10.0,10.0), dx=0.01, vb=True):
+def calculate_moment(p, N, using=None, limits=(-10.0,10.0), dx=0.01, vb=False):
     """
     Calculates moments of a distribution
 
@@ -243,7 +243,7 @@ def calculate_moment(p, N, using=None, limits=(-10.0,10.0), dx=0.01, vb=True):
     M = dx * np.dot(grid_to_N, pe)
     return M
 
-def calculate_kl_divergence(p, q, limits=(-10.0,10.0), dx=0.01, vb=True):
+def calculate_kl_divergence(p, q, limits=(-10.0,10.0), dx=0.01, vb=False):
     """
     Calculates the Kullback-Leibler Divergence between two PDFs.
 
@@ -286,7 +286,7 @@ def calculate_kl_divergence(p, q, limits=(-10.0,10.0), dx=0.01, vb=True):
     Dpq = np.sum(pn * (logp - logq))
     return Dpq
 
-def calculate_rmse(p, q, limits=(-10.,10.), dx=0.01, vb=True):
+def calculate_rmse(p, q, limits=(-10.,10.), dx=0.01, vb=False):
     """
     Calculates the Root Mean Square Error between two PDFs.
 

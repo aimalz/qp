@@ -88,7 +88,7 @@ class PDF(object):
 
         return
 
-    def evaluate(self, loc, vb=True, using=None):
+    def evaluate(self, loc, vb=False, using=None):
         """
         Evaluates the PDF (either the true version or the first
         approximation of it if no parametrization is specified)
@@ -446,7 +446,7 @@ class PDF(object):
         self.last = 'samples'
         return self.samples
 
-    def interpolate(self, using=None, vb=True):
+    def interpolate(self, using=None, vb=False):
         """
         Constructs an `interpolator` function based on the parametrization.
 
@@ -515,18 +515,18 @@ class PDF(object):
             if self.samples is None:
                 self.samples = self.sample(vb=vb)
 
-            def samples_interpolator(xf):
-                kde = sps.gaussian_kde(self.samples)# , bw_method=bandwidth)
-                yf = kde(xf)
-                return (yf)
+            # Well that's weird!  Samples does much better with KDE than linear interpolation.  I guess that shouldn't be surprising.
+            # def samples_interpolator(xf):
+            #     kde = sps.gaussian_kde(self.samples)# , bw_method=bandwidth)
+            #     yf = kde(xf)
+            #     return (yf)
+            # self.interpolator = samples_interpolator
+            # if vb:
+            #     print 'Created a KDE interpolator for the '+using+' parametrization.'
 
-            # (x, y) = qp.evaluate_samples(self.samples)
-            # if vb: print('interpolator support between '+str(min(x))+' and '+str(max(x))+' with extrapolation of '+str(default_eps))
-            # self.interpolator = spi.interp1d(x, y, kind=self.scheme, bounds_error=False, fill_value=default_eps)
-            self.interpolator = samples_interpolator
-
-            if vb:
-                print 'Created a KDE interpolator for the '+using+' parametrization.'
+            (x, y) = qp.evaluate_samples(self.samples)
+            self.interpolator = spi.interp1d(x, y, kind=self.scheme, bounds_error=False, fill_value=default_eps)
+            if vb: print('interpolator support between '+str(min(x))+' and '+str(max(x))+' with extrapolation of '+str(default_eps))
 
             return self.interpolator
 
@@ -536,7 +536,7 @@ class PDF(object):
                 return
             (x, y) = self.gridded
 
-        self.interpolator = spi.interp1d(x, y, kind=self.scheme, fill_value="extrapolate")# bounds_error=False)
+        self.interpolator = spi.interp1d(x, y, kind=self.scheme, fill_value="extrapolate")
 
         if vb:
             print 'Created a `'+self.scheme+'` interpolator for the '+using+' parametrization.'
