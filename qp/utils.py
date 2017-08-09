@@ -295,20 +295,22 @@ def calculate_kl_divergence(p, q, limits=(-10.0,10.0), dx=0.01, vb=False):
     TO DO: change this to calculate_kld
     """
     # Make a grid from the limits and resolution
-    grid = np.linspace(limits[0], limits[1], int((limits[1]-limits[0])/dx))
-    # Evaluate the functions on the grid
+    grid = np.arange(limits[0], limits[1], dx)
+    # Evaluate the functions on the grid and normalize
     pe = p.evaluate(grid, vb=vb)[1]
+    pn = normalize_integral(normalize_gridded((grid, pe)))[1]
     qe = q.evaluate(grid, vb=vb)[1]
+    qn = normalize_integral(normalize_gridded((grid, qe)))[1]
     # Normalize the evaluations, so that the integrals can be done
     # (very approximately!) by simple summation:
-    pn = pe / np.sum(pe)
+    # pn = pe / np.sum(pe)
     #denominator = max(np.sum(qe), epsilon)
-    qn = qe / np.sum(qe)#denominator
+    # qn = qe / np.sum(qe)#denominator
     # Compute the log of the normalized PDFs
     logp = safelog(pn)
     logq = safelog(qn)
     # Calculate the KLD from q to p
-    Dpq = np.sum(pn * (logp - logq))
+    Dpq = np.dot(pn * (logp - logq), dx * np.ones(len(grid)))
     return Dpq
 
 def calculate_rmse(p, q, limits=(-10.,10.), dx=0.01, vb=False):
