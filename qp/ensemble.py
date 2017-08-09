@@ -300,7 +300,7 @@ class Ensemble(object):
             value of the integral
         """
         def integrate_helper(i):
-            return self.pdfs[i].integrate(limits[i], using=using, dx=dx)
+            return self.pdfs[i].integrate(limits[i], using=using, dx=dx, vb=False)
 
         integrals = self.pool.map(integrate_helper, self.pdf_range)
 

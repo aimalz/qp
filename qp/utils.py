@@ -83,6 +83,35 @@ def safelog(arr, threshold=epsilon):
     logged = np.log(np.array([max(a, threshold) for a in flat])).reshape(shape)
     return logged
 
+def normalize_integral(in_data, vb=False):
+    """
+    Normalizes integrals over full range from grid
+
+    Parameters
+    ----------
+    in_data: None or tuple, ndarray, float
+        tuple of points at which function is evaluated and the PDF at those points
+    vb: boolean
+        print progress to stdout?
+
+    Returns
+    -------
+    (x, y): tuple, ndarray, float
+        tuple of input x and normalized y
+    """
+    if in_data is None:
+        return in_data
+    (x, y) = in_data
+    a = x.argsort()
+    x.sort()
+    ys = y[a]
+    dx = x[1:] - x[:-1]
+    dy = (ys[1:] + ys[:-1]) / 2.
+    assert(len(dx) == len(dy))
+    norm = np.dot(dy, dx)
+    y = y / norm
+    return(x, y)
+
 def normalize_gridded(in_data, vb=True):
     """
     Normalizes gridded parametrizations assuming evenly spaced grid
@@ -102,11 +131,7 @@ def normalize_gridded(in_data, vb=True):
     if in_data is None:
         return in_data
     (x, y) = in_data
-    #delta = (np.max(x) - np.min(x)) / len(x)
-    # if vb: print('before normalization: '+str(np.sum(y * delta)))
     y[y < epsilon] = epsilon
-    #y /= np.sum(y * delta)
-    # if vb: print('after normalization: '+str(np.sum(y * delta)))
     return (x, y)
 
 def normalize_histogram(in_data, vb=True):

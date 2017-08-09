@@ -51,7 +51,7 @@ class PDF(object):
         self.quantiles = quantiles
         self.histogram = qp.utils.normalize_histogram(histogram, vb=False)
         self.samples = samples
-        self.gridded = qp.utils.normalize_gridded(gridded, vb=False)
+        self.gridded = qp.normalize_integral(qp.utils.normalize_gridded(gridded, vb=False))
         self.mix_mod = None
 
         self.scheme = scheme
@@ -71,8 +71,6 @@ class PDF(object):
             self.initialized = self.histogram
             self.first = 'histogram'
         elif self.gridded is not None:
-            delta = (np.max(self.gridded[0]) - np.min(self.gridded[0])) / len(self.gridded[0])
-            self.gridded = (self.gridded[0], self.gridded[1] / np.sum(self.gridded[1] * delta))
             self.initialized = self.gridded
             self.first = 'gridded'
         elif self.samples is not None:
@@ -131,7 +129,7 @@ class PDF(object):
 
         return(loc, val)
 
-    def integrate(self, limits, dx=0.0001, using=None):
+    def integrate(self, limits, dx=0.0001, using=None, vb=False):
         """
         Computes the integral under the PDF between the given limits.
 
@@ -143,6 +141,8 @@ class PDF(object):
             granularity of integral
         using: string, optional
             parametrization over which to approximate the integral
+        vb: Boolean
+            print progress to stdout?
 
         Returns
         -------
@@ -150,9 +150,9 @@ class PDF(object):
             value of the integral
         """
         lim_range = limits[-1] - limits[0]
-        fine_grid = np.linspace(limits[0], limits[-1], lim_range / dx)
+        fine_grid = np.arange(limits[0], limits[-1] + dx, dx)
 
-        evaluated = self.evaluate(fine_grid, vb=True, using=using)
+        evaluated = self.evaluate(fine_grid, vb=vb, using=using)
         integral = np.sum(evaluated[1]) * dx
 
         return integral
@@ -543,7 +543,7 @@ class PDF(object):
 
         return self.interpolator
 
-    def approximate(self, points, using=None, scheme=None, vb=True):
+    def approximate(self, points, using=None, scheme=None, vb=False):
         """
         Interpolates the parametrization to get an approximation to the density.
 
