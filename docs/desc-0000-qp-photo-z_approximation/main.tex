@@ -118,27 +118,34 @@ described in Sec. \ref{sec:metrics}.
 
 First, we establish a vocabulary for the definitions of approximation methods.  
 Each \textit{parametrization} of a \pz\ is defined in terms of the 
-\textit{format} $\mathcal{F}$, \textit{metaparameters} comprising $\vec{C}$, 
-and \textit{parameters} comprising $\vec{c}$.  Each parametrization in turn 
-corresponds to a \textit{representation}
+\textit{format} function $\mathcal{F}$, \textit{metaparameters} comprising 
+$\vec{C}$, and \textit{parameters} comprising $\vec{c}$.  Each parametrization 
+in turn corresponds to a \textit{representation}
 \begin{align}
+  \label{eq:definition}
   \hat{p}_{\mathcal{F}, \vec{C}}(z) &\equiv \mathcal{F}(z;\vec{C}, \vec{c})
 \end{align}
 of the \pz, denoted as $\hat{p}(z)$ for brevity.
 
-\qp\ is currently capable of converting a \pz\ between the following five 
-formats: step functions, samples, grid evaluations, mixture models, and 
-quantiles.  These formats are described below in terms of the number $N_{f}$ of 
-stored parameters $c_{i}$ per \pz, which are presumed to be floating point 
-numbers unless otherwise specified.  The metaparameters are set of $N_{M}$ 
-numbers $C_{m}$ necessary to convert the stored \pz\ parameters $\vec{c}$ into 
-a probability distribution function over redshift.  Because the metaparameters 
-for a catalog of \pz s released by a survey will only need to be stored once, 
-it does not matter how large $N_{M}$ is.  For each format, we address the 
-following questions:
+\qp\ is currently capable of converting a \pz\ between five formats that are 
+described below in terms of the number $N_{f}$ of stored parameters $c_{i}$ per 
+\pz, which are presumed to be floating point numbers unless otherwise 
+specified.  The metaparameters are a set of $N_{M}$ numbers $C_{i}$ necessary 
+to convert the stored \pz\ parameters $\vec{c}$ into a probability distribution 
+function over redshift.  Because the metaparameters for a catalog of \pz s 
+released by a survey will only need to be stored once, it does not matter how 
+large $N_{M}$ is.  
+
+Three of these formats are considered candidates for large survey \pz\ catalog 
+storage: regular binning (Sec. \ref{sec:bins}), random samples (Sec. 
+\ref{sec:samples}), and quantiles (Sec. \ref{sec:quantiles}), while the other 
+two are used solely for internal manipulations within \qp, but are nonetheless 
+discussed here for completeness.  For each format, we address the following 
+questions:
+
 \begin{itemize}
   \item When/where has this format appeared in the literature as a published 
-catalog format, native \pz code output format, and science application input 
+catalog format, native \pz\ code output format, and science application input 
 format?
   \item What exactly is stored under this format, per galaxy (the parameters) 
 and per catalog (the metaparameters)?
@@ -158,24 +165,29 @@ $N_{f}$? realistically complex or simple Gaussian?]
 \subsubsection{Regular Binning}
 \label{sec:bins}
 
+  %\item When/where has this format appeared in the literature as a published 
+catalog format, native \pz\ code output format, and science application input 
+format?
 By far the most popular format for \pz s is that of a piecewise constant step 
-function, also called a histogram binning.  It is the only format that has been 
-used for public release of \pz\ catalogs \citep{tanaka_photometric_2017, 
+function, also called a histogram binning.  The only format that has been used 
+for public release of \pz\ catalogs \citep{tanaka_photometric_2017, 
 sheldon_photometric_2012}; it is unclear whether this is a consequence or a 
 cause of the fact that it is the most common format for using \pz s in 
 cosmological inference, as tomographic binning is a universal step between the 
-\pz\ catalog and calculation of any two-point correlation function.
+\pz\ catalog and calculation of any two-point correlation function.  
+\COMMENT{Find more examples of usage.}
 
+  %\item What exactly is stored under this format, per galaxy (the parameters) 
+and per catalog (the metaparameters)?
 The metaparameters of the binned parametrization are the ordered list of 
 $N_{M}=N_{f}+1$ redshifts $(z_{1}, z_{2}, \dots, z_{N_{M}-1}, z_{N_{M}})$ with 
-$z_{1} < z_{2} < \dots < z_{N_{M}-1} < z_{N_{M}}$ and 
-$z_{m+1}=z_{m}+\Delta_{m}$ serving as endpoints shared by all galaxies in the 
-catalog, each adjacent pair of which is associated with a parameter 
-$c_{i}=\int_{z_{i}}^{z_{i+1}}p(z)dz$.  If the binning is "regular," then 
-$z_{i+1}=z_{i}+\Delta$ for some constant scalar $\Delta$.  As this is the only 
-type of binning that has been used in the literature, it is the only one we 
-consider.  The standard assumption that $p(z)=0$ when $z<z_{1}$ or 
-$z>z_{N_{M}}$ implies that the $c_{i}$ are normalized according to $\sum_{i} 
+$z_{1} < z_{2} < \dots < z_{N_{M}-1} < z_{N_{M}}$ serving as endpoints shared 
+by all galaxies in the catalog, each adjacent pair of which is associated with 
+a parameter $c_{i}=\int_{z_{i}}^{z_{i+1}}\ p(z)\ dz$.  If the binning is 
+"regular," then $z_{i+1}=z_{i}+\Delta$ for some constant scalar $\Delta$.  As 
+this is the only type of binning that has been used in the literature, it is 
+the only one we consider.  The standard assumption that $p(z)=0$ when $z<z_{1}$ 
+or $z>z_{N_{M}}$ implies that the $c_{i}$ are normalized according to $\sum_{i} 
 c_{i}\cdot\Delta = 1$.  Note that this is not equivalent to the erroneous 
 normalization condition $\sum_{i} c_{i} = 1$ that commonly appears in the 
 literature.  The \pz\ under this representation is thus
@@ -185,14 +197,18 @@ literature.  The \pz\ under this representation is thus
 $z < z_{i}$\ or\ $z > z_{i+1}$&$0$\end{tabular}\right\}.
 \end{align}
 
+  %\item Beyond fidelity to the original \pz, what are the a priori strengths 
+and weaknesses of this format, especially with respect to 
+compression/reconstruction properties?
 All known native \pz\ formats are easy to convert to the histogram 
 representation.  However, the corrolary to this statement is that it is an 
-inherently lossy format.  A \pz\ with features smaller than the bin width may 
-not accurately represent the underlying probability distribution, as 
-significant structure may be stored as a single bin value.  This problem may be 
-particularly troubling as the quality of the approximation may not be unbiased 
-among catalog entries; rather, it is likely to correlate with the properties of 
-the \pz\ in question and thus the true redshift of the galaxy.
+inherently lossy format.  A histogram parametrization with bin widths larger 
+than features of the \pz\ may not accurately represent the underlying 
+probability distribution, as significant structure may be lumped into a single 
+bin value.  This problem may be particularly troubling as the quality of the 
+approximation may not be unbiased among catalog entries; rather, it is likely 
+to correlate with the properties of the \pz\ in question and thus the true 
+redshift of the galaxy.
 
 The binned parametrization may also be considered wasteful in terms of data 
 storage.  A \pz\ with a compact probability distribution, with much of the 
@@ -200,53 +216,143 @@ probability contained within a region far narrower than the redshift range
 $z_{N_{M}} - z_{1}$, may have many of its catalog entries $c_{i}$ being 
 identically zero.  The storage footprint of this data is wasted in that it is 
 redundant, with each $c_{i}$ requiring the same space even though 
-$c_{i}=c_{i'}$ for many pairs $(i, i')$.
+$c_{i}=c_{i'}$ for many pairs $(i, i')$.  (A similar case can be made for a 
+very flat distribution, where all $c_{i}$ are approximately the same.)
 
 Finally, the binned parametrization requires the researcher to choose the 
 minimum and maximum possible redshifts of the galaxy sample.  These are 
 physical quantities that are unknown, so it would be preferable to not have to 
 choose them at the stage of producing the \pz\ catalog.
 
-\subsubsection{Samples}
+\subsubsection{Random Samples}
 \label{sec:samples}
 
-Samples $(z_{1}, z_{2}, \dots, z_{N_{f}-1}, z_{N_{f}})$ are another common 
-storage format for \pz s.  Samples are the native output format of many machine 
-learning algorithms dependent on random choices, such as random forests.  Such 
-approaches typically produce large numbers of samples, far more than can 
-realistically be stored by any survey, so a subsample is commonly stored.  
-\COMMENT{Cite upcoming DES paper.}
+  %\item When/where has this format appeared in the literature as a published 
+catalog format, native \pz\ code output format, and science application input 
+format?
+Samples are the native output format of many machine learning algorithms 
+dependent on random choices, such as random forests.  Such approaches typically 
+produce large numbers of samples, far more than can realistically be stored by 
+any survey, so a subsample is commonly stored.  \COMMENT{Cite recent DES paper, 
+which stores a single sample.}
 
-A small number of samples from a broad \pz may not be representative of the 
-overall shape, boosting the variance across the catalog, but it can be 
-appropriate for \pz s with narrow features.  As in the case of the histogram 
-parametrization, the quality of the approximation may be correlated to 
-properties of the \pz that themselves correlate with redshift.  Unlike the 
-simple reconstruction scheme for the histogram format (Eq. 
-\ref{eq:bin_interpolated}), there is no straightforward interpolation for 
-samples.  When we need one for the purposes of calculating metrics, we use a 
-kernel density estimate, which may introduce additional loss of information.  
-\COMMENT{Expand on details here.}
-
+  %\item What exactly is stored under this format, per galaxy (the parameters) 
+and per catalog (the metaparameters)?
+The parameters of the samples format are the set of $(z_{1}, z_{2}, \dots, 
+z_{N_{f}-1}, z_{N_{f}})$.  The implicit metaparameter is simply $C=N_{f}$.  
 Though it is possible to construct a catalog where each galaxy has a different 
 number $N_{f}$ of stored samples, optimizing the choice of $N_{f}$ given the 
 shape of the \pz\ in its native format is nontrivial.  As this has not been 
 done in the literature, we leave its investigation to future work.
 
-\subsubsection{Evaluation on a Regular Grid}
+  %\item Beyond fidelity to the original \pz, what are the a priori strengths 
+and weaknesses of this format, especially with respect to 
+compression/reconstruction properties?
+As with the histogram format, it is in general easy to convert any format into 
+samples, at the risk of loss of information.  One risk of samples is that a 
+small number of samples from a broad \pz\ may not be representative of the 
+overall shape, boosting the variance across the catalog.  On the other hand, a 
+small number of samples can be a very efficient way to store \pz s with narrow 
+features.  As in the case of the histogram parametrization, the quality of the 
+approximation may be correlated to properties of the \pz\ that themselves 
+correlate with redshift.  Unlike the simple reconstruction scheme for the 
+histogram format (Eq. \ref{eq:bin_interpolated}), there is no straightforward 
+interpolation for samples.  When we need one for the purposes of calculating 
+metrics, we use a kernel density estimate, which may introduce additional loss 
+of information, with the degree of that imprecision depending on nuisance 
+parameters of the interpolation scheme, i.e. the smoothing kernel and bandwidth.
+
+\subsubsection{Regular Quantiles}
+\label{sec:quantiles}
+
+  %\item What exactly is stored under this format, per galaxy (the parameters) 
+and per catalog (the metaparameters)?
+One parametrization that has not previously been implemented is that of 
+quantiles, which are defined in terms of the cumulative distribution function 
+(CDF)
+\begin{align}
+  \label{eq:cdf}
+  CDF(z) &= \int_{-\infty}^{z}\ p(z')\ dz'.
+\end{align}
+Under the quantile format, an ensemble of \pz s shares a set of $N_{f}$ values 
+$0<q_{1}<q_{2}<\dots<q_{N_{f}-1}<q_{N_{f}}<1$.  Each galaxy's catalog entry is 
+the $N_{f}$ values $z_{i}$ satisfying $CDF(z_{i})=q_{i}$.  In our tests, the 
+quantiles are regular, such that $q_{i}\equiv i\bar{q}$, where 
+$\bar{q}\equiv(N_{f}+1)^{-1}$, but \qp\ does not require that this be so.
+
+  %\item When/where has this format appeared in the literature as a published 
+catalog format, native \pz\ code output format, and science application input 
+format?
+As no survey has previously stored quantile \pz s, no existing \pz\ code 
+produces quantiles as output, and no science case pipeline has yet been 
+developed to accept input \pz s in the quantile format.  Given its limited 
+visibility, we share why it is the subject of this study.  The quantile 
+parametrization is the inspiration for this work and namesake of \qp.  Though 
+it has not appeared in the \pz\ literature prior to this point, it is a natural 
+choice for the compression of probability distributions because it keeps more 
+information in areas of higher probability density, so there is inherently less 
+waste in the information that is stored for each catalog entry and minimal risk 
+of bias in the quality of the approximation across \pz\ shapes.  Storing 
+quantiles is equivalent to storing piecewise constant data on an irregular 
+binning optimized to have narrower bins in areas of high probability and wider 
+bins in areas of low probability, effectively performing the optimization in 
+bin size while still permitting an entire catalog to share a single set of 
+metaparameters.  Unlike samples, its performance is uncorrelated with the shape 
+of the \pz.
+
+  %\item Beyond fidelity to the original \pz, what are the a priori strengths 
+and weaknesses of this format, especially with respect to 
+compression/reconstruction properties?
+Though the strengths and weaknesses of quantiles have not yet been formally 
+explored, we know have some ideas of what may be at play.  One obvious issue is 
+that storing more information where there is more probability density may not 
+always be desirable; it is possible that for some applications, information 
+about the tails of the \pz\ is more important.  We can also comment on matters 
+of compression and extraction.  Some native \pz\ output formats, like samples, 
+are easy to convert to regular quantiles, while others, like piecewise constant 
+functions, are not, requiring a numerical optimization for each parameter $i$.  
+Reconstruction of an approximate \pz\ $\hat{p}(z)$ requires a choice of 
+interpolation scheme and choices about the probability density for $z<z_{1}$ 
+and $z>z_{N_{f}}$.  Nonetheless, the quantile parametrization is a new option 
+that merits careful consideration.
+
+\subsubsection{Probability Evaluations}
 \label{sec:grid}
 
 \COMMENT{Should I discuss this since it isn't one of the three I test?}
 
+  %\item When/where has this format appeared in the literature as a published 
+catalog format, native \pz\ code output format, and science application input 
+format?
+  %\item What exactly is stored under this format, per galaxy (the parameters) 
+and per catalog (the metaparameters)?
+  %\item Beyond fidelity to the original \pz, what are the a priori strengths 
+and weaknesses of this format, especially with respect to 
+compression/reconstruction properties?
+
+A common format that appears in the \pz\ literature is that of evaluations of 
+the probability at specified points.  In particular, it is the most popular 
+native format for \pz s produced by template-fitting codes like BPZ.  
+\citep{benitez_bayesian_2000}  The reason for this is that with a large SED 
+template library, it is more efficient to precompute the filter fluxes of an 
+SED at a particular redshift than to do it on the fly while fitting the SED and 
+redshift of an individual galaxy's photometry.  The native parametrization of 
+BPZ, for example, has many more parameters than can reasonably be stored, so we 
+do not consider this format in this study.  We do, however, use it for internal 
+manipulations when converting between formats, so we describe it in the same 
+notation as the other formats discussed.
+
 Another storage option is evaluations of a continuous functional form of a \pz\ 
 at $N_{f}$ redshifts $(z_{1}, z_{2}, \dots, z_{N_{f}-1}, z_{N_{f}})$.  Thus 
-far, only a regular grid of redshifts (i.e. $z_{i+1}=z_{i}+\Delta$ for a 
+far, only a regular grid of redshifts (i.e. $\Delta=z_{i+j}-z_{j}$ for a 
 constant $\Delta$) shared among the entire catalog have been used in the 
 literature, so we do not consider irregular grids or grids that are not 
 homogeneous over the catalog.   In some cases, this is the native output format 
 of a \pz\ code.  For example. template-fitting codes may populate the template 
 library with colors of each SED evaluated on a regular grid of redshifts for 
 computational efficiency.
+
+
 
 The gridded parametrization is in some ways similar to the histogram format of 
 \ref{sec:bins}, suffering from the same risks of losing small-scale features 
@@ -264,6 +370,15 @@ values.  In this paper we use linear interpolation.  \COMMENT{Expand on this.}
 \label{sec:mm}
 
 \COMMENT{Should I discuss this since it isn't one of the three I test?}
+
+  %\item When/where has this format appeared in the literature as a published 
+catalog format, native \pz\ code output format, and science application input 
+format?
+  %\item What exactly is stored under this format, per galaxy (the parameters) 
+and per catalog (the metaparameters)?
+  %\item Beyond fidelity to the original \pz, what are the a priori strengths 
+and weaknesses of this format, especially with respect to 
+compression/reconstruction properties?
 
 There is some history of using a mixture model parametrization for \pz s.  
 \COMMENT{Seek citation.}  In this work, we consider only the common Gaussian 
@@ -296,61 +411,19 @@ representation in \qp\ in future work when we can justify a choice of how to
 handle negative values and avoid compounding format conversions.
 
 
-\subsubsection{Regular Quantiles}
-\label{sec:quantiles}
-
-One parametrization that has not previously been implemented is that of 
-quantiles, which are defined in terms of the cumulative distribution function 
-(CDF)
-\begin{align}
-  \label{eq:cdf}
-  CDF(z) &= \int_{-\infty}^{z}\ p(z)\ dz.
-\end{align}
-Under the quantile parametrization, an ensemble of \pz s shares a set of 
-$N_{f}$ values $0<q_{1}<q_{2}<\dots<q_{N-1}<q_{N_{f}}<1$.  Each galaxy's 
-catalog entry is the $N_{f}$ values $z_{i}$ satisfying $CDF(z_{i})=q_{i}$.  In 
-our tests, the quantiles are regular, such that $q_{i}\equiv i\bar{q}$, where 
-$\bar{q}\equiv(N_{f}+1)^{-1}$, but \qp\ does not require that this be so.
-
-The quantile parametrization is the inspiration for this work and namesake of 
-\qp.  Though it has not appeared in the \pz\ literature prior to this point, it 
-is a natural choice for the compression of probability distributions because it 
-keeps more information in areas of higher probability density, so there is 
-inherently less waste in the information that is stored for each catalog entry 
-and minimal risk of bias in the quality of the approximation across \pz\ 
-shapes.  Storing quantiles is equivalent to storing piecewise constant data (or 
-function evaluations) on an irregular binning (or irregular grid) optimized to 
-have narrower bins (denser evaluations) in areas of high probability and wider 
-bins (more diffuse evaluations) in areas of low probability, effectively 
-performing the optimization in bin size (grid resolution) while still 
-permitting an entire catalog to share a single set of metaparameters.  Unlike 
-samples, it is guaranteed to be an equally good approximation regardless of the 
-shape of the \pz.
-
-The strengths and weaknesses of quantiles have not yet been explored, as no 
-survey has previously stored quantile \pz s, no existing \pz\ code produces 
-quantiles as output, and no science case pipeline has yet been developed to 
-accept input \pz s as quantiles.  We can, however, comment on matters of 
-compression and extraction.  Some native \pz\ output formats, like samples, are 
-easy to convert to regular quantiles, while others, like piecewise constant 
-functions, are not, requiring a numerical optimization for each parameter $i$.  
-Reconstruction of an approximate \pz\ $\hat{p}(z)$ requires a choice of 
-interpolation scheme and choices about the probability density for $z<z_{1}$ 
-and $z>z_{N_{f}}$.  Nonetheless, the quantile parametrization is a new option 
-that merits careful consideration.
-
 \subsection{Comparison Metrics}
 \label{sec:metrics}
 
-We use two metrics to quantify how well an approximation of a \pz\ extracted 
-from a stored format represents the original \pz, characterized by many more 
-parameters than are available for storage, before it was compressed.  In 
-contrast to popular \pz\ metrics in the literature, this study aims to probe 
-how well an approximation of $p(z)$ represents an original $p(z)$, so there is 
-no notion of the accuracy of either the approximation nor the original $p(z)$ 
-relative to a galaxy's true redshift.  (For a demonstration of how one might 
-approach the different problem of evaluating the accuracy of a \pz\ relative to 
-a true redshift, see Schmidt, et al. (in prep.).)
+We use the Kullback-Leibler divergence (KLD) to quantify how well an 
+approximation of a \pz\ extracted from a stored format represents the original 
+\pz, characterized by many more parameters than are available for storage, 
+before it was compressed.  In contrast to popular \pz\ metrics in the 
+literature, this study aims to probe how well an approximation $\hat{p}(z)$ of 
+$p(z)$ represents an original $p(z)$, so there is no notion of the accuracy of 
+either the approximation nor the original $p(z)$ relative to a galaxy's true 
+redshift.  (For a demonstration of how one might approach the different problem 
+of evaluating the accuracy of a \pz\ relative to a true redshift, see Schmidt, 
+et al. (in prep.).)
 
 For most galaxy surveys producing \pz\ catalogs, it is important to reconstruct 
 individual \pz s.  For example, they may be used as the basis for targeting 
@@ -385,25 +458,9 @@ distributions of metric values for each parametrization are compared in Sec.
 redshift distribution function of a survey may be found in Sec. 
 \ref{sec:stacked}.
 
-\subsubsection{RMSE}
-\label{sec:rms}
 
-\COMMENT{Remove this metric from the final version after some restructuring.}
 
-The root mean square error (RMSE) is a familiar measure of the difference 
-between two functions $p(z)$ and $\hat{p}(z)$,
-\begin{align}
-  \label{eq:rmse}
-  RMSE &= \frac{1}{N_{ff}}\ \sum_{i=1}^{N_{ff}} (p(z_{i}) - \hat{p}(z_{i}))^{2}.
-\end{align}
-The RMSE is symmetric in that it is simply about the difference between the 
-functions, not some distance from one to the other.  The RMSE is also not 
-specific to probability distributions.  The RMSE is always positive, and a 
-smaller value indicates better agreement between the approximation and the 
-truth.
 
-\subsubsection{KLD}
-\label{sec:kld}
 
 The Kullback-Leibler divergence (KLD)
 \begin{align}
@@ -506,7 +563,7 @@ Even with six filters spanning the optical, there are known degeneracies
 (e.~g.~the Lyman/Balmer break degeneracy) that lead us to expect the presence 
 of multi-modal \pz's; some examples are shown in the top panel of 
 Fig.~\ref{fig:pzs}.  We produce "true" underlying \pz s by fitting a 
-five-component Gaussian mixture model to each \pz output by BPZ.
+five-component Gaussian mixture model to each \pz\ output by BPZ.
 
 
 \subsection{Euclid-like mock data}
