@@ -422,7 +422,6 @@ class PDF(object):
                 weights = qp.utils.evaluate_quantiles(self.quantiles)[1]# self.evaluate((endpoints[1:]+endpoints[:-1])/2.)
                 # interpolator = self.interpolate(using='quantiles', vb=False)
 
-
             if using == 'histogram':
                 # First find the histogram if none exists:
                 if self.histogram is None:
