@@ -110,10 +110,12 @@ parametrization.  The currently supported parametrizations are described in
 Sec. \ref{sec:approx}.  \qp\ also includes a few built-in metrics of the 
 accuracy of a representation of a \pz\ if its value under a given 
 parametrization is designated as "true."  The currently implemented metrics are 
-described in Sec. \ref{sec:metrics}.
+described in Sec. \ref{sec:metric}.
 
 \subsection{Approximation Methods}
 \label{sec:approx}
+
+\COMMENT{There's way, way too much detail in the subsubsections here!}
 
 
 First, we establish a vocabulary for the definitions of approximation methods.  
@@ -131,7 +133,9 @@ schemes with a generic interpolator functions $F_{\vec{C}'}(z; z', p')$ that
 comes with its own $N_{M}'$ metaparameters $\vec{C}'$.  The choice of 
 interpolator may be made on a survey-by-survey basis.  \qp\ supports all 
 interpolation options available to the \texttt{scipy.interpolate.interp1d} 
-function.
+function.  However, we have chosen a default interpolation scheme for each 
+format to maximize its performance, demonstrating the significance of the 
+choices made in reconstructing a \pz\ from stored parameters.
 
 \qp\ is currently capable of converting a \pz\ between five formats that are 
 described below in terms of the number $N_{f}$ of stored parameters $c_{i}$ per 
@@ -268,10 +272,11 @@ different value of $C$), optimizing the choice of $N_{f}$ given the shape of
 the \pz\ in its native format is nontrivial.  As this has not been done in the 
 literature, we leave its investigation to future work.  To reconstruct the 
 probability distribution, the format function $\mathcal{F}^{s}$ is the 
-interpolation scheme $F$ operating on another function $\Phi(z)=p$, such as a 
-kernel density estimator (KDE), that transforms samples into probability 
-density estimates, which also has metaparameters $\vec{C}''$ such as a 
-smoothing bandwidth in the case of a KDE.  The samples representation is then
+interpolation scheme $F$, such as a kernel density estimate (KDE), operating on 
+another function $\Phi(z)=p$, such as a KDE's kernel function, that transforms 
+samples into probability density estimates, which also has metaparameters 
+$\vec{C}''$ such as a smoothing bandwidth of the kernel function.  The samples 
+representation is then
 \begin{align}
   \label{eq:sampled}
   \hat{p}_{s}(z) &= F_{\vec{C}'}(z | \vec{c}, \Phi_{\vec{C}''}(\vec{c})).
@@ -320,7 +325,9 @@ quantile representation
   \hat{p}_{q}(z) &= F_{\vec{C}'}(z| \vec{c}, \frac{d}{dz}CDF^{-1}(\vec{C})).
 \end{align}
 In our tests, the quantiles are regular, such that $C_{i}\equiv i\bar{C}$, 
-where $\bar{C}\equiv(N_{f}+1)^{-1}$, but \qp\ does not require that this be so.
+where $\bar{C}\equiv(N_{f}+1)^{-1}$, but \qp\ does not require that this be so. 
+ Additionally, in the tests presented here, we use a linear interpolator by 
+default for the quantile format.
 
   %\item When/where has this format appeared in the literature as a published 
 catalog format, native \pz\ code output format, and science application input 
@@ -394,7 +401,8 @@ It has thus far only been applied on a regular grid in redshift (i.e.
 $\Delta=C_{i+1}-C_{i}$ for a constant $\Delta$) shared among the entire 
 catalog.  As irregular grids have not been used in the literature, we do not 
 consider them nor grids that are not homogeneous over the catalog, though \qp\ 
-can accommodate them.
+can accommodate them.  We use a linear interpolator in the tests presented in 
+this study.
 
   %\item Beyond fidelity to the original \pz, what are the a priori strengths 
 and weaknesses of this format, especially with respect to 
@@ -487,9 +495,10 @@ semidefinite function to integrate to unity is always possible (if the
 endpoints of integration are specified), one can motivate multiple schemes for 
 enforcing nonnegativity that result in different reconstructions $\hat{p}(z)$.  
 To discourage misuse of \qp, we do not permit functions that can take negative 
-values at this time.   We anticipate including the sparse basis representation 
-in \qp\ in future work when we can justify a choice of how to handle negative 
-values.
+values at this time.   \COMMENT{Actually, the gridded format already does this, 
+so it's not as much of a problem as I'm claiming here.}  We anticipate 
+including the sparse basis representation in \qp\ in future work when we can 
+justify a choice of how to handle negative values.
 
 
   %\item Beyond fidelity to the original \pz, what are the a priori strengths 
@@ -511,87 +520,102 @@ mixture model against other formats.  \COMMENT{This sort of weakens my
 assertion of realistic complexity with the mock data.}
 
 \subsection{Comparison Metrics}
-\label{sec:metrics}
+\label{sec:metric}
 
-\COMMENT{Mention interpolation choices for evaluating metrics.}
+In contrast to popular \pz\ metrics in the literature, we aim to probe how 
+closely a PDF $\hat{p}(z)$ reconstructed from a limited set of parameters 
+approximates a true PDF $p(z)$, so there is no notion of the accuracy of either 
+the approximate nor the original \pz\ relative to a galaxy's true redshift.  
+For a demonstration of how one might approach the different problem of 
+evaluating the accuracy of a \pz\ relative to a true redshift, see Schmidt, et 
+al. (in prep.).)  To quantify how much more information is in a true PDF $P(z)$ 
+than an approximate PDF $P'(z)$, we use the Kullback-Leibler divergence (KLD), 
+defined as
+\begin{align}
+  \label{eq:kld}
+  KLD[P(z) || P'(z)] &= \int_{-\infty}^{\infty}\ P(z)\ 
+\log\left[\frac{P(z)}{P'(z)}\right]\ dz
+\end{align}
+Though the KLD is hardly unheard of in astronomy, it is far from established.  
+In App. \ref{sec:kld}, we review its properties and deepen intuition, as it is 
+central to the proposed procedure for choosing the best storage parametrization 
+for \pz\ catalogs.
 
-We use the Kullback-Leibler divergence (KLD) to quantify how well an 
-approximation of a \pz\ extracted from a stored format represents the original 
-\pz, characterized by many more parameters than are available for storage, 
-before it was compressed.  In contrast to popular \pz\ metrics in the 
-literature, this study aims to probe how well an approximation $\hat{p}(z)$ of 
-$p(z)$ represents an original $p(z)$, so there is no notion of the accuracy of 
-either the approximation nor the original $p(z)$ relative to a galaxy's true 
-redshift.  (For a demonstration of how one might approach the different problem 
-of evaluating the accuracy of a \pz\ relative to a true redshift, see Schmidt, 
-et al. (in prep.).)
+The most important quirk of the KLD is its asymmetry; it is not a distance, 
+like the root mean square error, that is the same from $P(z)$ to $P'(z)$ as it 
+is from $P'(z)$ to $P(z)$ but a \textit{divergence} in the information lost 
+when using $P'(z)$ to approximate $P(z)$.  The KLD requires not only that both 
+functions $P(z)$ and $P'(z)$ be true probability distributions but also that 
+there must be some notion of a true reference distribution.  The former 
+condition is not always satisfied for the binned, gridded, and mixture model 
+formats produced by \pz\ code so must be explicitly enforced.  The latter is in 
+general not true for real data but can be checked for mock data.  It is also 
+obvious that the KLD is always positive, and a smaller value indicates better 
+agreement between the approximation and the truth.
 
-For most galaxy surveys producing \pz\ catalogs, it is important to reconstruct 
-individual \pz s.  For example, they may be used as the basis for targeting 
-spectroscopic follow up for a variety of science applications.  However, \pz s 
-have thus far been used almost exclusively to estimate the redshift 
+\Pz s have thus far been used almost exclusively to estimate the redshift 
 distribution function $n(z)$ necessary for calculating the correlation 
-functions used by many cosmological probes.  In addition to comparing the 
-properties of the distributions of individual \pz\ metrics, we also calculate 
-the metrics on an estimator $\hat{n}(z)$ of the redshift distribution function 
-$n(z)$, which is itself a 1-dimensional PDF.  The most common way to estimate 
+functions used by many cosmological probes.  The most common way to estimate 
 the redshift distribution function is to sum the \pz s according to
 \begin{align}
   \label{eq:nz}
-  \hat{n}(z) &\equiv \frac{1}{N_{g}}\ \sum_{j=1}^{N_{g}}\ \hat{p}_{j}(z),
+  \hat{n}(z) &\equiv \frac{1}{N_{g}}\ \sum_{k=1}^{N_{g}}\ \hat{p}^{k}(z),
 \end{align}
-where the estimator is normalized so that it, too, is a probability 
-distribution.  Though we do not recommend this approach to estimating the 
-redshift distribution (see Malz and Hogg, et al. (in prep.) for a 
-mathematically consistent alternative), we calculate the metrics below on this 
-"stacked estimator" of the redshift distribution function under the assumption 
-that inaccuracy and imprecision of an alternative estimator $\hat{n}'(z)$ 
-behaves similarly to that of the stacked estimator $\hat{n}(z)$ under each 
-format and number of parameters.
+in terms of the number $N_{g}$ of galaxies $k$ in the catalog, where the 
+estimator is normalized so that it, too, is a probability distribution (though 
+in the literature it is often subject to the fallacy conflating a sum and an 
+integral, first mentioned in Sec. \ref{sec:bins}).  We do not recommend this 
+approach to estimating the redshift distribution (see Malz and Hogg, et al. (in 
+prep.) for a mathematically consistent alternative), however, we use it under 
+the assumption that any metric calculated on a more principled estimator of the 
+redshift distribution function will have similar behavior with respect to the 
+parametrization of the \pz\ catalog as that of the stacked estimator.
 
-To calculate the metrics for a stored parameters $\vec{c}$ of a \pz\ 
-approximation, we perform an interpolation to evaluations of the approximated 
-\pz\ $\hat{p}(z)$ on a fine grid $(z_{1}, z_{2}, \dots, z_{N_{ff}-1}, 
-z_{N_{ff}})$ and compare the approximation to the true \pz\ $p_{0}(z)$ 
-evaluated on that grid, which is a mixture model by construction.  The 
-distributions of metric values for each parametrization are compared in Sec. 
-\ref{sec:individual}.  The metrics calculated on the stacked estimator of the 
+As $n(z)$ is itself a PDF (though in the literature it is often subject to the 
+fallacy conflating a sum and an integral, first mentioned in Sec. 
+\ref{sec:bins}), our primary metric is the KLD from the stacked estimator 
+$\hat{n}_{N_{f}}^{X}(z)$ derived from the catalog of approximate \pz s 
+$\{\hat{p}^{X}_{N_{f}}\}_{N_{g}}$ under format $X$ with $N_{f}$ parameters to 
+the stacked estimator $\hat{n}'(z)'$ derived from the true \pz s 
+$\{p_{k}(z)\}_{N_{g}}$.  The metrics calculated on the stacked estimator of the 
 redshift distribution function of a survey may be found in Sec. 
 \ref{sec:stacked}.
 
+For most galaxy surveys producing \pz\ catalogs, there is potential value not 
+only in obtaining $\hat{n}(z)$ but also in reconstructing individual \pz s 
+that, for example, may be used as the basis for targeting spectroscopic follow 
+up for a variety of science applications.  \COMMENT{I have many other ideas for 
+how to use \pz s but would like to be able to cite something that's actually 
+been done.}  For this purpose, we also calculate $\{KLD[p_{k}(z) | \hat{p}^{X; 
+N_{f}}_{k}(z)]\}_{N_{g}}$ for each individual \pz\ $k$ in a catalog and 
+characterize the distribution of KLD values $p(KLD_{X; N_{f}})$ by their first, 
+second, and third moments, or, the mean, variance, and kurtosis.  We use these 
+aggregate statistics to observe how the approximate \pz s for some dataset vary 
+with the choice of format $X$ and number of parameters $N_{f}$.  The moments of 
+the distributions of KLDs for each parametrization are compared in Sec. 
+\ref{sec:individual}.
 
-
-
-
-The Kullback-Leibler divergence (KLD)
+Calculating both of these metrics requires making an approximation of Eq. 
+\ref{eq:kld}, since there is in general no closed form solution to the integral 
+for the approximate \pz s.  To acquire the KLD on individual \pz s, \qp\ uses 
+the gridded format of Sec. \ref{sec:grid}.  The approximate \pz\ is evaluated 
+using the representation function $\mathcal{F}(z | \vec{C}, \vec{c})$ on a very 
+fine, regular grid $(z_{1}, z_{2}, \dots, z_{N_{ff}-1}, z_{N_{ff}})$ with 
+resolution $\Delta=z_{i+1}-z_{i}$, with $N_{ff}\gg N_{f}$, and the true \pz\ is 
+by construction a Gaussian mixture model, introduced in Sec. \ref{sec:mm}, 
+evaluated at the same redshifts.  Then they are combined according to
 \begin{align}
   \label{eq:kld}
-  D(p_{0}(z) || \hat{p}(z)) &= \int_{-\infty}^{\infty}\ p_{0}(z)\ 
-\log\left[\frac{p_{0}(z)}{\hat{p}(z)}\right]\ dz\\
-  &\approx \sum_{z_{1}}^{z_{N_{ff}}}\ p_{0}(z)\ 
-\log\left[\frac{p_{0}(z)}{\hat{p}(z)}\right]\ \cdot\ \Delta
+  \hat{KLD}(p(z) || \hat{p}(z)) &\approx \sum_{z=z_{1}}^{z_{N_{ff}}}\ p(z)\ 
+\log\left[\frac{p(z)}{\hat{p}(z)}\right]\ \cdot\ \Delta
 \end{align}
-quantifies the loss of information of an approximation of a probability 
-distribution from the true probability distribution.  The KLD is the most 
-natural metric for comparing an approximation of a PDF to a true PDF and so is 
-ideal for this application.
+to estimate the KLD.  We attempt to use the most appropriate interpolation 
+scheme for each format, noted in Sec. \ref{sec:approx}.
 
-Note that the KLD is not symmetric and requires not only that both functions be 
-true probability distributions but also that there must be some notion of a 
-true reference distribution.  The former condition is not always satisfied for 
-the binned, gridded, and mixture model formats produced by \pz\ codes; while 
-\qp\ checks these conditions before attempting to calculate any metric, 
-enforcing them on an approximate \pz is not always well-defined.
+\COMMENT{Perhaps switch the order of the individual and stacked metrics?}
 
-Though the KLD is hardly unheard of in astronomy, it is far from established.  
-It is obvious that the KLD is always positive, and a smaller value indicates 
-better agreement between the approximation and the truth.  The following 
-discussion, however, is intended to deepen the reader's intuition for this 
-metric, as it is central to the proposed procedure for choosing the best 
-storage parameters for \pz\ catalogs.
 
-\COMMENT{Add the discussion of "precision" and "tension" for single Gaussians 
-as outlined in the KLD Jupyter notebook in the documentation.}
+
 
 
 \section{Photo-z Test Data}
@@ -714,7 +738,7 @@ that is a wrapper for collections of \texttt{qp.PDF} objects.
 \label{sec:individual}
 
 Parametrizations are compared on the basis of the distributions of the metrics 
-of Sec. \ref{sec:metrics} calculated over all galaxies in the ensemble.  An 
+of Sec. \ref{sec:metric} calculated over all galaxies in the ensemble.  An 
 example of the distribution of the KLD for $N_{f}=10$ is shown in Fig. 
 \ref{fig:individual}.
 
@@ -817,6 +841,12 @@ the format necessary for science calculations.
 
 \dots
 
+
+\subsection*{Appendix}
+\label{sec:kld}
+
+\COMMENT{Add the discussion of "precision" and "tension" for single Gaussians 
+as outlined in the KLD Jupyter notebook in the documentation.}
 
 \subsection*{Acknowledgments}
 
