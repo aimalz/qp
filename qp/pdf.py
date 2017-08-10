@@ -10,11 +10,12 @@ from sklearn import mixture
 import qp
 from qp.utils import infty as default_infty
 from qp.utils import epsilon as default_eps
+from qp.utils import limits as default_lims
 
 class PDF(object):
 
     def __init__(self, truth=None, quantiles=None, histogram=None,
-                 gridded=None, samples=None, scheme='linear',
+                 gridded=None, samples=None, limits=default_lims, scheme='linear',
                  vb=True):
         """
         An object representing a probability density function in
@@ -36,6 +37,8 @@ class PDF(object):
             at those points
         samples: ndarray, optional
             Array of length nsamples containing sampled values
+        limits: tuple, float, optional
+            limits past which PDF is considered to be 0.
         scheme: string, optional
             name of interpolation scheme to use.
         vb: boolean
@@ -49,10 +52,11 @@ class PDF(object):
         """
         self.truth = truth
         self.quantiles = quantiles
-        self.histogram = qp.utils.normalize_histogram(histogram, vb=False)
+        self.histogram = qp.utils.normalize_histogram(histogram, vb=vb)
         self.samples = samples
-        self.gridded = qp.normalize_integral(qp.utils.normalize_gridded(gridded, vb=False))
+        self.gridded = qp.normalize_integral(qp.utils.normalize_gridded(gridded, vb=vb))
         self.mix_mod = None
+        self.limits = limits
 
         self.scheme = scheme
 
@@ -64,18 +68,22 @@ class PDF(object):
         if self.truth is not None:
             self.initialized = self.truth
             self.first = 'truth'
-        elif self.quantiles is not None:
-            self.initialized = self.quantiles
-            self.first = 'quantiles'
-        elif self.histogram is not None:
-            self.initialized = self.histogram
-            self.first = 'histogram'
         elif self.gridded is not None:
             self.initialized = self.gridded
             self.first = 'gridded'
+            self.limits = (min(self.limits[0], np.min(self.gridded[0])), max(self.limits[-1], np.max(self.gridded[0])))
         elif self.samples is not None:
             self.initialized = self.samples
             self.first = 'samples'
+            self.limits = (min(self.limits[0], np.min(self.samples)), max(self.limits[-1], np.max(self.samples)))
+        elif self.histogram is not None:
+            self.initialized = self.histogram
+            self.first = 'histogram'
+            self.limits = (min(self.limits[0], np.min(self.histogram[0])), max(self.limits[-1], np.max(self.histogram[0])))
+        elif self.quantiles is not None:
+            self.initialized = self.quantiles
+            self.first = 'quantiles'
+            self.limits = (min(self.limits[0], np.min(self.quantiles[-1])), max(self.limits[-1], np.max(self.quantiles[-1])))
 
         # The most recent parametrization used is, at this point, the
         # first one:
@@ -86,7 +94,7 @@ class PDF(object):
 
         return
 
-    def evaluate(self, loc, vb=False, using=None):
+    def evaluate(self, loc, vb=True, using=None):
         """
         Evaluates the PDF (either the true version or the first
         approximation of it if no parametrization is specified)
@@ -129,13 +137,13 @@ class PDF(object):
 
         return(loc, val)
 
-    def integrate(self, limits, dx=0.0001, using=None, vb=False):
+    def integrate(self, limits=None, dx=0.0001, using=None, vb=True):
         """
         Computes the integral under the PDF between the given limits.
 
         Parameters
         ----------
-        limits: tuple, float
+        limits: tuple, float, optional
             limits of integration
         dx: float, optional
             granularity of integral
@@ -149,6 +157,10 @@ class PDF(object):
         integral: float
             value of the integral
         """
+        if limits is None:
+            limits = self.limits
+            if vb:
+                print('Integrating over '+str(limits)+' because no limits provided')
         lim_range = limits[-1] - limits[0]
         fine_grid = np.arange(limits[0], limits[-1] + dx, dx)
 
@@ -157,7 +169,7 @@ class PDF(object):
 
         return integral
 
-    def quantize(self, quants=None, percent=10., N=None, infty=default_infty, vb=True):
+    def quantize(self, quants=None, N=9, limits=None, vb=True):
         """
         Computes an array of evenly-spaced quantiles from the truth.
 
@@ -165,12 +177,10 @@ class PDF(object):
         ----------
         quants: ndarray, float, optional
             array of quantile locations as decimals
-        percent: float, optional
-            the separation of the requested quantiles, in percent
         N: int, optional
-            the number of quantiles to compute.
-        infty: float, optional
-            approximate value at which CDF=1.
+            number of regular quantiles to compute
+        limits: tuple, float, optional
+            approximate values at which CDF=0. and CDF=1.
         vb: boolean
             report on progress to stdout?
 
@@ -191,19 +201,12 @@ class PDF(object):
         """
         if quants is not None:
             quantpoints = quants
-        else:
-            if N is not None:
-                # Compute the spacing of the quantiles:
-                quantum = 1.0 / float(N+1)
-            else:
-                quantum = percent/100.0
-                # Over-write the number of quantiles:
-                N = np.ceil(100.0 / percent) - 1
-                assert N > 0
-            quantpoints = np.linspace(0.0+quantum, 1.0-quantum, N)
-
+        elif N is not None:
+            quantum = 1. / float(N+1)
+            quantpoints = np.linspace(0.+quantum, 1.-quantum, N)
         if vb:
             print("Calculating "+str(len(quantpoints))+" quantiles: "+str(quantpoints))
+
         if self.truth is not None:
             quantiles = self.truth.ppf(quantpoints)
         else:
@@ -212,26 +215,29 @@ class PDF(object):
 
         if vb:
             print("Resulting "+str(len(quantiles))+" quantiles: "+str(quantiles))
-            integrals = self.truth.cdf(quantiles)
-            print("Checking integrals: "+str(integrals))
+        # integrals = self.truth.cdf(quantiles)
+        # assert np.isclose(integrals, quantpoints)
         self.quantiles = (quantpoints, quantiles)
+        if limits is None:
+            limits = self.limits
+        self.limits = (min(limits[0], np.min(quantiles)), max(limits[-1], np.max(quantiles)))
         self.last = 'quantiles'
         return self.quantiles
 
-    def histogramize(self, binends=None, N=10, binrange=None, vb=True):
+    def histogramize(self, binends=None, N=10, binrange=(-1.*default_infty, default_infty), vb=True):
         """
         Computes integrated histogram bin values from the truth via the CDF.
 
         Parameters
         ----------
         binends: ndarray, float, optional
-            Array of N+1 endpoints of N bins
+            array of N+1 endpoints of N bins
         N: int, optional
-            Number of bins if no binends provided
+            number of regular bins if no binends provided
         binrange: tuple, float, optional
-            Pair of values of endpoints of total bin range
+            pair of values of endpoints of total bin range
         vb: boolean
-            Report on progress to stdout?
+            report on progress to stdout?
 
         Returns
         -------
@@ -271,7 +277,7 @@ class PDF(object):
         if self.truth is not None:
             cdf = self.truth.cdf(binends)
             heights = cdf[1:] - cdf[:-1]
-            histogram = qp.utils.normalize_histogram((binends, heights), vb=False)
+            histogram = qp.utils.normalize_histogram((binends, heights), vb=vb)
             # for b in range(N):
             #     histogram[b] = (cdf[b+1]-cdf[b])/(binends[b+1]-binends[b])
         else:
@@ -365,7 +371,7 @@ class PDF(object):
         self.mix_mod = qp.composite(components)
         return self.mix_mod
 
-    def sample(self, N=100, infty=default_infty, using=None, vb=True):
+    def sample(self, N=1000, infty=default_infty, using=None, vb=True):
         """
         Samples the pdf in given representation
 
@@ -403,6 +409,7 @@ class PDF(object):
 
         elif using == 'gridded':
             interpolator = self.interpolate(using = 'gridded', vb=vb)
+            # (xlims, ylims) = self.evaluate(self.limits, using='gridded', vb=vb)
             (xmin, xmax) = (min(self.gridded[0]), max(self.gridded[0]))
             (ymin, ymax) = (min(self.gridded[1]), max(self.gridded[1]))
             (xran, yran) = (xmax - xmin, ymax - ymin)
@@ -418,7 +425,7 @@ class PDF(object):
                 if self.quantiles is None:
                     self.quantiles = self.quantize(vb=vb)
 
-                endpoints = np.concatenate((np.array([-1.*infty]),  self.quantiles[1], np.array([infty])))
+                endpoints = np.insert(self.quantiles[1], [0, -1], self.limits)
                 weights = qp.utils.evaluate_quantiles(self.quantiles)[1]# self.evaluate((endpoints[1:]+endpoints[:-1])/2.)
                 # interpolator = self.interpolate(using='quantiles', vb=False)
 
@@ -442,10 +449,11 @@ class PDF(object):
 
         if vb: print 'Sampled values: ', samples
         self.samples = np.array(samples)
+        self.limits = (min(self.limits[0], np.min(self.samples)), max(self.limits[-1], np.max(self.samples)))
         self.last = 'samples'
         return self.samples
 
-    def interpolate(self, using=None, vb=False):
+    def interpolate(self, using=None, vb=True):
         """
         Constructs an `interpolator` function based on the parametrization.
 
@@ -483,14 +491,18 @@ class PDF(object):
                 self.quantiles = self.quantize(vb=vb)
 
             (x, y) = qp.utils.evaluate_quantiles(self.quantiles)
+            def normalize_quantiles((x, y)):
+                x = np.insert(x, [0, -1], self.limits)
+                y = np.insert(y, [0, -1], (default_eps, default_eps))
+                return(x, y)
+            (x, y) = normalize_quantiles((x, y))
 
         if using == 'histogram':
             # First find the histogram if none exists:
             if self.histogram is None:
                 self.histogram = self.histogramize(vb=vb)
 
-            y_ext = np.array([default_eps])
-            extra_y = np.concatenate((y_ext, self.histogram[1], y_ext))
+            extra_y = np.insert(self.histogram[1], [0, -1], (default_eps, default_eps))
 
             def histogram_interpolator(xf):
                 nx = len(xf)
@@ -542,7 +554,7 @@ class PDF(object):
 
         return self.interpolator
 
-    def approximate(self, points, using=None, scheme=None, vb=False):
+    def approximate(self, points, using=None, scheme=None, vb=True):
         """
         Interpolates the parametrization to get an approximation to the density.
 
@@ -586,18 +598,20 @@ class PDF(object):
         self.interpolator = self.interpolate(using=using, vb=vb)
         if vb: print('interpolating between '+str(min(points))+' and '+str(max(points)))
         interpolated = self.interpolator(points)
-        interpolated = qp.utils.normalize_gridded((points, interpolated), vb=False)
+        interpolated = qp.utils.normalize_gridded((points, interpolated), vb=vb)
         # interpolated[interpolated<0.] = 0.
 
         return interpolated#(points, interpolated)
 
-    def plot(self, loc='plot.png', vb=True):
+    def plot(self, limits=None, loc='plot.png', vb=True):
         """
         Plots the PDF, in various ways.
 
         Parameters
         ----------
-        loc: string
+        limits: tuple, float, optional
+            limits over which plot should be made
+        loc: string, optional
             filepath/name for saving the plot, optional
         vb: boolean, optional
             report on progress to stdout?
@@ -608,7 +622,9 @@ class PDF(object):
         is stored in it: the more properties the PDF has,
         the more exciting the plot!
         """
-        extrema = [0., 0.]
+        if limits is None:
+            limits = self.limits
+        extrema = limits
 
         colors = {}
         colors['truth'] = 'k'
@@ -645,7 +661,7 @@ class PDF(object):
             plt.vlines(self.quantiles[1],
                        np.zeros(len(self.quantiles[1])),
                        self.evaluate(self.quantiles[1],
-                                     using='quantiles', vb=False)[1],
+                                     using='quantiles', vb=vb)[1],
                        color=colors['quantiles'], linestyle=':', lw=1.0, alpha=1.0,
                        label='Quantiles')
             (grid, qinterpolated) = self.approximate(x, vb=vb,
@@ -705,13 +721,13 @@ class PDF(object):
 
         return
 
-    def kld(self, limits=(0., 1.), dx=0.01):
+    def kld(self, limits=None, dx=0.01):
         """
         Calculates Kullback-Leibler divergence of quantile approximation from truth.
 
         Parameters
         ----------
-        limits: tuple of floats
+        limits: tuple of floats, optional
             endpoints of integration interval in which to calculate KLD
         dx: float
             resolution of integration grid
@@ -728,12 +744,15 @@ class PDF(object):
             d = p.kld(limits=(-1., 1.), dx=1./100))
         """
         print('This function is deprecated; use `qp.utils.calculate_kl_divergence`.')
-        if self.truth is None:
-            print('Truth not available for comparison.')
-            return
-        else:
-            KL = qp.utils.calculate_kl_divergence(self, self, limits=limits, dx=dx)
-            return(KL)
+        return
+        # if self.truth is None:
+        #     print('Truth not available for comparison.')
+        #     return
+        # else:
+        #     if limits is None:
+        #         limits = self.limits
+        #     KL = qp.utils.calculate_kl_divergence(self, self, limits=limits, dx=dx)
+        #     return(KL)
 
     def rms(self, limits=(0., 1.), dx=0.01):
         """
@@ -759,9 +778,10 @@ class PDF(object):
             d = p.rms(limits=(-1., 1.), dx=1./100))
         """
         print('This function is deprecated; use `qp.utils.calculate_rmse`.')
-        if self.truth is None:
-            print('Truth not available for comparison.')
-            return
-        else:
-            RMS = qp.utils.calculate_rms(self, self, limits=limits, dx=dx)
-            return(RMS)
+        return
+        # if self.truth is None:
+        #     print('Truth not available for comparison.')
+        #     return
+        # else:
+        #     RMS = qp.utils.calculate_rms(self, self, limits=limits, dx=dx)
+        #     return(RMS)
