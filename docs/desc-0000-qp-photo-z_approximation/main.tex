@@ -168,8 +168,8 @@ compression/reconstruction properties?
 \begin{figure}
   \includegraphics[width=0.9\columnwidth]{figures/qp_placeholder.png}
   \caption{Placeholder! [all available $\hat{p}(z)$ for one \texttt{qp.PDF} 
-object and given $N_{f}$; show multiple \texttt{qp.PDF} objects? multiple 
-$N_{f}$? realistically complex or simple Gaussian?]
+object and given $N_{f}$]  \COMMENT{Should I show multiple \texttt{qp.PDF} 
+objects? a different $N_{f}$? a simpler or more complex function?}
   \label{fig:qp}}
 \end{figure}
 
@@ -621,48 +621,57 @@ scheme for each format, noted in Sec. \ref{sec:approx}.
 \section{Photo-z Test Data}
 \label{sec:data}
 
-With the expectation that \qp\  may suggest a different optimal result for 
+With the expectation that \qp\  may indicate a different optimal result for 
 different datasets, we apply it to two mock datasets with different data 
 quality properties.  For example, one can expect storing a small number of 
 samples to be sufficient for unimodal \pz s with low variance but disastrous 
 for broader \pz s, or storing the components of a Gaussian mixture model to 
-only be appropriate when the \pz s in the catalog are in fact weighted sums of 
-Gaussians as opposed to other functional forms.  For this reason, we 
-demonstrate the procedure for making a good choice of format and number of 
-parameters on a pair of mock datasets intended to be realistic projections of 
-anticipated data from upcoming surveys with different data quality.
+only be appropriate.  For this reason, we demonstrate a procedure for making a 
+good choice of format and number of parameters on a pair of mock datasets 
+intended to be realistic projections of anticipated data from upcoming surveys 
+with different data quality.
 
 Both datasets were fit using the publicly available Bayesian Photometric 
 Redshift (BPZ) code \citep{benitez_bayesian_2000}, which employs spectral 
-energy distribution (SED) fitting to a template set.  However, the choice of 
-\pz\ estimation method is not relevant to this study; so long as the mock \pz s 
-are realistically complex, meaning they take shapes we expect to see in 
-accurate \pz s from real datasets with similar photometric properties, it does 
-not matter how accurately they describe the probability distribution of galaxy 
-redshifts given their photometric data.  We only seek to optimize the fidelity 
-of the stored \pz\ relative to the \pz\ output by a representative \pz\ fitting 
-code.  (Other work has been done to compare the accuracy of \pz s produced by 
-different methods; see Schmidt, et al. (in prep.), 
-\citet{tanaka_photometric_2017}.)  As BPZ is a widely used and well established 
+energy distribution (SED) fitting to a template library.  However, the choice 
+of \pz\ estimation method is not relevant to this study; so long as the mock 
+\pz s are realistically complex, meaning they take shapes like those we expect 
+to see in accurate \pz s from real datasets with similar photometric 
+properties, it does not matter how accurately they describe the probability 
+distribution of galaxy redshifts given their photometric data.  We only seek to 
+optimize the fidelity of the stored \pz\ relative to the \pz\ output by a 
+representative \pz\ fitting code.  (See \citet{tanaka_photometric_2017}, 
+Schmidt, et al. (in prep.) for other work comparing the accuracy of \pz s 
+produced by different methods.)  As BPZ is a widely used and well established 
 method, we assume that the \pz s produced by it are of realistic complexity.
 
-The mock datasets considered here begin in a gridded parametrization.  Because 
-we believe that each galaxy has a true redshift interim posterior probability 
-distribution that is a continuous function, to which the output of a \pz\ code 
-is itself a high-resolution approximation, we fit each \pz\ in the catalog of 
-densely evaluated gridded evaluations with a Gaussian mixture model, which we 
-designate as $p_{0}(z)$.
+The mock datasets considered here were obtained in a gridded parametrization, 
+the default for BPZ output, with $N_{ff}>200$, the maximum number of floating 
+point numbers available for characterizing all photo-z information obtained by 
+LSST.  \citep{juric_data_2017}  Because we believe that each galaxy has an 
+underlying redshift interim posterior probability distribution that is a 
+continuous function, to which the output of this \pz\ code is itself a 
+high-resolution approximation, we fit each \pz\ in the catalog of densely 
+evaluated gridded evaluations with a Gaussian mixture model and designate that 
+as the true \pz\ $p(z)$.
 
 \begin{figure}
-  \includegraphics[width=0.9\columnwidth]{figures/pz_placeholder.png}\\
-  \includegraphics[width=0.9\columnwidth]{figures/pz_placeholder.png}
+  \includegraphics[width=0.9\columnwidth]{figures/lsst_pz_placeholder.png}\\
+  \includegraphics[width=0.9\columnwidth]{figures/euclid_pz_placeholder.png}
   \caption{Placeholder! [plot with a few examples of what the \pz s look like, 
-one panel per dataset (vertical); random sample? cherrypick weirdest? how many?]
+one panel per dataset (vertical)]  \COMMENT{A random sample of a handful of \pz 
+s doesn't really tell me much about the whole dataset, but cherrypicking the 
+most interesting or average members of the catalog could be more misleading.  
+What else can I do to give readers a feel for the differences between the 
+datasets?}
   \label{fig:pzs}}
 \end{figure}
 
 \subsection{LSST-like mock data}
 \label{sec:LSST}
+
+\COMMENT{Written by Sam Schmidt, anticipating future contributions from Joe 
+DeRose, Risa Wechsler, and/or Matt Becker}
 
 In order to simulate the expected LSST galaxy sample, we use the 
 Buzzard-highres-v1.0 mock galaxy catalog \COMMENT{How do we cite this?}, which 
@@ -694,7 +703,8 @@ five-component Gaussian mixture model to each \pz\ output by BPZ.
 \subsection{Euclid-like mock data}
 \label{sec:Euclid}
 
-\COMMENT{Ask for larger subset comparable to Sec. \ref{sec:LSST}.}
+\COMMENT{Written by Melissa Graham, have asked for larger catalog comparable to 
+Sec. \ref{sec:LSST}.}
 
 We start with a 30,000 object subset of the same simulated galaxy catalog used 
 for LSST photometric redshift experiments by Graham, et al. (in prep.), which 
@@ -745,8 +755,8 @@ example of the distribution of the KLD for $N_{f}=10$ is shown in Fig.
 \begin{figure}
   \includegraphics[width=0.9\columnwidth]{figures/individual_placeholder.png}
   \caption{Placeholder! [histogram of log-KLD for one number of parameters 
-$N_{f}$, one color per format, one panel per dataset (vertical), panel title of 
-(dataset, $N_{f}$)]
+$N_{f}$, one color per format, one panel per dataset? (vertical)?, panel title 
+of (dataset, $N_{f}$)]  \COMMENT{Which $N_{f}$ and dataset should I choose?}
   \label{fig:individual}}
 \end{figure}
 
@@ -755,15 +765,17 @@ compare the moments of the distributions of metric values for the individual
 \pz s under each parametrization.
 
 \begin{figure}
-  \caption{\COMMENT{Make a placeholder!} [$N_{f}$ (horizontal) vs. first few 
-moment values each with separate vertical scale(?), one marker shape per moment 
-(might be too confusing with many moments, will need to see which are most 
-informative), one color per format, one panel per dataset (vertical), panel 
-title of dataset]
+  \includegraphics[width=0.9\columnwidth]{lsst_moments_placeholder.png}\\
+  \includegraphics[width=0.9\columnwidth]{euclid_moments_placeholder.png}
+  \caption{Placeholder!  (still refining this plot concept)  [$N_{f}$ 
+(horizontal) vs. first few moment values each with separate vertical scale, one 
+marker shape per moment (might be too confusing with many moments, will need to 
+see which are most informative), one color per format, one panel per dataset 
+(vertical), panel title of dataset]
   \label{fig:moments}}
 \end{figure}
 
-\COMMENT{How does moment behavior differ between datsets?}
+\COMMENT{Interpreting this is pretty interesting!}
 
 \subsection{Stacked $\hat{n}(z)$ estimator}
 \label{sec:stacked}
@@ -773,12 +785,16 @@ distribution estimator $\hat{n}(z)$ relative to that of the \pz s in their
 original format.
 
 \begin{figure}
-  \includegraphics[width=0.9\columnwidth]{figures/stacked_placeholder.png}\\
-  \includegraphics[width=0.9\columnwidth]{figures/stacked_placeholder.png}
-  \caption{Placeholder! [$N_{f}$ (horizontal) vs. metric value (vertical), one 
-color per format, curves from many instantiations of the subsample of galaxies 
-(or error bars derived from those instantiations), one panel per dataset 
-(vertical), panel title of dataset]
+  
+\includegraphics[width=0.9\columnwidth]{figures/lsst_stacked_placeholder.png}\\
+  
+\includegraphics[width=0.9\columnwidth]{figures/euclid_stacked_placeholder.png}
+  \caption{Placeholder!  \COMMENT{Should I show the $\hat{n}(z)$ plot or just 
+the metrics?}  [$N_{f}$ (horizontal) vs. metric value (vertical), one color per 
+format, curves from many instantiations of the subsample of galaxies (or error 
+bars derived from those instantiations), one panel per dataset (vertical), 
+panel title of dataset; i.e. both panels look like the upper panel but hasn't 
+been run on Euclid-like mock data yet]
   \label{fig:stacked}}
 \end{figure}
 
