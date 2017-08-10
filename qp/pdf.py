@@ -498,8 +498,8 @@ class PDF(object):
 
             (x, y) = qp.utils.evaluate_quantiles(self.quantiles)
             def normalize_quantiles((x, y)):
-                xmin = x[0] - 2 * self.quantiles[0] / y[0]
-                xmax = x[1] + 2 * (1-self.quantiles[-1]) / y[-1]
+                xmin = x[0] - 2 * self.quantiles[0][0] / y[0]
+                xmax = x[1] + 2 * (1-self.quantiles[0][-1]) / y[-1]
                 x = np.insert(x, [0, -1], (xmin, xmax))
                 y = np.insert(y, [0, -1], (default_eps, default_eps))
                 return(x, y)
