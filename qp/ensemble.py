@@ -10,10 +10,12 @@ import matplotlib.pyplot as plt
 import qp
 import qp.utils as u
 from qp.utils import infty as default_infty
+from qp.utils import epsilon as default_eps
+from qp.utils import limits as default_lims
 
 class Ensemble(object):
 
-    def __init__(self, N, truth=None, quantiles=None, histogram=None, gridded=None, samples=None, scheme='linear', vb=True, procs=None):# where='ensemble.db', procs=None):#
+    def __init__(self, N, truth=None, quantiles=None, histogram=None, gridded=None, samples=None, limits=None, scheme='linear', vb=True, procs=None):# where='ensemble.db', procs=None):#
         """
         Creates an object comprised of many qp.PDF objects to efficiently
         perform operations on all of them
@@ -37,6 +39,8 @@ class Ensemble(object):
             pdf at those points
         samples: ndarray, optional
             Array of size (npdfs, nsamples) containing sampled values
+        limits: tuple, float, optional
+            shared limits of the space over which the PDFs are defined
         scheme: string, optional
             name of interpolation scheme to use.
         vb: boolean, optional
@@ -72,6 +76,11 @@ class Ensemble(object):
         if truth is None and quantiles is None and histogram is None and gridded is None and samples is None:
             print 'Warning: initializing an Ensemble object without inputs'
             return
+
+        if limits is None:
+            self.limits = default_lims
+        else:
+            self.limits = limits
 
         if truth is None:
             self.truth = [None] * N
@@ -112,7 +121,7 @@ class Ensemble(object):
             #     logfile.write('making pdf '+str(i)+'\n')
             return qp.PDF(truth=self.truth[i], quantiles=self.quantiles[i],
                             histogram=self.histogram[i],
-                            gridded=self.gridded[i], samples=self.samples[i],
+                            gridded=self.gridded[i], samples=self.samples[i], limits=self.limits,
                             scheme=self.scheme, vb=False)
 
         start_time = timeit.default_timer()
@@ -154,7 +163,7 @@ class Ensemble(object):
 
         return self.samples
 
-    def quantize(self, quants=None, percent=10., N=None, infty=default_infty, vb=True):
+    def quantize(self, quants=None, N=None, limits=None, vb=True):
         """
         Computes an array of evenly-spaced quantiles for each PDF
 
@@ -179,8 +188,8 @@ class Ensemble(object):
         def quantize_helper(i):
             # with open(self.logfilename, 'wb') as logfile:
             #     logfile.write('quantizing pdf '+str(i)+'\n')
-            return self.pdfs[i].quantize(quants=quants, percent=percent,
-                                            N=N, infty=infty, vb=False)
+            return self.pdfs[i].quantize(quants=quants,
+                                            N=N, limits=None, vb=False)
 
         self.quantiles = self.pool.map(quantize_helper, self.pdf_range)
         self.quantiles = np.swapaxes(np.array(self.quantiles), 0, 1)
@@ -252,7 +261,7 @@ class Ensemble(object):
 
         return self.mix_mod
 
-    def evaluate(self, loc, using=None, vb=True):
+    def evaluate(self, loc, using=None, norm=False, vb=True):
         """
         Evaluates all PDFs
 
@@ -262,6 +271,8 @@ class Ensemble(object):
             location(s) at which to evaluate the pdfs
         using: string
             which parametrization to evaluate, defaults to initialization
+        norm: boolean, optional
+            True to normalize the evaluation, False if expected probability outside loc
         vb: boolean
             report on progress
 
@@ -274,14 +285,14 @@ class Ensemble(object):
         def evaluate_helper(i):
             # with open(self.logfilename, 'wb') as logfile:
             #     logfile.write('evaluating pdf '+str(i)+'\n')
-            return self.pdfs[i].evaluate(loc=loc, using=using, vb=False)
+            return self.pdfs[i].evaluate(loc=loc, using=using, norm=norm, vb=False)
         self.gridded = self.pool.map(evaluate_helper, self.pdf_range)
         self.gridded = np.swapaxes(np.array(self.gridded), 0, 1)
         self.gridded = (self.gridded[0][0], self.gridded[1])
 
         return self.gridded
 
-    def integrate(self, limits, using, dx=0.0001):
+    def integrate(self, limits, using, dx=0.001):
         """
         Computes the integral under the ensemble of PDFs between the given limits.
 
@@ -306,7 +317,7 @@ class Ensemble(object):
 
         return integrals
 
-    def kld(self, using=None, limits=(-10.0,10.0), dx=0.01):
+    def kld(self, using=None, limits=None, dx=0.01):
         """
         Calculates the KLD for each PDF in the ensemble
 
@@ -314,7 +325,7 @@ class Ensemble(object):
         ----------
         using: string
             which parametrization to use
-        limits: tuple of floats
+        limits: tuple of floats, optional
             endpoints of integration interval in which to calculate KLD
         dx: float
             resolution of integration grid
@@ -330,6 +341,9 @@ class Ensemble(object):
         else:
             def P_func(pdf):
                 return qp.PDF(truth=pdf.truth, vb=False)
+
+        if limits is None:
+            limits = self.limits
 
         if using == 'quantiles':
             def Q_func(pdf):
@@ -358,7 +372,7 @@ class Ensemble(object):
 
         return klds
 
-    def rmse(self, using=None, limits=(-10.0,10.0), dx=0.01):
+    def rmse(self, using=None, limits=None, dx=0.01):
         """
         Calculates the RMSE for each PDF in the ensemble
 
@@ -382,6 +396,9 @@ class Ensemble(object):
         else:
             def P_func(pdf):
                 return qp.PDF(truth=pdf.truth, vb=False)
+
+        if limits is None:
+            limits = self.limits
 
         if using == 'quantiles':
             def Q_func(pdfs):
@@ -435,7 +452,7 @@ class Ensemble(object):
         """
         loc_range = max(loc) - min(loc)
         delta = loc_range / len(loc)
-        evaluated = self.evaluate(loc, using=using, vb=False)
+        evaluated = self.evaluate(loc, using=using, norm=True, vb=False)
         stack = np.mean(evaluated[1], axis=0)
         stack /= np.sum(stack) * delta
         assert(np.isclose(np.sum(stack) * delta, 1.))

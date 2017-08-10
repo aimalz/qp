@@ -54,7 +54,7 @@ class PDF(object):
         self.quantiles = quantiles
         self.histogram = qp.utils.normalize_histogram(histogram, vb=vb)
         self.samples = samples
-        self.gridded = qp.normalize_integral(qp.utils.normalize_gridded(gridded, vb=vb))
+        self.gridded = qp.utils.normalize_integral(qp.utils.normalize_gridded(gridded, vb=vb))
         self.mix_mod = None
         self.limits = limits
 
@@ -94,7 +94,7 @@ class PDF(object):
 
         return
 
-    def evaluate(self, loc, vb=True, using=None):
+    def evaluate(self, loc, using=None, norm=False, vb=True):
         """
         Evaluates the PDF (either the true version or the first
         approximation of it if no parametrization is specified)
@@ -104,10 +104,12 @@ class PDF(object):
         ----------
         loc: float or ndarray
             location(s) at which to evaluate the pdf
-        vb: boolean
-            report on progress to stdout?
         using: string
             which parametrization to evaluate, defaults to initialization
+        norm: boolean, optional
+            True to normalize the evaluation, False if expected probability outside loc
+        vb: boolean
+            report on progress to stdout?
 
         Returns
         -------
@@ -115,7 +117,7 @@ class PDF(object):
             the input locations and the value of the PDF (or its approximation) at the requested location(s)
         """
         if using is None:
-            using = self.first
+            using = self.last
 
         if using == 'truth':
             if self.truth is not None:
@@ -135,9 +137,13 @@ class PDF(object):
             evaluated = self.approximate(loc, using=using, vb=vb)
             val = evaluated[1]
 
-        return(loc, val)
+        self.gridded = (loc, val)
+        if norm:
+            self.gridded = qp.utils.normalize_integral(self.gridded)
 
-    def integrate(self, limits=None, dx=0.0001, using=None, vb=True):
+        return self.gridded
+
+    def integrate(self, limits=None, dx=0.001, using=None, vb=True):
         """
         Computes the integral under the PDF between the given limits.
 
@@ -492,10 +498,14 @@ class PDF(object):
 
             (x, y) = qp.utils.evaluate_quantiles(self.quantiles)
             def normalize_quantiles((x, y)):
-                x = np.insert(x, [0, -1], self.limits)
+                xmin = x[0] - 2 * self.quantiles[0] / y[0]
+                xmax = x[1] + 2 * (1-self.quantiles[-1]) / y[-1]
+                x = np.insert(x, [0, -1], (xmin, xmax))
                 y = np.insert(y, [0, -1], (default_eps, default_eps))
                 return(x, y)
             (x, y) = normalize_quantiles((x, y))
+            # self.interpolator = spi.interp1d(x, y, kind=self.scheme, bounds_error=False, fill_value=default_eps)
+            # return self.interpolator
 
         if using == 'histogram':
             # First find the histogram if none exists:
@@ -563,8 +573,7 @@ class PDF(object):
         points: ndarray
             the value(s) at which to evaluate the interpolated function
         using: string, optional
-            approximation parametrization, currently either 'quantiles'
-            or 'histogram'
+            approximation parametrization
         scheme: string, optional
             interpolation scheme, from the [`scipy.interpolate.interp1d`
             options](https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interp1d.html).
@@ -596,7 +605,7 @@ class PDF(object):
 
         # Now make the interpolation, using the current scheme:
         self.interpolator = self.interpolate(using=using, vb=vb)
-        if vb: print('interpolating between '+str(min(points))+' and '+str(max(points)))
+        if vb: print('interpolating between '+str(min(points))+' and '+str(max(points))+' using '+using)
         interpolated = self.interpolator(points)
         interpolated = qp.utils.normalize_gridded((points, interpolated), vb=vb)
         # interpolated[interpolated<0.] = 0.
