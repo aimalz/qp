@@ -42,7 +42,6 @@ estimator of the overall redshift distribution function.
 
 \maketitlepost
 
-\COMMENT{Consider alternative title.}
 
 
 
@@ -70,18 +69,17 @@ probability distributions involves making difficult decisions.  Each survey
 seeks to create a catalog of \pz s balancing accuracy against storage 
 footprint.  For example, the \pz\ catalog that LSST will release is limited to 
 200 floating point numbers per galaxy, with plans to store \pz s derived by 
-multiple methods.  \citep{juric_data_2017}  \COMMENT{Review Tab. 5 of this 
-reference.}  These matters were first addressed in 
-\citet{carrasco_kind_sparse_2014} in the context of a single galaxy survey, a 
-limited set of storage formats, and metrics restricted to that survey's 
-intended \pz\ use case.  The number of stored parameters and the 
-parametrization optimizing this choice, however, depend on the science 
-requirements of the survey and the characteristics of the data.  This paper 
-answers the question of \textit{how} these choices should be made in general, 
-demonstrating the approach on diverse mock data and using mathematically 
-motivated metrics of both the individual \pz s and a science application.  The 
-publicly available \qp\ Python package is also presented here as a tool to 
-enable each survey to optimize these choices.
+multiple methods.  \citep{juric_data_2017}
+These matters were first addressed in \citet{carrasco_kind_sparse_2014} in the 
+context of a single galaxy survey, a limited set of storage formats, and 
+metrics restricted to that survey's intended \pz\ use case.  The number of 
+stored parameters and the parametrization optimizing this choice, however, 
+depend on the science requirements of the survey and the characteristics of the 
+data.  This paper answers the question of \textit{how} these choices should be 
+made in general, demonstrating the approach on diverse mock data and using 
+mathematically motivated metrics of both the individual \pz s and a science 
+application.  The publicly available \qp\ Python package is also presented here 
+as a tool to enable each survey to optimize these choices.
 
 In Sec. \ref{sec:methods}, we outline how \qp\ can be used to optimize the 
 choice of storage format and catalog allocation.  In Sec. \ref{sec:data}, we 
@@ -115,7 +113,6 @@ described in Sec. \ref{sec:metric}.
 \subsection{Approximation Methods}
 \label{sec:approx}
 
-\COMMENT{There's way, way too much detail in the subsubsections here!}
 
 
 First, we establish a vocabulary for the definitions of approximation methods.  
@@ -151,8 +148,9 @@ storage: regular binning (Sec. \ref{sec:bins}), random samples (Sec.
 \ref{sec:samples}), and regular quantiles (Sec. \ref{sec:quantiles}), while the 
 other two, regular evaluations (Sec. \ref{sec:grid}) and mixture models (Sec. 
 \ref{sec:mm}), are used solely for internal manipulations within \qp, but are 
-nonetheless discussed here for completeness.  For each format, we address the 
-following questions:
+nonetheless discussed here for completeness.  The different formats are 
+illustrated in Fig. \ref{fig:qp} on a multimodal \pz\ with stored parameters.  
+For each format, we address the following questions:
 
 \begin{itemize}
   \item When/where has this format appeared in the literature as a published 
@@ -166,30 +164,25 @@ compression/reconstruction properties?
 \end{itemize}
 
 \begin{figure}
-  \includegraphics[width=0.9\columnwidth]{figures/qp_placeholder.png}
-  \caption{Placeholder! [all available $\hat{p}(z)$ for one \texttt{qp.PDF} 
-object and given $N_{f}$]  \COMMENT{Should I show multiple \texttt{qp.PDF} 
-objects? a different $N_{f}$? a simpler or more complex function?}
+  \includegraphics[width=0.9\columnwidth]{figures/Euclid_example_pz.png}
+  \caption{\qp\ can approximate a continuous 1D PDF (black line) using the step 
+function (red dashed), random sample (green short-dashed), and quantile formats 
+(blue long-dashed) with a specified number of stored parameters (20 in this 
+case).
   \label{fig:qp}}
 \end{figure}
 
 \subsubsection{Regular Binning}
 \label{sec:bins}
 
-  %\item When/where has this format appeared in the literature as a published 
-catalog format, native \pz\ code output format, and science application input 
-format?
 By far the most popular format for \pz s is that of a piecewise constant step 
 function, also called a histogram binning.  The only format that has been used 
 for public release of \pz\ catalogs \citep{tanaka_photometric_2017, 
 sheldon_photometric_2012}; it is unclear whether this is a consequence or a 
 cause of the fact that it is the most common format for using \pz s in 
 cosmological inference, as tomographic binning is a universal step between the 
-\pz\ catalog and calculation of any two-point correlation function.  
-\COMMENT{Find more examples of usage.}
+\pz\ catalog and calculation of any two-point correlation function.
 
-  %\item What exactly is stored under this format, per galaxy (the parameters) 
-and per catalog (the metaparameters)?
 The metaparameters of the binned parametrization are the ordered list of 
 $N_{M}=N_{f}+1$ redshifts $\vec{C} = (z_{1}, z_{2}, \dots, z_{N_{M}-1}, 
 z_{N_{M}})$ with $C_{1} < C_{2} < \dots < C_{N_{M}-1} < C_{N_{M}}$ serving as 
@@ -222,9 +215,6 @@ the $c_{i}$ are normalized according to $\sum_{i} c_{i}\cdot\Delta = 1$.  Note
 that this is not equivalent to the erroneous normalization condition $\sum_{i} 
 c_{i} = 1$ that commonly appears in the literature.
 
-  %\item Beyond fidelity to the original \pz, what are the a priori strengths 
-and weaknesses of this format, especially with respect to 
-compression/reconstruction properties?
 All known native \pz\ formats are easy to convert to the histogram 
 representation.  However, the corrolary to this statement is that it is an 
 inherently lossy format.  A histogram parametrization with bin widths larger 
@@ -252,18 +242,11 @@ choose them at the stage of producing the \pz\ catalog.
 \subsubsection{Random Samples}
 \label{sec:samples}
 
-  %\item When/where has this format appeared in the literature as a published 
-catalog format, native \pz\ code output format, and science application input 
-format?
 Samples are the native output format of many machine learning algorithms 
-dependent on random choices, such as random forests.  \COMMENT{Cite some 
-machine learning \pz\ methods that natively produce samples.}  Such approaches 
-typically produce large numbers of samples, far more than can realistically be 
-stored by any survey, so a subsample is commonly stored.  \COMMENT{Cite recent 
-DES paper, which stores a single sample.}
+dependent on random choices, such as random forests.
+Such approaches typically produce large numbers of samples, far more than can 
+realistically be stored by any survey, so a subsample is commonly stored.
 
-  %\item What exactly is stored under this format, per galaxy (the parameters) 
-and per catalog (the metaparameters)?
 The parameters of the samples format are the set of samples $\vec{c}=(z_{1}, 
 z_{2}, \dots, z_{C_{0}-1}, z_{C_{0}})$.  An implicit metaparameter is simply 
 $C_{0}=N_{f}$, meaning $N_{M}=1$.  Though it is possible to construct a catalog 
@@ -282,9 +265,6 @@ representation is then
   \hat{p}_{s}(z) &= F_{\vec{C}'}(z | \vec{c}, \Phi_{\vec{C}''}(\vec{c})).
 \end{align}
 
-  %\item Beyond fidelity to the original \pz, what are the a priori strengths 
-and weaknesses of this format, especially with respect to 
-compression/reconstruction properties?
 As with the histogram format, it is in general easy to convert any format into 
 samples, at the risk of loss of information.  One risk of samples is that a 
 small number of samples from a broad \pz\ may not be representative of the 
@@ -302,8 +282,6 @@ parameters of the interpolation scheme, i.e. the smoothing kernel and bandwidth.
 \subsubsection{Regular Quantiles}
 \label{sec:quantiles}
 
-  %\item What exactly is stored under this format, per galaxy (the parameters) 
-and per catalog (the metaparameters)?
 One parametrization that has not previously been implemented is that of 
 quantiles, which are defined in terms of the cumulative distribution function 
 (CDF)
@@ -329,9 +307,6 @@ where $\bar{C}\equiv(N_{f}+1)^{-1}$, but \qp\ does not require that this be so.
  Additionally, in the tests presented here, we use a linear interpolator by 
 default for the quantile format.
 
-  %\item When/where has this format appeared in the literature as a published 
-catalog format, native \pz\ code output format, and science application input 
-format?
 As no survey has previously stored quantile \pz s, no existing \pz\ code 
 produces quantiles as output, and no science case pipeline has yet been 
 developed to accept input \pz s in the quantile format.  Given its limited 
@@ -349,9 +324,6 @@ bin size while still permitting an entire catalog to share a single set of
 metaparameters.  Unlike samples, its performance is uncorrelated with the shape 
 of the \pz.
 
-  %\item Beyond fidelity to the original \pz, what are the a priori strengths 
-and weaknesses of this format, especially with respect to 
-compression/reconstruction properties?
 Though the strengths and weaknesses of quantiles have not yet been formally 
 explored, we know have some ideas of what may be at play.  One obvious issue is 
 that storing more information where there is more probability density may not 
@@ -370,9 +342,6 @@ for each stored parameter $c_{i}$.
 \subsubsection{Regular Evaluations}
 \label{sec:grid}
 
-  %\item When/where has this format appeared in the literature as a published 
-catalog format, native \pz\ code output format, and science application input 
-format?
 A common format that appears in the \pz\ literature is that of evaluations of 
 the probability at specified points.  In particular, it is the most popular 
 native format for \pz s produced by template-fitting codes like BPZ.  
@@ -385,8 +354,6 @@ consider this format in this study.  We do, however, use it for internal
 manipulations when converting between formats and for the evaluation of 
 metrics, so we describe it in the same notation as the other formats discussed.
 
-  %\item What exactly is stored under this format, per galaxy (the parameters) 
-and per catalog (the metaparameters)?
 The format of grid evaluations has stored parameters $\vec{c}=(p(z_{1}), 
 p(z_{2}), \dots, p(z_{N_{f}-1}, p(z_{N_{f}}))$ on a grid of $N_{M}=N_{f}$ 
 redshifts $\vec{C}=(z_{1}, z_{2}, \dots, z_{N_{M}-1}, z_{N_{M}})$ serving as 
@@ -404,9 +371,6 @@ consider them nor grids that are not homogeneous over the catalog, though \qp\
 can accommodate them.  We use a linear interpolator in the tests presented in 
 this study.
 
-  %\item Beyond fidelity to the original \pz, what are the a priori strengths 
-and weaknesses of this format, especially with respect to 
-compression/reconstruction properties?
 The gridded parametrization is in some ways similar to the histogram format of 
 \ref{sec:bins}, suffering from the same risks of losing small-scale features 
 (and the corresponding risk of systematics in the quality of the approximation) 
@@ -419,21 +383,16 @@ be used as a mathematically valid \pz.
 \subsubsection{Mixture Model}
 \label{sec:mm}
 
-  %\item When/where has this format appeared in the literature as a published 
-catalog format, native \pz\ code output format, and science application input 
-format?
 There is some history of using a mixture model parametrization for \pz s, 
-particularly that of a small number of Gaussian components.  \COMMENT{Seek 
-citation for BPZ top 3 Gaussian components.}  A Gaussian mixture model may be a 
-natural choice for the native output of a method based on a distance metric in 
-the space of photometry because the \pz s could be weighted sums of Gaussians 
-by construction, though for many other methods, there is no such guarantee.  
-Besides the mixture of Gaussians, other functions have been investigated before 
-in the sparse basis representation of \citet{carrasco_kind_sparse_2014}, which 
-uses a mixture model of members of a library of $N_{M}\sim10^{4}$ functions.
+particularly that of a small number of Gaussian components.
+A Gaussian mixture model may be a natural choice for the native output of a 
+method based on a distance metric in the space of photometry because the \pz s 
+could be weighted sums of Gaussians by construction, though for many other 
+methods, there is no such guarantee.  Besides the mixture of Gaussians, other 
+functions have been investigated before in the sparse basis representation of 
+\citet{carrasco_kind_sparse_2014}, which uses a mixture model of members of a 
+library of $N_{M}\sim10^{4}$ functions.
 
-  %\item What exactly is stored under this format, per galaxy (the parameters) 
-and per catalog (the metaparameters)?
 Under the mixture model format, the format function $\mathcal{F}^{m}$ is a 
 weighted sum of $N_{M}'$ continuous functions $\phi^{j}(z)$ chosen from a set 
 of $N_{M}''$ possible functions, each with $N_{M}^{j}$ metaparameters in 
@@ -495,15 +454,11 @@ semidefinite function to integrate to unity is always possible (if the
 endpoints of integration are specified), one can motivate multiple schemes for 
 enforcing nonnegativity that result in different reconstructions $\hat{p}(z)$.  
 To discourage misuse of \qp, we do not permit functions that can take negative 
-values at this time.   \COMMENT{Actually, the gridded format already does this, 
-so it's not as much of a problem as I'm claiming here.}  We anticipate 
-including the sparse basis representation in \qp\ in future work when we can 
-justify a choice of how to handle negative values.
+values at this time.
+We anticipate including the sparse basis representation in \qp\ in future work 
+when we can justify a choice of how to handle negative values.
 
 
-  %\item Beyond fidelity to the original \pz, what are the a priori strengths 
-and weaknesses of this format, especially with respect to 
-compression/reconstruction properties?
 Mixture models can be stored with very few parameters per component function 
 and are trivial to convert to piecewise constant functions, samples, and 
 evaluations commonly used for analysis.  Compressing an original \pz\ into this 
@@ -516,11 +471,11 @@ functions}.  If, for example, the \pz\ is not inherently a sum of Gaussian
 components, it could take a prohibitive number of Gaussian components to obtain 
 an acceptable approximation.  Because the mock data discussed here is not known 
 to be comprised of a weighted sum of Gaussian components, we do not test the 
-mixture model against other formats.  \COMMENT{This sort of weakens my 
-assertion of realistic complexity with the mock data.}
+mixture model against other formats.
 
 \subsection{Comparison Metrics}
 \label{sec:metric}
+
 
 In contrast to popular \pz\ metrics in the literature, we aim to probe how 
 closely a PDF $\hat{p}(z)$ reconstructed from a limited set of parameters 
@@ -584,9 +539,8 @@ redshift distribution function of a survey may be found in Sec.
 For most galaxy surveys producing \pz\ catalogs, there is potential value not 
 only in obtaining $\hat{n}(z)$ but also in reconstructing individual \pz s 
 that, for example, may be used as the basis for targeting spectroscopic follow 
-up for a variety of science applications.  \COMMENT{I have many other ideas for 
-how to use \pz s but would like to be able to cite something that's actually 
-been done.}  For this purpose, we also calculate $\{KLD[p_{k}(z) | \hat{p}^{X; 
+up for a variety of science applications.
+For this purpose, we also calculate $\{KLD[p_{k}(z) | \hat{p}^{X; 
 N_{f}}_{k}(z)]\}_{N_{g}}$ for each individual \pz\ $k$ in a catalog and 
 characterize the distribution of KLD values $p(KLD_{X; N_{f}})$ by their first, 
 second, and third moments, or, the mean, variance, and kurtosis.  We use these 
@@ -605,14 +559,13 @@ resolution $\Delta=z_{i+1}-z_{i}$, with $N_{ff}\gg N_{f}$, and the true \pz\ is
 by construction a Gaussian mixture model, introduced in Sec. \ref{sec:mm}, 
 evaluated at the same redshifts.  Then they are combined according to
 \begin{align}
-  \label{eq:kld}
+  \label{eq:kldapprox}
   \hat{KLD}(p(z) || \hat{p}(z)) &\approx \sum_{z=z_{1}}^{z_{N_{ff}}}\ p(z)\ 
 \log\left[\frac{p(z)}{\hat{p}(z)}\right]\ \cdot\ \Delta
 \end{align}
 to estimate the KLD.  We attempt to use the most appropriate interpolation 
 scheme for each format, noted in Sec. \ref{sec:approx}.
 
-\COMMENT{Perhaps switch the order of the individual and stacked metrics?}
 
 
 
@@ -658,33 +611,32 @@ as the true \pz\ $p(z)$.
 \begin{figure}
   \includegraphics[width=0.9\columnwidth]{figures/lsst_pz_placeholder.png}\\
   \includegraphics[width=0.9\columnwidth]{figures/euclid_pz_placeholder.png}
-  \caption{Placeholder! [plot with a few examples of what the \pz s look like, 
-one panel per dataset (vertical)]  \COMMENT{A random sample of a handful of \pz 
-s doesn't really tell me much about the whole dataset, but cherrypicking the 
-most interesting or average members of the catalog could be more misleading.  
-What else can I do to give readers a feel for the differences between the 
-datasets?}
+  \caption{The shapes of the \pz s\ in the two datasets considered vary 
+substantially despite using the same \pz\ method, due to the differences in the 
+quality of the photometry.  Different parametrizations may perform better on 
+some \pz\ shapes than others.  Top panel: The lower quality photometry of the 
+ground-based optical photometry catalog yields broader, multimodal \pz s. 
+Bottom panel: The higher quality photometry of the space-based optical + IR 
+photometry catalog yields narrow, unimodal \pz s.[plot with a few examples of 
+what the \pz s look like, one panel per dataset (vertical)]
   \label{fig:pzs}}
 \end{figure}
 
-\subsection{LSST-like mock data}
+\subsection{Ground-based optical mock data}
 \label{sec:LSST}
 
-\COMMENT{Written by Sam Schmidt, anticipating future contributions from Joe 
-DeRose, Risa Wechsler, and/or Matt Becker}
 
 In order to simulate the expected LSST galaxy sample, we use the 
-Buzzard-highres-v1.0 mock galaxy catalog \COMMENT{How do we cite this?}, which 
-adds galaxies with SEDs drawn from an empirical library of $\sim500,000$ SEDs 
-from the Sloan Digital Sky Survey  (SDSS) \COMMENT{Look up the spec-z sample 
-reference.}  \COMMENT{Invite Joe DeRose (and Buzzard team) to review and 
-contribute to this section.}  Given an SED, redshift, and absolute r-band 
-magnitude for each galaxy, we compute the expected apparent magnitudes and 
-magnitude errors in the six broadband LSST filters (ugrizy), assuming full 
-10-year depth of the survey using the simple model of 
-\citet{ivezic_lsst:_2008}.  The catalog contains 111,171 galaxies to a depth of 
-$i<26.9$, 1.5 magnitudes deeper than the expected "LSST Gold sample'' of 
-galaxies that will have S/N$\gtrsim$30 in multiple bands.
+Buzzard-highres-v1.0 mock galaxy catalog
+, which adds galaxies with SEDs drawn from an empirical library of 
+$\sim500,000$ SEDs from the Sloan Digital Sky Survey  (SDSS)
+Given an SED, redshift, and absolute r-band magnitude for each galaxy, we 
+compute the expected apparent magnitudes and magnitude errors in the six 
+broadband LSST filters (ugrizy), assuming full 10-year depth of the survey 
+using the simple model of \citet{ivezic_lsst:_2008}.  The catalog contains 
+111,171 galaxies to a depth of $i<26.9$, 1.5 magnitudes deeper than the 
+expected "LSST Gold sample'' of galaxies that will have S/N$\gtrsim$30 in 
+multiple bands.
 
 In implementing BPZ, we create a custom Bayesian prior using a subset of the 
 Buzzard-highres-v1.0 catalog, and create a spanning template set via a simple 
@@ -700,18 +652,16 @@ Fig.~\ref{fig:pzs}.  We produce "true" underlying \pz s by fitting a
 five-component Gaussian mixture model to each \pz\ output by BPZ.
 
 
-\subsection{Euclid-like mock data}
+\subsection{Space-based optical + IR mock data}
 \label{sec:Euclid}
 
-\COMMENT{Written by Melissa Graham, have asked for larger catalog comparable to 
-Sec. \ref{sec:LSST}.}
 
 We start with a 30,000 object subset of the same simulated galaxy catalog used 
 for LSST photometric redshift experiments by Graham, et al. (in prep.), which 
 is based on the Millennium simulation \citep{springel_simulations_2005}, in 
-particular the LC DEEP Gonzalez2014a \COMMENT{Fix this reference.} catalog 
-based on the galaxy formation models of \cite{gonzalez-perez_how_2014}, and was 
-created using the lightcone construction techniques described by 
+particular the LC DEEP Gonzalez2014a
+catalog based on the galaxy formation models of \cite{gonzalez-perez_how_2014}, 
+and was created using the lightcone construction techniques described by 
 \cite{merson_lightcone_2013}.  We limit the sample to galaxies with a catalog 
 $i$-band magnitude of $i<25$ and true redshifts $z<3.5$. As in Graham, et al. 
 (in prep.) we simulate observed apparent magnitudes from the true catalog 
@@ -756,7 +706,7 @@ example of the distribution of the KLD for $N_{f}=10$ is shown in Fig.
   \includegraphics[width=0.9\columnwidth]{figures/individual_placeholder.png}
   \caption{Placeholder! [histogram of log-KLD for one number of parameters 
 $N_{f}$, one color per format, one panel per dataset? (vertical)?, panel title 
-of (dataset, $N_{f}$)]  \COMMENT{Which $N_{f}$ and dataset should I choose?}
+of (dataset, $N_{f}$)]
   \label{fig:individual}}
 \end{figure}
 
@@ -775,7 +725,6 @@ see which are most informative), one color per format, one panel per dataset
   \label{fig:moments}}
 \end{figure}
 
-\COMMENT{Interpreting this is pretty interesting!}
 
 \subsection{Stacked $\hat{n}(z)$ estimator}
 \label{sec:stacked}
@@ -789,18 +738,15 @@ original format.
 \includegraphics[width=0.9\columnwidth]{figures/lsst_stacked_placeholder.png}\\
   
 \includegraphics[width=0.9\columnwidth]{figures/euclid_stacked_placeholder.png}
-  \caption{Placeholder!  \COMMENT{Should I show the $\hat{n}(z)$ plot or just 
-the metrics?}  [$N_{f}$ (horizontal) vs. metric value (vertical), one color per 
-format, curves from many instantiations of the subsample of galaxies (or error 
-bars derived from those instantiations), one panel per dataset (vertical), 
-panel title of dataset; i.e. both panels look like the upper panel but hasn't 
-been run on Euclid-like mock data yet]
+  \caption{Placeholder!
+  [$N_{f}$ (horizontal) vs. metric value (vertical), one color per format, 
+curves from many instantiations of the subsample of galaxies (or error bars 
+derived from those instantiations), one panel per dataset (vertical), panel 
+title of dataset; i.e. both panels look like the upper panel but hasn't been 
+run on Euclid-like mock data yet]
   \label{fig:stacked}}
 \end{figure}
 
-\COMMENT{Review relative performance and absolute differences of metric values. 
- Note $N_{f}$ at which asymptotic behavior is achieved for each format and rate 
-of convergence to asymptote, across datasets.}
 
 Further recommendations can be made if the requirements on the science products 
 derived from the \pz\ catalog are known.  If the information loss tolerance on 
@@ -830,8 +776,7 @@ against the available storage resources.  We demonstrate the recommended method
 on two realistic mock datasets representative of upcoming \pz\ catalogs and 
 draw the following conclusions:
 \begin{itemize}
-  \item \COMMENT{Insert observations of Sec. \ref{sec:results} here, 
-emphasizing \pz\ data quality differences.}
+  \item
   \item As indicated by the KLD, the quantile parametrization is a promising 
 option for minimizing loss of information in \pz\ storage.
   \item Given the constraint that LSST will be able to store 200 floating point 
@@ -861,16 +806,10 @@ the format necessary for science calculations.
 \subsection*{Appendix}
 \label{sec:kld}
 
-\COMMENT{Add the discussion of "precision" and "tension" for single Gaussians 
-as outlined in the KLD Jupyter notebook in the documentation.}
 
 \subsection*{Acknowledgments}
 
 
-This work was incubated at the 2016 LSST-DESC Hack Week.  We invite the 
-following people to be co-authors: Melissa Graham, Samuel Schmidt, [Buzzard 
-team].  \COMMENT{Please send your author information in the 
-\texttt{authors.csv} format.}
 
 \input{acknowledgments}
 
