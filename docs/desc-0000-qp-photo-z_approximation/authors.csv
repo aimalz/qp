@@ -29,9 +29,9 @@
 #
 # =============================================================================
 Lastname,Firstname,Authorname,AuthorType,Affiliation,Contribution,Email
-Malz,Alex I.,A.I.~Malz,Contact,"Center for Cosmology and Particle Physics, New York University, 726 Broadway, New York, 10003","Initiated project, led development work.",aimalz@nyu.edu
+Malz,Alex,A.I.~Malz,Contact,"Center for Cosmology and Particle Physics, New York University, 726 Broadway, New York, 10003","Initiated project, led development work.",aimalz@nyu.edu
 Marshall,Phil,P.J.~Marshall,Contributor,"SLAC National Accelerator Laboratory, Menlo Park, CA 94025, USA","Advised on statistics, and project design and management.",dr.phil.marshall@gmail.com
-Schmidt,Samuel,S.~Schmidt,Contributor,"University of California Davis","Provided data.",sschmidt@physics.usdavis.edu
+Schmidt,Samuel,S.J.~Schmidt,Contributor,"Dept. of Physics, University of California, One Shields Ave., Davis, CA, 95616","Provided data.",sschmidt@physics.usdavis.edu
 Graham,Melissa,M.~Graham,Contributor,"University of Washington","Provided data.",mlg3k@uw.edu
 DeRose,Joe,J.~DeRose,Contributor,"Stanford University","Provided data.",jderose@stanford.edu
 Wechsler,Risa,R.~Wechsler,Contributor,"Stanford University","Provided data.",rwechsler@stanford.edu

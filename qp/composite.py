@@ -91,7 +91,7 @@ class composite(object):
                 samples.append(self.functions[c].rvs())
         return np.array(samples)
 
-    def ppf(self, cdfs, vb=True):
+    def ppf(self, cdfs, ivals=None, vb=True):
         """
         Evaluates the composite PPF at locations
 
@@ -99,6 +99,10 @@ class composite(object):
         ----------
         cdfs: float or numpy.ndarray, float
             value(s) at which to find quantiles
+        ivals: float or numpy.ndarray, float
+            initial guesses for quantiles
+        vb: boolean
+            print progress to stdout?
 
         Returns
         -------
@@ -108,10 +112,13 @@ class composite(object):
         N = np.shape(cdfs)
         xs = np.zeros(N)
 
-        all_cdfs = np.zeros(N)
-        for c in self.component_range:
-            all_cdfs += self.functions[c].ppf(cdfs)
-        xs0 = all_cdfs / self.n_components
+        if ivals is not None:
+            xs0 = ivals
+        else:
+            all_cdfs = np.zeros(N)
+            for c in self.component_range:
+                all_cdfs += self.functions[c].ppf(cdfs)
+            xs0 = all_cdfs / self.n_components
 
         for n in range(N[0]):
             def ppf_helper(x):
@@ -121,4 +128,6 @@ class composite(object):
             xs[n] += res.x
             # if vb:
             #     print(res.message, res.success)
+            # initialize using 1/2 moment stuff?
+            # start from gridded and integrate it up, take that as initialization
         return xs

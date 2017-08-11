@@ -137,11 +137,11 @@ class PDF(object):
             evaluated = self.approximate(loc, using=using, vb=vb)
             val = evaluated[1]
 
-        self.gridded = (loc, val)
+        gridded = (loc, val)
         if norm:
-            self.gridded = qp.utils.normalize_integral(self.gridded)
+            gridded = qp.utils.normalize_integral(gridded)
 
-        return self.gridded
+        return gridded
 
     def integrate(self, limits=None, dx=0.001, using=None, vb=True):
         """
@@ -207,6 +207,7 @@ class PDF(object):
         """
         if quants is not None:
             quantpoints = quants
+            N = len(quantpoints)
         elif N is not None:
             quantum = 1. / float(N+1)
             quantpoints = np.linspace(0.+quantum, 1.-quantum, N)
@@ -214,7 +215,16 @@ class PDF(object):
             print("Calculating "+str(len(quantpoints))+" quantiles: "+str(quantpoints))
 
         if self.truth is not None:
-            quantiles = self.truth.ppf(quantpoints)
+            if isinstance(self.truth, qp.composite):
+                if limits is None:
+                    limits = self.limits
+                grid = np.linspace(limits[0], limits[-1], N * 100)
+                icdf = np.array([self.integrate(limits=(limits[0], grid[i]), dx=0.01, using='truth', vb=vb) for i in range(N * 100)])
+                locs = np.array([bisect.bisect_right(icdf[:-1], quantpoints[n]) for n in range(N)])
+
+                quantiles = self.truth.ppf(quantpoints, ivals=grid[locs])
+            else:
+                quantiles = self.truth.ppf(quantpoints)
         else:
             print('New quantiles can only be computed from a truth distribution in this version.')
             return
@@ -431,8 +441,10 @@ class PDF(object):
                 if self.quantiles is None:
                     self.quantiles = self.quantize(vb=vb)
 
-                endpoints = np.insert(self.quantiles[1], [0, -1], self.limits)
-                weights = qp.utils.evaluate_quantiles(self.quantiles)[1]# self.evaluate((endpoints[1:]+endpoints[:-1])/2.)
+                (x, y) = qp.utils.evaluate_quantiles(self.quantiles)
+                (endpoints, weights) = qp.utils.normalize_quantiles(self.quantiles[0], (x, y))
+                # endpoints = np.insert(self.quantiles[1], [0, -1], self.limits)
+                # weights = qp.utils.evaluate_quantiles(self.quantiles)[1]# self.evaluate((endpoints[1:]+endpoints[:-1])/2.)
                 # interpolator = self.interpolate(using='quantiles', vb=False)
 
             if using == 'histogram':
@@ -497,13 +509,7 @@ class PDF(object):
                 self.quantiles = self.quantize(vb=vb)
 
             (x, y) = qp.utils.evaluate_quantiles(self.quantiles)
-            def normalize_quantiles((x, y)):
-                xmin = x[0] - 2 * self.quantiles[0][0] / y[0]
-                xmax = x[-1] + 2 * (1-self.quantiles[0][-1]) / y[-1]
-                x = np.insert(x, [0, -1], (xmin, xmax))
-                y = np.insert(y, [0, -1], (default_eps, default_eps))
-                return(x, y)
-            (x, y) = normalize_quantiles((x, y))
+            (x, y) = qp.utils.normalize_quantiles(self.quantiles[0], (x, y))
             # self.interpolator = spi.interp1d(x, y, kind=self.scheme, bounds_error=False, fill_value=default_eps)
             # return self.interpolator
 
@@ -639,9 +645,17 @@ class PDF(object):
         colors['truth'] = 'k'
         colors['mix_mod'] = 'k'
         colors['gridded'] = 'k'
-        colors['quantiles'] = 'b'
-        colors['histogram'] = 'r'
-        colors['samples'] = 'g'
+        colors['quantiles'] = 'b'#'blueviolet'
+        colors['histogram'] = 'r'#'darkorange'
+        colors['samples'] = 'g'#'forestgreen'
+
+        styles = {}
+        styles['truth'] = '-'
+        styles['mix_mod'] = ':'
+        styles['gridded'] = '--'
+        styles['quantiles'] = (0,(5,10))
+        styles['histogram'] = (0,(3,6))
+        styles['samples'] = (0,(1,2))
 
         if self.truth is not None:
             min_x = self.truth.ppf(np.array([0.001]))
@@ -649,7 +663,7 @@ class PDF(object):
             x = np.linspace(min_x, max_x, 100)
             extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
             y = self.truth.pdf(x)
-            plt.plot(x, y, color=colors['truth'], linestyle='-', lw=1.0, alpha=1.0, label='True PDF')
+            plt.plot(x, y, color=colors['truth'], linestyle=styles['truth'], lw=1.0, alpha=1.0, label='True PDF')
             if vb:
                 print 'Plotted truth.'
 
@@ -659,25 +673,19 @@ class PDF(object):
             x = np.linspace(min_x, max_x, 100)
             extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
             y = self.mix_mod.pdf(x)
-            plt.plot(x, y, color=colors['mix_mod'], linestyle=':', lw=2.0, alpha=1.0, label='Mixture Model PDF')
+            plt.plot(x, y, color=colors['mix_mod'], linestyle=styles['mix_mod'], lw=2.0, alpha=1.0, label='Mixture Model PDF')
             if vb:
                 print 'Plotted mixture model.'
 
         if self.quantiles is not None:
-            min_x = self.quantiles[1][0]
-            max_x = self.quantiles[1][-1]
+            (z, p) = self.evaluate(self.quantiles[1], using='quantiles', vb=vb)
+            (x, y) = qp.utils.normalize_quantiles(self.quantiles[0], (z, p))
+            min_x = min(min(x), extrema[0])
+            max_x = max(max(x), extrema[-1])
             x = np.linspace(min_x, max_x, 100)
-            plt.vlines(self.quantiles[1],
-                       np.zeros(len(self.quantiles[1])),
-                       self.evaluate(self.quantiles[1],
-                                     using='quantiles', vb=vb)[1],
-                       color=colors['quantiles'], linestyle=':', lw=1.0, alpha=1.0,
-                       label='Quantiles')
-            (grid, qinterpolated) = self.approximate(x, vb=vb,
-                                                     using='quantiles')
-            plt.plot(grid, qinterpolated, color=colors['quantiles'], lw=2.0, alpha=1.0,
-                     linestyle=(0,(5,10)),
-                     label='Quantile Interpolated PDF')
+            (grid, qinterpolated) = self.approximate(x, vb=vb, using='quantiles')
+            plt.vlines(z, np.zeros(len(self.quantiles[1])), p, color=colors['quantiles'], linestyle=':', lw=1.0, alpha=1.0, label='Quantiles')
+            plt.plot(grid, qinterpolated, color=colors['quantiles'], lw=2.0, alpha=1.0, linestyle=styles['quantiles'], label='Quantile Interpolated PDF')
             extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
             if vb:
                 print 'Plotted quantiles.'
@@ -691,7 +699,7 @@ class PDF(object):
             (grid, hinterpolated) = self.approximate(x, vb=vb,
                                                      using='histogram')
             plt.plot(grid, hinterpolated, color=colors['histogram'], lw=2.0, alpha=1.0,
-                     linestyle=(5,(5,10)),
+                     linestyle=styles['histogram'],
                      label='Histogram Interpolated PDF')
             extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
             if vb:
@@ -702,7 +710,7 @@ class PDF(object):
             max_x = max(self.gridded[0])
             (x, y) = self.gridded
             plt.plot(x, y, color=colors['gridded'], lw=2.0, alpha=0.5,
-                     linestyle='--', label='Gridded PDF')
+                     linestyle=styles['gridded'], label='Gridded PDF')
             extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
             if vb:
                 print 'Plotted gridded.'
@@ -716,7 +724,7 @@ class PDF(object):
             (grid, sinterpolated) = self.approximate(x, vb=vb,
                                                      using='samples')
             plt.plot(grid, sinterpolated, color=colors['samples'], lw=2.0,
-                        alpha=1.0, linestyle=(10,(5,10)),
+                        alpha=1.0, linestyle=styles['samples'],
                         label='Samples Interpolated PDF')
             extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
             if vb:

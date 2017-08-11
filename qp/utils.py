@@ -15,9 +15,9 @@ import matplotlib.pyplot as plt
 global epsilon
 epsilon = sys.float_info.epsilon
 global infty
-infty = 100.
+infty = 10.
 global limits
-limits = (0., 1.)
+limits = (0., 1.*infty)
 
 def cdf(weights):
     """
@@ -161,6 +161,30 @@ def normalize_histogram(in_data, vb=True):
     y /= np.dot(y, delta)
     # if vb: print(np.sum(y * delta))
     return (x, y)
+
+def normalize_quantiles(q, (x, y)):
+    """
+    Adds valid endpoints to quantile parametrization
+
+    Parameters
+    ----------
+    q: numpy.ndarray, float
+        CDF values corresponding to quantiles
+    x: numpy.ndarray, float
+        quantile values
+    y: numpy.ndarray, float
+        probability evaluated at quantiles
+
+    Returns
+    -------
+    (x, y): tuple, ndarray, float
+        tuple of input x and normalized y
+    """
+    xmin = x[0] - 2 * q[0] / y[0]
+    xmax = x[-1] + 2 * (1 - q[-1]) / y[-1]
+    x = np.insert(x, [0, -1], (xmin, xmax))
+    y = np.insert(y, [0, -1], (epsilon, epsilon))
+    return(x, y)
 
 def evaluate_quantiles((qs, xs)):
     """
