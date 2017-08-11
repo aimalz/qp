@@ -499,7 +499,7 @@ class PDF(object):
             (x, y) = qp.utils.evaluate_quantiles(self.quantiles)
             def normalize_quantiles((x, y)):
                 xmin = x[0] - 2 * self.quantiles[0][0] / y[0]
-                xmax = x[1] + 2 * (1-self.quantiles[0][-1]) / y[-1]
+                xmax = x[-1] + 2 * (1-self.quantiles[0][-1]) / y[-1]
                 x = np.insert(x, [0, -1], (xmin, xmax))
                 y = np.insert(y, [0, -1], (default_eps, default_eps))
                 return(x, y)
@@ -518,7 +518,7 @@ class PDF(object):
                 nx = len(xf)
                 yf = np.ones(nx) * default_eps
                 for n in range(nx):
-                    i = bisect.bisect(self.histogram[0], xf[n])
+                    i = bisect.bisect_left(self.histogram[0], xf[n])
                     yf[n] = extra_y[i]
                 return(yf)
 
@@ -537,17 +537,17 @@ class PDF(object):
                 self.samples = self.sample(vb=vb)
 
             # Well that's weird!  Samples does much better with KDE than linear interpolation.  I guess that shouldn't be surprising.
-            # def samples_interpolator(xf):
-            #     kde = sps.gaussian_kde(self.samples)# , bw_method=bandwidth)
-            #     yf = kde(xf)
-            #     return (yf)
-            # self.interpolator = samples_interpolator
-            # if vb:
-            #     print 'Created a KDE interpolator for the '+using+' parametrization.'
+            def samples_interpolator(xf):
+                kde = sps.gaussian_kde(self.samples)# , bw_method=bandwidth)
+                yf = kde(xf)
+                return (yf)
+            self.interpolator = samples_interpolator
+            if vb:
+                print 'Created a KDE interpolator for the '+using+' parametrization.'
 
-            (x, y) = qp.evaluate_samples(self.samples)
-            self.interpolator = spi.interp1d(x, y, kind=self.scheme, bounds_error=False, fill_value=default_eps)
-            if vb: print('interpolator support between '+str(min(x))+' and '+str(max(x))+' with extrapolation of '+str(default_eps))
+            # (x, y) = qp.evaluate_samples(self.samples)
+            # self.interpolator = spi.interp1d(x, y, kind=self.scheme, bounds_error=False, fill_value=default_eps)
+            # if vb: print('interpolator support between '+str(min(x))+' and '+str(max(x))+' with extrapolation of '+str(default_eps))
 
             return self.interpolator
 
