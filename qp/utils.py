@@ -16,8 +16,8 @@ global epsilon
 epsilon = sys.float_info.epsilon
 global infty
 infty = 10.
-global limits
-limits = (epsilon, infty)
+global lims
+lims = (epsilon, infty)
 
 def cdf(weights):
     """
@@ -262,7 +262,7 @@ def evaluate_samples(x):
     y = kde(sx)
     return ((sx, y))
 
-def calculate_moment(p, N, using=None, limits=(-10.0,10.0), dx=0.01, vb=False):
+def calculate_moment(p, N, using=None, limits=lims, dx=0.01, vb=False):
     """
     Calculates moments of a distribution
 
@@ -294,7 +294,7 @@ def calculate_moment(p, N, using=None, limits=(-10.0,10.0), dx=0.01, vb=False):
     M = dx * np.dot(grid_to_N, pe)
     return M
 
-def calculate_kl_divergence(p, q, limits=(-10.0,10.0), dx=0.01, vb=False):
+def calculate_kl_divergence(p, q, limits=lims, dx=0.01, vb=False):
     """
     Calculates the Kullback-Leibler Divergence between two PDFs.
 
@@ -339,7 +339,7 @@ def calculate_kl_divergence(p, q, limits=(-10.0,10.0), dx=0.01, vb=False):
     Dpq = np.dot(pn * (logp - logq), dx * np.ones(len(grid)))
     return Dpq
 
-def calculate_rmse(p, q, limits=(-10.,10.), dx=0.01, vb=False):
+def calculate_rmse(p, q, limits=lims, dx=0.01, vb=False):
     """
     Calculates the Root Mean Square Error between two PDFs.
 
