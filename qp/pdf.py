@@ -10,7 +10,7 @@ from sklearn import mixture
 import qp
 from qp.utils import infty as default_infty
 from qp.utils import epsilon as default_eps
-from qp.utils import limits as default_lims
+from qp.utils import lims as default_lims
 
 class PDF(object):
 
@@ -218,8 +218,9 @@ class PDF(object):
             if isinstance(self.truth, qp.composite):
                 if limits is None:
                     limits = self.limits
-                grid = np.arange(limits[0], limits[-1], 0.01)
-                icdf = np.array([self.integrate(limits=(limits[0], grid[i]), dx=0.01, using='truth', vb=vb) for i in range(len(grid))])
+                grid = np.linspace(limits[0], limits[-1], N * 100)
+                spacing = (limits[-1] - limits[0]) / (N * 100)
+                icdf = np.array([self.integrate(limits=(limits[0], grid[i]), dx=spacing, using='truth', vb=vb) for i in range(len(grid))])
                 locs = np.array([bisect.bisect_right(icdf[:-1], quantpoints[n]) for n in range(N)])
 
                 quantiles = self.truth.ppf(quantpoints, ivals=grid[locs])
@@ -234,8 +235,6 @@ class PDF(object):
         # integrals = self.truth.cdf(quantiles)
         # assert np.isclose(integrals, quantpoints)
         self.quantiles = (quantpoints, quantiles)
-        if limits is None:
-            limits = self.limits
         self.limits = (min(limits[0], np.min(quantiles)), max(limits[-1], np.max(quantiles)))
         self.last = 'quantiles'
         return self.quantiles
@@ -497,7 +496,7 @@ class PDF(object):
         TO DO: There's got to be a better to do quantile interpolation!  Maybe use inverse CDF?
         """
         if using is None:
-            using = self.first
+            using = self.last
 
         if using == 'truth' or using == 'mix_mod':
             print 'A functional form needs no interpolation.  Try converting to an approximate parametrization first.'
