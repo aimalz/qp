@@ -8,10 +8,10 @@ import scipy.interpolate as spi
 import matplotlib.pyplot as plt
 
 import qp
-import qp.utils as u
-from qp.utils import infty as default_infty
-from qp.utils import epsilon as default_eps
-from qp.utils import limits as default_lims
+import utils as u
+from utils import infty as default_infty
+from utils import epsilon as default_eps
+from utils import lims as default_lims
 
 class Ensemble(object):
 
