@@ -17,7 +17,7 @@ epsilon = sys.float_info.epsilon
 global infty
 infty = 10.
 global limits
-limits = (0., 1.*infty)
+limits = (epsilon, infty)
 
 def cdf(weights):
     """

@@ -218,8 +218,8 @@ class PDF(object):
             if isinstance(self.truth, qp.composite):
                 if limits is None:
                     limits = self.limits
-                grid = np.linspace(limits[0], limits[-1], N * 100)
-                icdf = np.array([self.integrate(limits=(limits[0], grid[i]), dx=0.01, using='truth', vb=vb) for i in range(N * 100)])
+                grid = np.arange(limits[0], limits[-1], 0.01)
+                icdf = np.array([self.integrate(limits=(limits[0], grid[i]), dx=0.01, using='truth', vb=vb) for i in range(len(grid))])
                 locs = np.array([bisect.bisect_right(icdf[:-1], quantpoints[n]) for n in range(N)])
 
                 quantiles = self.truth.ppf(quantpoints, ivals=grid[locs])
