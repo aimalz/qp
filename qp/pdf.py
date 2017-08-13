@@ -211,6 +211,7 @@ class PDF(object):
         elif N is not None:
             quantum = 1. / float(N+1)
             quantpoints = np.linspace(0.+quantum, 1.-quantum, N)
+
         if vb:
             print("Calculating "+str(len(quantpoints))+" quantiles: "+str(quantpoints))
 
@@ -218,9 +219,14 @@ class PDF(object):
             if isinstance(self.truth, qp.composite):
                 if limits is None:
                     limits = self.limits
-                grid = np.linspace(limits[0], limits[-1], N * 100)
-                spacing = (limits[-1] - limits[0]) / (N * 100)
-                icdf = np.array([self.integrate(limits=(limits[0], grid[i]), dx=spacing, using='truth', vb=vb) for i in range(len(grid))])
+                extrapoints = np.concatenate((np.array([0.]), quantpoints, np.array([1.])))
+                min_delta = np.min(extrapoints[1:] - extrapoints[:-1])
+                n_grid = N
+                icdf = extrapoints
+                while np.max(icdf[1:] - icdf[:-1]) >= min_delta:
+                    grid = np.linspace(limits[0], limits[-1], n_grid)
+                    icdf = self.truth.cdf(grid)#np.array([self.integrate(limits=(limits[0], grid[i]), dx=spacing/10., using='truth', vb=vb) for i in range(len(grid))])
+                    n_grid *= 10
                 locs = np.array([bisect.bisect_right(icdf[:-1], quantpoints[n]) for n in range(N)])
 
                 quantiles = self.truth.ppf(quantpoints, ivals=grid[locs])
@@ -509,8 +515,8 @@ class PDF(object):
 
             (x, y) = qp.utils.evaluate_quantiles(self.quantiles)
             (x, y) = qp.utils.normalize_quantiles(self.quantiles[0], (x, y))
-            # self.interpolator = spi.interp1d(x, y, kind=self.scheme, bounds_error=False, fill_value=default_eps)
-            # return self.interpolator
+            self.interpolator = spi.interp1d(x, y, kind=self.scheme, bounds_error=False, fill_value=default_eps)
+            return self.interpolator
 
         if using == 'histogram':
             # First find the histogram if none exists:

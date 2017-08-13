@@ -109,7 +109,7 @@ class composite(object):
         xs: float or numpy.ndarray, float
             quantiles
         """
-        N = np.shape(cdfs)
+        N = np.shape(cdfs)[0]
         xs = np.zeros(N)
 
         if ivals is not None:
@@ -120,14 +120,13 @@ class composite(object):
                 all_cdfs += self.functions[c].ppf(cdfs)
             xs0 = all_cdfs / self.n_components
 
-        for n in range(N[0]):
+        for n in range(N):
             def ppf_helper(x):
                 return np.absolute(cdfs[n] - self.cdf(x))
-            res = op.minimize(ppf_helper, xs0[n], method="Nelder-Mead", options={"maxfev": 1e5, "maxiter":1e5})
-            # res = op.basinhopping(ppf_helper, xs0[n])#, method="Nelder-Mead", options={"maxfev": 1e5, "maxiter":1e5})
+            res = op.minimize(ppf_helper, xs0[n], method="Nelder-Mead", options={"maxfev": 1e5, "maxiter":1e5}, tol=1e-8)
+                    # res = op.basinhopping(ppf_helper, xs0[n])#, method="Nelder-Mead", options={"maxfev": 1e5, "maxiter":1e5})
             xs[n] += res.x
             # if vb:
             #     print(res.message, res.success)
-            # initialize using 1/2 moment stuff?
-            # start from gridded and integrate it up, take that as initialization
+
         return xs

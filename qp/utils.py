@@ -15,9 +15,9 @@ import matplotlib.pyplot as plt
 global epsilon
 epsilon = sys.float_info.epsilon
 global infty
-infty = 10.
+infty = sys.float_info.max * epsilon
 global lims
-lims = (epsilon, infty)
+lims = (epsilon, 1.)
 
 def cdf(weights):
     """
@@ -109,7 +109,6 @@ def normalize_integral(in_data, vb=False):
     ys = y[a]
     dx = x[1:] - x[:-1]
     dy = (ys[1:] + ys[:-1]) / 2.
-    assert(len(dx) == len(dy))
     norm = np.dot(dy, dx)
     y = y / norm
     return(x, y)
@@ -134,6 +133,7 @@ def normalize_gridded(in_data, vb=True):
         return in_data
     (x, y) = in_data
     y[y < epsilon] = epsilon
+    y[y > infty] = infty
     return (x, y)
 
 def normalize_histogram(in_data, vb=True):
@@ -213,6 +213,7 @@ def evaluate_quantiles((qs, xs)):
     # xs = np.append(x, np.array([infty]))
     # xs = np.append(np.array([-1. * infty]), x)
     dx = xs[1:] - xs[:-1]
+    assert np.all(dx>0.)
     mx = (xs[1:] + xs[:-1]) / 2.
     y = dq / dx
     # print(np.dot(y, dx))
