@@ -227,12 +227,13 @@ class PDF(object):
                 icdf = self.truth.cdf(grid)
                 new_deltas = icdf[1:] - icdf[:-1]
                 while np.max(new_deltas) >= min_delta:
-                    where_wrong = np.where(new_deltas >= min_delta)
-                    for i in np.flip(where_wrong, axis=0):
+                    where_wrong = np.where(new_deltas >= min_delta)[0]
+                    flipped = np.flip(where_wrong, axis=0)
+                    for i in flipped:
                         delta_i = new_deltas[i] / (N + 1)
                         subgrid = np.linspace(grid[i] + delta_i, grid[i+1] - delta_i, N)
-                        grid = np.insert(grid, i, subgrid)
-                    icdf = self.truth.cdf(grid)
+                        grid = np.insert(grid, i+1, subgrid)
+                        icdf = np.insert(icdf, i+1, self.truth.cdf(subgrid))
                     new_deltas = icdf[1:] - icdf[:-1]
                 locs = np.array([bisect.bisect_right(icdf[:-1], quantpoints[n]) for n in range(N)])
 
