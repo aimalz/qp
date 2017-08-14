@@ -204,29 +204,36 @@ class PDF(object):
         Uses the `.ppf` method of the `rvs_continuous` distribution
         object stored in `self.truth`. This calculates the inverse CDF.
         See `the Scipy docs <https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_continuous.ppf.html#scipy.stats.rv_continuous.ppf>`_ for details.
+        TO DO: reorder these checks
         """
         if quants is not None:
             quantpoints = quants
             N = len(quantpoints)
-        elif N is not None:
+        else:
             quantum = 1. / float(N+1)
             quantpoints = np.linspace(0.+quantum, 1.-quantum, N)
 
         if vb:
             print("Calculating "+str(len(quantpoints))+" quantiles: "+str(quantpoints))
 
+        if limits is None:
+            limits = self.limits
+
         if self.truth is not None:
             if isinstance(self.truth, qp.composite):
-                if limits is None:
-                    limits = self.limits
                 extrapoints = np.concatenate((np.array([0.]), quantpoints, np.array([1.])))
                 min_delta = np.min(extrapoints[1:] - extrapoints[:-1])
-                n_grid = N
-                icdf = extrapoints
-                while np.max(icdf[1:] - icdf[:-1]) >= min_delta:
-                    grid = np.linspace(limits[0], limits[-1], n_grid)
-                    icdf = self.truth.cdf(grid)#np.array([self.integrate(limits=(limits[0], grid[i]), dx=spacing/10., using='truth', vb=vb) for i in range(len(grid))])
-                    n_grid *= 10
+                grid = np.linspace(limits[0], limits[-1], N)
+                icdf = self.truth.cdf(grid)
+                new_deltas = icdf[1:] - icdf[:-1]
+                while np.max(new_deltas) >= min_delta:
+                    where_wrong = np.where(new_deltas >= min_delta)
+                    for i in np.flip(where_wrong, axis=0):
+                        delta_i = new_deltas[i] / (N + 1)
+                        subgrid = np.linspace(grid[i] + delta_i, grid[i+1] - delta_i, N)
+                        grid = np.insert(grid, i, subgrid)
+                    icdf = self.truth.cdf(grid)
+                    new_deltas = icdf[1:] - icdf[:-1]
                 locs = np.array([bisect.bisect_right(icdf[:-1], quantpoints[n]) for n in range(N)])
 
                 quantiles = self.truth.ppf(quantpoints, ivals=grid[locs])
@@ -245,7 +252,7 @@ class PDF(object):
         self.last = 'quantiles'
         return self.quantiles
 
-    def histogramize(self, binends=None, N=10, binrange=(-1.*default_infty, default_infty), vb=True):
+    def histogramize(self, binends=None, N=10, binrange=None, vb=True):
         """
         Computes integrated histogram bin values from the truth via the CDF.
 
@@ -276,23 +283,13 @@ class PDF(object):
         object stored in `self.truth`. This calculates the CDF.
         See `the Scipy docs <https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_continuous.cdf.html#scipy.stats.rv_continuous.cdf>`_ for details.
         """
-        if binrange is None:
-            if self.gridded is not None:
-                binrange = [min(self.gridded[0]), max(self.gridded[0])]
-            elif self.samples is not None:
-                binrange = [min(self.samples), max(self.samples)]
-            elif self.quantiles is not None:
-                binrange = [min(self.quantiles[1]), max(self.quantiles[1])]
-            elif self.histogram is not None:
-                return self.histogram
-            else:
-                binrange = [0., 1.]
-
         if binends is None:
-            step = float(binrange[1]-binrange[0])/N
-            binends = np.arange(binrange[0], binrange[1]+step, step)
+            if binrange is None:
+                binrange = self.limits
+            binends = np.linspace(binrange[0], binrange[-1], N+1)
+        else:
+            N = len(binends) - 1
 
-        N = len(binends)-1
         histogram = np.zeros(N)
         if vb: print 'Calculating histogram: ', binends
         if self.truth is not None:
