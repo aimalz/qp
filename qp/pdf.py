@@ -671,17 +671,17 @@ class PDF(object):
         colors['truth'] = 'k'
         colors['mix_mod'] = 'k'
         colors['gridded'] = 'k'
-        colors['quantiles'] = 'b'#'blueviolet'
-        colors['histogram'] = 'r'#'darkorange'
-        colors['samples'] = 'g'#'forestgreen'
+        colors['quantiles'] = 'blueviolet'
+        colors['histogram'] = 'darkorange'
+        colors['samples'] = 'forestgreen'
 
         styles = {}
         styles['truth'] = '-'
         styles['mix_mod'] = ':'
         styles['gridded'] = '--'
-        styles['quantiles'] = (0,(5,10))
-        styles['histogram'] = (0,(3,6))
-        styles['samples'] = (0,(1,2))
+        styles['quantiles'] = '--'#(0,(5,10))
+        styles['histogram'] = ':'#(0,(3,6))
+        styles['samples'] = '-.'#(0,(1,2))
 
         if self.truth is not None:
             min_x = self.truth.ppf(np.array([0.001]))
@@ -689,7 +689,7 @@ class PDF(object):
             x = np.linspace(min_x, max_x, 100)
             extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
             y = self.truth.pdf(x)
-            plt.plot(x, y, color=colors['truth'], linestyle=styles['truth'], lw=1.0, alpha=1.0, label='True PDF')
+            plt.plot(x, y, color=colors['truth'], linestyle=styles['truth'], lw=3.0, alpha=1.0, label='True PDF')
             if vb:
                 print 'Plotted truth.'
 
@@ -710,7 +710,7 @@ class PDF(object):
             max_x = max(max(x), extrema[-1])
             x = np.linspace(min_x, max_x, 100)
             (grid, qinterpolated) = self.approximate(x, vb=vb, using='quantiles')
-            plt.vlines(z, np.zeros(len(self.quantiles[1])), p, color=colors['quantiles'], linestyle=':', lw=1.0, alpha=1.0, label='Quantiles')
+            plt.vlines(z, np.zeros(len(self.quantiles[1])), p, color=colors['quantiles'], linestyle=styles['quantiles'], lw=1.0, alpha=1.0, label='Quantiles')
             plt.plot(grid, qinterpolated, color=colors['quantiles'], lw=2.0, alpha=1.0, linestyle=styles['quantiles'], label='Quantile Interpolated PDF')
             extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
             if vb:
@@ -721,7 +721,7 @@ class PDF(object):
             max_x = self.histogram[0][-1]
             x = np.linspace(min_x, max_x, 100)
             plt.hlines(self.histogram[1], self.histogram[0][:-1],
-                       self.histogram[0][1:], color=colors['histogram'], linestyle=':', lw=1.0, alpha=1., label='Histogram')
+                       self.histogram[0][1:], color=colors['histogram'], linestyle=styles['histogram'], lw=1.0, alpha=1., label='Histogram')
             (grid, hinterpolated) = self.approximate(x, vb=vb,
                                                      using='histogram')
             plt.plot(grid, hinterpolated, color=colors['histogram'], lw=2.0, alpha=1.0,
@@ -735,7 +735,7 @@ class PDF(object):
             min_x = min(self.gridded[0])
             max_x = max(self.gridded[0])
             (x, y) = self.gridded
-            plt.plot(x, y, color=colors['gridded'], lw=2.0, alpha=0.5,
+            plt.plot(x, y, color=colors['gridded'], lw=1.0, alpha=0.5,
                      linestyle=styles['gridded'], label='Gridded PDF')
             extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
             if vb:
@@ -745,8 +745,7 @@ class PDF(object):
             min_x = min(self.samples)
             max_x = max(self.samples)
             x = np.linspace(min_x, max_x, 100)
-            plt.plot(self.samples, np.zeros(np.shape(self.samples)),
-                     colors['samples']+'+', ms=20, label='Samples')
+            plt.plot(self.samples, np.zeros(np.shape(self.samples)), color=    colors['samples'], marker='+', ms=20, label='Samples')
             (grid, sinterpolated) = self.approximate(x, vb=vb,
                                                      using='samples')
             plt.plot(grid, sinterpolated, color=colors['samples'], lw=2.0,
@@ -757,9 +756,10 @@ class PDF(object):
                 print('Plotted samples')
 
         plt.xlim(extrema[0], extrema[-1])
-        plt.legend(fontsize='small')
-        plt.xlabel('z')
-        plt.ylabel('Probability density')
+        plt.legend()
+        plt.xlabel(r'$z$', fontsize=14)
+        plt.ylabel(r'$p(z)$', fontsize=14)
+        plt.tight_layout()
         plt.savefig(loc, dpi=250)
 
         return
