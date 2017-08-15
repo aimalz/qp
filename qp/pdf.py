@@ -228,6 +228,7 @@ class PDF(object):
                 icdf = self.truth.cdf(grid)
                 while icdf[0] > quantpoints[0] or icdf[-1] < quantpoints[-1]:
                     limits = (limits[0] - 1., limits[-1] + 1.)
+                    grid = np.linspace(limits[0], limits[-1], N)
                     icdf = self.truth.cdf(grid)
                 new_deltas = icdf[1:] - icdf[:-1]
                 while np.max(new_deltas) >= min_delta:
