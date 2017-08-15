@@ -114,7 +114,6 @@ described in Sec. \ref{sec:metric}.
 \label{sec:approx}
 
 
-
 First, we establish a vocabulary for the definitions of approximation methods.  
 Each \textit{parametrization} of a \pz\ is defined in terms of the 
 \textit{format} function $\mathcal{F}$, \textit{metaparameters} comprising 
@@ -134,21 +133,22 @@ function.  However, we have chosen a default interpolation scheme for each
 format to maximize its performance, demonstrating the significance of the 
 choices made in reconstructing a \pz\ from stored parameters.
 
-\qp\ is currently capable of converting a \pz\ between five formats that are 
-described below in terms of the number $N_{f}$ of stored parameters $c_{i}$ per 
-\pz, which are presumed to be floating point numbers unless otherwise 
-specified.  The metaparameters are a set of $N_{M}$ numbers $C_{i}$ necessary 
-to convert the stored \pz\ parameters $\vec{c}$ into a probability distribution 
-function over redshift.  Because the metaparameters for a catalog of \pz s 
-released by a survey will only need to be stored once, it does not matter how 
-large $N_{M}$ is.
+\qp\ supports conversion of \pz\ catalogs between five formats: step functions, 
+samples, quantiles, evaluations, and mixture model components.  These formats 
+may be associated with any number $N_{f}$ of stored parameters $c_{i}$ per \pz, 
+which are presumed to be floating point numbers unless otherwise specified.  
+The metaparameters are a set of $N_{M}$ numbers $C_{i}$ necessary to convert 
+the stored \pz\ parameters $\vec{c}$ into a probability distribution function 
+over redshift.  Because the metaparameters for a catalog of \pz s released by a 
+survey will only need to be stored once, it does not matter how large $N_{M}$ 
+is.
 
-Three of these formats are considered candidates for large survey \pz\ catalog 
-storage: regular binning (Sec. \ref{sec:bins}), random samples (Sec. 
-\ref{sec:samples}), and regular quantiles (Sec. \ref{sec:quantiles}), while the 
-other two, regular evaluations (Sec. \ref{sec:grid}) and mixture models (Sec. 
-\ref{sec:mm}), are used solely for internal manipulations within \qp, but are 
-nonetheless discussed here for completeness.  The different formats are 
+Special cases of three of these formats are considered candidates for large 
+survey \pz\ catalog storage: regular binning (Sec. \ref{sec:bins}), random 
+samples (Sec. \ref{sec:samples}), and regular quantiles (Sec. 
+\ref{sec:quantiles}), while the other two, evaluations on a grid (Sec. 
+\ref{sec:grid}) and mixture model components (Sec. \ref{sec:mm}), are used 
+solely for internal manipulations within \qp.  The different formats are 
 illustrated in Fig. \ref{fig:qp} on a multimodal \pz\ with stored parameters.  
 For each format, we address the following questions:
 
@@ -159,16 +159,15 @@ format?
   \item What exactly is stored under this format, per galaxy (the parameters) 
 and per catalog (the metaparameters)?
   \item Beyond fidelity to the original \pz, what are the a priori strengths 
-and weaknesses of this format, especially with respect to 
-compression/reconstruction properties?
+and weaknesses of this format?
 \end{itemize}
 
 \begin{figure}
-  \includegraphics[width=0.9\columnwidth]{figures/Euclid_example_pz.png}
-  \caption{\qp\ can approximate a continuous 1D PDF (black line) using the step 
-function (red dashed), random sample (green short-dashed), and quantile formats 
-(blue long-dashed) with a specified number of stored parameters (20 in this 
-case).
+  \includegraphics[width=0.9\columnwidth]{figures/demo_pz.png}
+  \caption{\qp\ can approximate a continuous 1D PDF (solid black line) using 
+the step function (orange dotted line), random sample (green dash-dotted line), 
+and quantile formats (purple dashed line) with a specified number of stored 
+parameters ($N_{f}=20$ in this case).
   \label{fig:qp}}
 \end{figure}
 
@@ -176,20 +175,25 @@ case).
 \label{sec:bins}
 
 By far the most popular format for \pz s is that of a piecewise constant step 
-function, also called a histogram binning.  The only format that has been used 
-for public release of \pz\ catalogs \citep{tanaka_photometric_2017, 
-sheldon_photometric_2012}; it is unclear whether this is a consequence or a 
-cause of the fact that it is the most common format for using \pz s in 
-cosmological inference, as tomographic binning is a universal step between the 
-\pz\ catalog and calculation of any two-point correlation function.
+function, also called a histogram binning.  It is the only format that has been 
+used for public release of \pz\ catalogs \citep{tanaka_photometric_2017, 
+sheldon_photometric_2012}; it is unclear whether this is a consequence or cause 
+of the fact that it is the most common format for using \pz s in cosmological 
+inference, as tomographic binning is a universal step between the \pz\ catalog 
+and calculation of any two-point correlation function.
 
 The metaparameters of the binned parametrization are the ordered list of 
 $N_{M}=N_{f}+1$ redshifts $\vec{C} = (z_{1}, z_{2}, \dots, z_{N_{M}-1}, 
 z_{N_{M}})$ with $C_{1} < C_{2} < \dots < C_{N_{M}-1} < C_{N_{M}}$ serving as 
-endpoints shared by all galaxies in the catalog, each adjacent pair of which is 
-associated with a parameter $c_{i}=\int_{C_{i}}^{C_{i+1}}\ p(z)dz$.  The format 
-function $\mathcal{F}^{b}=\sum_{i=1}^{N_{f}}F_{i}$ is the sum of a set of 
-$N_{f}$ step functions $F_{i}$, where a step function is defined as
+bin endpoints shared by all galaxies in the catalog, each adjacent pair of 
+which is associated with a parameter $c_{i}=\int_{C_{i}}^{C_{i+1}}\ p(z)dz$.  
+The standard assumption that $p(z)=0$ when $z<C_{1}$ or $z>C_{N_{M}}$ implies 
+that the $c_{i}$ are normalized according to $\sum_{i} c_{i}\cdot\Delta = 1$.  
+Note that this is not equivalent to the erroneous normalization condition 
+$\sum_{i} c_{i} = 1$ that commonly appears in the literature.
+
+The format function $\mathcal{F}^{b}=\sum_{i=1}^{N_{f}}F_{i}$ is the sum of a 
+set of $N_{f}$ step functions $F_{i}$, where a step function is defined as
 \begin{align}
   \label{eq:step}
   F_{C_{i}, C_{i+1}}(z| (C_{i}, C_{i+1})), c_{i}) &= c_{i} 
@@ -203,17 +207,10 @@ making the estimator of the \pz\
 \left\{\begin{tabular}{cc}$1$&$C_{i}<z<C_{i+1}$\\
 0&$z < C_{i}$\ or\ $z > C_{i+1}$\end{tabular}\right\}
 \end{align}
-under the binned format.  We note that a step function may be considered an 
-interpolator that is uniform between given endpoints.
-
-If the binning is "regular," then $C_{i+1}=C_{i}+\Delta$ for some constant 
-scalar $\Delta$.  As this is the only type of binning that has been used in the 
-literature, it is the only one we consider.  (A suitable irregular binning 
-across the entire catalog would also require a nontrivial optimization.)  The 
-standard assumption that $p(z)=0$ when $z<C_{1}$ or $z>C_{N_{M}}$ implies that 
-the $c_{i}$ are normalized according to $\sum_{i} c_{i}\cdot\Delta = 1$.  Note 
-that this is not equivalent to the erroneous normalization condition $\sum_{i} 
-c_{i} = 1$ that commonly appears in the literature.
+under the histogram format.  We note that a step function may be considered its 
+own interpolator that is uniform between given endpoints.  The regular binning 
+considered here has $C_{i+1}=C_{i}+\Delta$ for a constant $\Delta$, as this is 
+the only type of binning that has been used in the literature.
 
 All known native \pz\ formats are easy to convert to the histogram 
 representation.  However, the corrolary to this statement is that it is an 
@@ -608,8 +605,8 @@ evaluated gridded evaluations with a Gaussian mixture model and designate that
 as the true \pz\ $p(z)$.
 
 \begin{figure}
-  \includegraphics[width=0.9\columnwidth]{figures/lsst_pz_placeholder.png}\\
-  \includegraphics[width=0.9\columnwidth]{figures/euclid_pz_placeholder.png}
+  \includegraphics[width=0.9\columnwidth]{figures/lsst_pzs.png}\\
+  \includegraphics[width=0.9\columnwidth]{figures/euclid_pzs.png}
   \caption{The shapes of the \pz s\ in the two datasets considered vary 
 substantially despite using the same \pz\ method, due to the differences in the 
 quality of the photometry.  Different parametrizations may perform better on 
@@ -697,15 +694,17 @@ that is a wrapper for collections of \texttt{qp.PDF} objects.
 
 Parametrizations are compared on the basis of the distributions of the KLD of 
 Sec. \ref{sec:metric} calculated over all \pz s in the ensemble.  An example of 
-the distribution of the KLD for $N_{f}=10$ is shown in Fig. 
-\ref{fig:individual}.
+the distribution of the KLD is shown in Fig. \ref{fig:individual}.
 
 \begin{figure}
-  \includegraphics[width=0.9\columnwidth]{figures/individual_placeholder.png}
+  \includegraphics[width=0.9\columnwidth]{figures/lsst_individual.png}
   \caption{Here one can see the general shape of the distribution of log-KLD 
-values for one dataset and one number of parameters over different formats 
-(quantiles in purple, samples in green, and histogram in orange).  We note 
-that\dots is broad/narrow but high/low\dots.
+values for $N_{g}=100$ \pz s from the Optical dataset and one number of 
+parameters $N_{f}=10$ over the quantiles (purple with dashed border), samples 
+(green with dash-dotted border), and histogram (orange with dotted border) 
+formats.  We note that the quantile format has a narrow distribution with a 
+higher KLD, whereas the samples and histogram formats have broader 
+distributions with generally lower KLDs.
   \label{fig:individual}}
 \end{figure}
 
@@ -715,8 +714,8 @@ distributions of metric values for the individual \pz s under each
 parametrization, summarized in Fig. \ref{fig:moments}.
 
 \begin{figure}
-  \includegraphics[width=0.9\columnwidth]{lsst_moments_placeholder.png}\\
-  \includegraphics[width=0.9\columnwidth]{euclid_moments_placeholder.png}
+  \includegraphics[width=0.9\columnwidth]{lsst_moments.png}\\
+  \includegraphics[width=0.9\columnwidth]{euclid_moments.png}
   \caption{The mean (star), variance ($+$), and kurtosis ($\times$) of the KLD 
 distributions are plotted for each dataset over all parametrizations (quantiles 
 in purple, samples in green, and histogram in orange).  Top panel: The optical 
@@ -744,16 +743,15 @@ estimator based on \pz s reconstructed from a set number of stored parameters
 under each format, as well as the KLD for each format.
 
 \begin{figure}
-  
-\includegraphics[width=0.9\columnwidth]{figures/euclid_stacked_placeholder.png}
+  \includegraphics[width=0.9\columnwidth]{figures/euclid_stacked.png}
   \caption{We show an example of the stacked estimator of the redshift 
-distribution for one dataset with one number of parameters across all formats 
-along with the KLD for each format.  The most striking characteristic of 
-$\hat{n}$ with a relatively small number of parameters $N_{f}=10$ is the 
-coarseness of the histogram format (orange dotted line) relative to the 
-quantile format (purple dashed line) and samples format (green dash-dotted 
-line), both of which are fairly close to $\hat{n}(z)$ derived from evaluating 
-the true \pz s (thick gray line).
+distribution for the Optical+IR dataset with one number of parameters 
+$N_{f}=10$ across all formats along with the KLD for each format.  The most 
+striking characteristic of $\hat{n}(z)$ with a relatively small number of 
+parameters on a small number of galaxies is the coarseness of the histogram 
+format (orange dotted line) relative to the quantile format (purple dashed 
+line) and samples format (green dash-dotted line), both of which are fairly 
+close to $\hat{n}(z)$ derived from evaluating the true \pz s (thick gray line).
   \label{fig:stacked}}
 \end{figure}
 
@@ -765,9 +763,8 @@ absolute accuracy of the redshift distribution estimator and its convergence
 behavior.
 
 \begin{figure}
-  
-\includegraphics[width=0.9\columnwidth]{figures/lsst_stacked_placeholder.png}\\
-  \includegraphics[width=0.9\columnwidth]{figures/lsst_stacked_placeholder.png}
+  \includegraphics[width=0.9\columnwidth]{figures/lsst_kld.png}\\
+  \includegraphics[width=0.9\columnwidth]{figures/euclid_kld.png}
   \caption{We show the behavior of the KLD as a function of number of 
 parameters over the quantiles (purple dashed line), samples (green dash-dotted 
 line), and histogram (orange dotted line) formats.  Top panel: The Optical 
