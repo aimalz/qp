@@ -530,8 +530,8 @@ As $n(z)$ is itself a PDF (though in the literature it is often subject to the
 fallacy conflating a sum and an integral, first mentioned in Sec. 
 \ref{sec:bins}), our primary metric is the KLD from the stacked estimator 
 $\hat{n}_{N_{f}}^{X}(z)$ derived from the catalog of approximate \pz s 
-$\{\hat{p}^{X}_{N_{f}}\}_{N_{g}}$ under format $X$ with $N_{f}$ parameters to 
-the stacked estimator $\hat{n}'(z)'$ derived from the true \pz s 
+$\{\hat{p}^{X}_{N_{f}}\}_{N_{g}}$ under a given format $X$ with $N_{f}$ 
+parameters to the stacked estimator $\hat{n}'(z)'$ derived from the true \pz s 
 $\{p_{k}(z)\}_{N_{g}}$.  The metrics calculated on the stacked estimator of the 
 redshift distribution function of a survey may be found in Sec. 
 \ref{sec:stacked}.
@@ -565,7 +565,6 @@ evaluated at the same redshifts.  Then they are combined according to
 \end{align}
 to estimate the KLD.  We attempt to use the most appropriate interpolation 
 scheme for each format, noted in Sec. \ref{sec:approx}.
-
 
 
 
@@ -617,8 +616,7 @@ quality of the photometry.  Different parametrizations may perform better on
 some \pz\ shapes than others.  Top panel: The lower quality photometry of the 
 ground-based optical photometry catalog yields broader, multimodal \pz s. 
 Bottom panel: The higher quality photometry of the space-based optical + IR 
-photometry catalog yields narrow, unimodal \pz s.[plot with a few examples of 
-what the \pz s look like, one panel per dataset (vertical)]
+photometry catalog yields narrow, unimodal \pz s.
   \label{fig:pzs}}
 \end{figure}
 
@@ -697,69 +695,112 @@ that is a wrapper for collections of \texttt{qp.PDF} objects.
 \subsection{Individual \pz s}
 \label{sec:individual}
 
-Parametrizations are compared on the basis of the distributions of the metrics 
-of Sec. \ref{sec:metric} calculated over all galaxies in the ensemble.  An 
-example of the distribution of the KLD for $N_{f}=10$ is shown in Fig. 
+Parametrizations are compared on the basis of the distributions of the KLD of 
+Sec. \ref{sec:metric} calculated over all \pz s in the ensemble.  An example of 
+the distribution of the KLD for $N_{f}=10$ is shown in Fig. 
 \ref{fig:individual}.
 
 \begin{figure}
   \includegraphics[width=0.9\columnwidth]{figures/individual_placeholder.png}
-  \caption{Placeholder! [histogram of log-KLD for one number of parameters 
-$N_{f}$, one color per format, one panel per dataset? (vertical)?, panel title 
-of (dataset, $N_{f}$)]
+  \caption{Here one can see the general shape of the distribution of log-KLD 
+values for one dataset and one number of parameters over different formats 
+(quantiles in purple, samples in green, and histogram in orange).  We note 
+that\dots is broad/narrow but high/low\dots.
   \label{fig:individual}}
 \end{figure}
 
-As viewing the histograms of metric values is not especially informative, we 
-compare the moments of the distributions of metric values for the individual 
-\pz s under each parametrization.
+To distill what is observed in plots like Fig. \ref{fig:individual} for both 
+datasets and all numbers of parameters, we compare the moments of the 
+distributions of metric values for the individual \pz s under each 
+parametrization, summarized in Fig. \ref{fig:moments}.
 
 \begin{figure}
   \includegraphics[width=0.9\columnwidth]{lsst_moments_placeholder.png}\\
   \includegraphics[width=0.9\columnwidth]{euclid_moments_placeholder.png}
-  \caption{Placeholder!  (still refining this plot concept)  [$N_{f}$ 
-(horizontal) vs. first few moment values each with separate vertical scale, one 
-marker shape per moment (might be too confusing with many moments, will need to 
-see which are most informative), one color per format, one panel per dataset 
-(vertical), panel title of dataset]
+  \caption{The mean (star), variance ($\plus$), and kurtosis ($\times$) of the 
+KLD distributions are plotted for each dataset over all parametrizations 
+(quantiles in purple, samples in green, and histogram in orange).  Top panel: 
+The optical dataset has\dots.  Bottom panel: The optical+IR dataset has\dots.
   \label{fig:moments}}
 \end{figure}
 
+While it is obvious that one would like the mean (first moment) of the KLD 
+distribution to be low, interpretation of higher-order moments is less clear.  
+In a science application that is robust to \pz\ outliers, a parametrization 
+with a high variance (second moment) may be acceptable, whereas in another 
+science application that simply requires well-characterized errors could 
+tolerate a higher mean in exchange for a lower variance.  To meaningfully 
+interpret the KLD of individual \pz s, it will be necessary for those using \pz 
+s in their science to calculate the requirements on the acceptable degree of 
+information loss.
 
 \subsection{Stacked $\hat{n}(z)$ estimator}
 \label{sec:stacked}
 
 Parametrizations are also compared by the accuracy of their stacked redshift 
 distribution estimator $\hat{n}(z)$ relative to that of the \pz s in their 
-original format.
+original format.  Fig. \ref{fig:stacked} shows a typical example of the stacked 
+estimator based on \pz s reconstructed from a set number of stored parameters 
+under each format, as well as the KLD for each format.
+
+\begin{figure}
+  
+\includegraphics[width=0.9\columnwidth]{figures/euclid_stacked_placeholder.png}
+  \caption{We show an example of the stacked estimator of the redshift 
+distribution for one dataset with one number of parameters across all formats 
+along with the KLD for each format.  The most striking characteristic of 
+$\hat{n}$ with a relatively small number of parameters $N_{f}=10$ is the 
+coarseness of the histogram format (orange dotted line) relative to the 
+quantile format (purple dashed line) and samples format (green dash-dotted 
+line), both of which are fairly close to $\hat{n}(z)$ derived from evaluating 
+the true \pz s (thick gray line).
+  \label{fig:stacked}}
+\end{figure}
+
+The KLD values based on plots like Fig. \ref{fig:stacked} over all 
+parametrizations are collected and plotted in Fig. \ref{fig:kld}.  Error 
+regions are based on $10$ subsamples of $N_{g}=1000$ \pz s from the full 
+catalogs of Sec. \ref{sec:data}.  The results can be interpreted in terms of 
+absolute accuracy of the redshift distribution estimator and its convergence 
+behavior.
 
 \begin{figure}
   
 \includegraphics[width=0.9\columnwidth]{figures/lsst_stacked_placeholder.png}\\
-  
-\includegraphics[width=0.9\columnwidth]{figures/euclid_stacked_placeholder.png}
-  \caption{Placeholder!
-  [$N_{f}$ (horizontal) vs. metric value (vertical), one color per format, 
-curves from many instantiations of the subsample of galaxies (or error bars 
-derived from those instantiations), one panel per dataset (vertical), panel 
-title of dataset; i.e. both panels look like the upper panel but hasn't been 
-run on Euclid-like mock data yet]
-  \label{fig:stacked}}
+  \includegraphics[width=0.9\columnwidth]{figures/lsst_stacked_placeholder.png}
+  \caption{We show the behavior of the KLD as a function of number of 
+parameters over the quantiles (purple dashed line), samples (green dash-dotted 
+line), and histogram (orange dotted line) formats.  Top panel: The Optical 
+dataset of Sec. \ref{sec:LSST} shows\dots.  Bottom panel: The Optical+IR 
+dataset of Sec. \ref{sec:Euclid} shows\dots.
+  \label{fig:kld}}
 \end{figure}
 
+A survey may be limited by a required accuracy on $\hat{n}(z)$ for its primary 
+science mission or by a hard limit on the available storage $N_{f}$ (or both).  
+If the storage is the strongest constraint, one may consider a vertical line in 
+Fig. \ref{fig:kld}; the best parametrization will correspond to the format that 
+minimizes the KLD at the limiting value of $N_{f}$.
 
 Further recommendations can be made if the requirements on the science products 
-derived from the \pz\ catalog are known.  If the information loss tolerance on 
-$n(z)$ for a given survey mission is specified, it would correspond to a 
-horizontal line in Fig. \ref{fig:stacked}; the optimal format would be the one 
-that drops below that line at the lowest value of $N_{f}$, which would be the 
-optimal number of parameters to store.  We encourage the community to specify 
-the requirements on estimators of science products like $n(z)$ in terms of 
-information theoretic quantities such as entropy, as these are naturally 
-relatable to \pz s.  We do not attempt to convert traditional percent 
-error-based requirements to such a framework because it would require a fully 
-probabilistic pipeline from \pz s to cosmological parameter constraints, which 
-has not yet been developed.
+derived from the \pz\ catalog are known in terms of the acceptable degree of 
+information loss.  If the information loss tolerance on $n(z)$ for a given 
+survey mission is specified, it would correspond to a horizontal line in Fig. 
+\ref{fig:stacked}; the optimal format would be the one that drops below that 
+line at the lowest value of $N_{f}$, which would be the optimal number of 
+parameters to store.  We encourage the community to specify the requirements on 
+estimators of science products like $n(z)$ in terms of information theoretic 
+quantities such as entropy, as these are naturally relatable to \pz s.
+
+If there is some flexibility in the acceptable degree of information loss on 
+$\hat{n}(z)$ and/or the allocation of storage for \pz s, as is the case for 
+LSST, it may be best to examine the asymptotic behavior of the KLD as a 
+function of $N_{f}$ for each format considered to make a choice based on a 
+marginal difference.  For example, if the KLD can be significantly reduced with 
+a slightly larger $N_{f}$, it may be possible to request additional storage 
+capacity for the survey's \pz s.  We note that for these datasets, the KLD 
+achieves its asymptote at different values of $N_{f}$ for each format, with the 
+histogram format taking far larger $N_{f}$ than the other formats.
 
 
 
@@ -769,12 +810,12 @@ has not yet been developed.
 \label{sec:conclusions}
 
 
-This work addresses how one may go about choosing a storage format and 
-resolution for a catalog of \pz s for a survey of known data quality to balance 
-the accuracy of the stored \pz s and the science metrics derived from them 
-against the available storage resources.  We demonstrate the recommended method 
-on two realistic mock datasets representative of upcoming \pz\ catalogs and 
-draw the following conclusions:
+This work develops a principled approach to choosing a storage format and 
+resolution for storing a catalog of \pz s from a survey of known data quality 
+to balance the accuracy of \pz s and science products thereof reconstructed 
+from the stored parameters against the available storage constraints.  We 
+demonstrate the recommended method on two realistic mock datasets 
+representative of upcoming \pz\ catalogs and draw the following conclusions:
 \begin{itemize}
   \item
   \item As indicated by the KLD, the quantile parametrization is a promising 
@@ -809,6 +850,9 @@ the format necessary for science calculations.
 
 \subsection*{Acknowledgments}
 
+
+SJS was partially supported by the National Science Foundation under grant 
+N56981CC
 
 
 \input{acknowledgments}
