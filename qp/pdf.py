@@ -226,24 +226,36 @@ class PDF(object):
                 min_delta = np.min(extrapoints[1:] - extrapoints[:-1])
                 grid = np.linspace(limits[0], limits[-1], N)
                 icdf = self.truth.cdf(grid)
-                while icdf[0] > quantpoints[0]:
+                low_extended = 0
+                while icdf[0] > quantpoints[0] and low_extended < 5:
+                    low_extended += 1
                     limits = (limits[0] - 1., limits[-1])
                     grid = np.linspace(limits[0], limits[-1], N)
                     icdf = self.truth.cdf(grid)
-                while icdf[-1] < quantpoints[-1]:
+                if vb:
+                    print('lower limits extended '+str(low_extended)+' times')
+                high_extended = 0
+                while icdf[-1] < quantpoints[-1] and high_extended < 5:
+                    high_extended += 1
                     limits = (limits[0], limits[-1] + 1.)
                     grid = np.linspace(limits[0], limits[-1], N)
                     icdf = self.truth.cdf(grid)
+                if vb:
+                    print('upper_limits extended '+str(high_extended)+' times')
                 new_deltas = icdf[1:] - icdf[:-1]
-                while np.max(new_deltas) >= min_delta:
-                    where_wrong = np.where(new_deltas >= min_delta)[0]
+                expanded = 0
+                while np.max(new_deltas) >= 2. * min_delta and expanded < 10:
+                    expanded += 1
+                    where_wrong = np.where(new_deltas >= 2. * min_delta)[0]
                     flipped = np.flip(where_wrong, axis=0)
                     for i in flipped:
                         delta_i = new_deltas[i] / (N + 1)
-                        subgrid = np.linspace(grid[i] + delta_i, grid[i+1] - delta_i, N)
+                        subgrid = np.linspace(grid[i] + delta_i, grid[i+1] - delta_i, 10)
                         grid = np.insert(grid, i+1, subgrid)
                         icdf = np.insert(icdf, i+1, self.truth.cdf(subgrid))
                     new_deltas = icdf[1:] - icdf[:-1]
+                if vb:
+                    print('grid expanded '+str(expanded)+' times')
                 locs = np.array([bisect.bisect_right(icdf[:-1], quantpoints[n]) for n in range(N)])
 
                 quantiles = self.truth.ppf(quantpoints, ivals=grid[locs])
