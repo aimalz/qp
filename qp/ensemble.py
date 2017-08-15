@@ -347,16 +347,20 @@ class Ensemble(object):
 
         if using == 'quantiles':
             def Q_func(pdf):
-                return qp.PDF(quantiles=pdf.quantiles, vb=False)
+                assert(pdf.quantiles is not None)
+                return qp.PDF(quantiles=pdf.quantiles, limits=limits, vb=False)
         elif using == 'histogram':
             def Q_func(pdf):
-                return qp.PDF(histogram=pdf.histogram, vb=False)
+                assert(pdf.histogram is not None)
+                return qp.PDF(histogram=pdf.histogram, limits=limits, vb=False)
         elif using == 'samples':
             def Q_func(pdf):
-                return qp.PDF(samples=pdf.samples, vb=False)
+                assert(pdf.samples is not None)
+                return qp.PDF(samples=pdf.samples, limits=limits, vb=False)
         elif using == 'gridded':
             def Q_func(pdf):
-                return qp.PDF(quantiles=pdf.gridded, vb=False)
+                assert(pdf.gridded is not None)
+                return qp.PDF(gridded=pdf.gridded, limits=limits, vb=False)
         else:
             print(using + ' not available; try a different parametrization.')
             return

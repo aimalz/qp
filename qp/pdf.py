@@ -117,7 +117,7 @@ class PDF(object):
             the input locations and the value of the PDF (or its approximation) at the requested location(s)
         """
         if using is None:
-            using = self.last
+            using = self.first
 
         if using == 'truth':
             if self.truth is not None:
@@ -137,7 +137,7 @@ class PDF(object):
             evaluated = self.approximate(loc, using=using, vb=vb)
             val = evaluated[1]
 
-        gridded = (loc, val)
+        gridded = qp.utils.normalize_gridded((loc, val))
         if norm:
             gridded = qp.utils.normalize_integral(gridded)
 
@@ -514,6 +514,8 @@ class PDF(object):
             (x, y) = qp.utils.evaluate_quantiles(self.quantiles)
             (x, y) = qp.utils.normalize_quantiles(self.quantiles[0], (x, y))
             self.interpolator = spi.interp1d(x, y, kind=self.scheme, bounds_error=False, fill_value=default_eps)
+            if vb:
+                print 'Created a `'+self.scheme+'` interpolator for the '+using+' parametrization.'
             return self.interpolator
 
         if using == 'histogram':

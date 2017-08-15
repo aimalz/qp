@@ -104,13 +104,16 @@ def normalize_integral(in_data, vb=False):
     if in_data is None:
         return in_data
     (x, y) = in_data
-    a = x.argsort()
-    x.sort()
-    ys = y[a]
+    # a = x.argsort()
+    # x.sort()
+    # ys = y[a]
     dx = x[1:] - x[:-1]
-    dy = (ys[1:] + ys[:-1]) / 2.
+    dy = (y[1:] + y[:-1]) / 2.
     norm = np.dot(dy, dx)
     y = y / norm
+    if vb:
+        dy = (y[1:] + y[:-1]) / 2.
+        assert(np.isclose(np.dot(dy, dx), 1.))
     return(x, y)
 
 def normalize_gridded(in_data, vb=True):
@@ -286,7 +289,7 @@ def calculate_moment(p, N, using=None, limits=lims, dx=0.01, vb=False):
     if using is None:
         using = p.first
     # Make a grid from the limits and resolution
-    grid = np.linspace(limits[0], limits[1], int((limits[1]-limits[0])/dx))
+    grid = np.arange(limits[0], limits[1], dx)
     grid_to_N = grid ** N
     # Evaluate the functions on the grid
     pe = p.evaluate(grid, using=using, vb=vb)[1]
@@ -324,20 +327,22 @@ def calculate_kl_divergence(p, q, limits=lims, dx=0.01, vb=False):
     # Make a grid from the limits and resolution
     grid = np.arange(limits[0], limits[1], dx)
     # Evaluate the functions on the grid and normalize
-    pe = p.evaluate(grid, vb=vb)[1]
-    pn = normalize_integral(normalize_gridded((grid, pe)))[1]
-    qe = q.evaluate(grid, vb=vb)[1]
-    qn = normalize_integral(normalize_gridded((grid, qe)))[1]
+    pe = p.evaluate(grid, vb=vb, norm=True)
+    pn = pe[1]
+    qe = q.evaluate(grid, vb=vb, norm=True)
+    qn = qe[1]
     # Normalize the evaluations, so that the integrals can be done
     # (very approximately!) by simple summation:
     # pn = pe / np.sum(pe)
     #denominator = max(np.sum(qe), epsilon)
     # qn = qe / np.sum(qe)#denominator
     # Compute the log of the normalized PDFs
-    logp = safelog(pn)
-    logq = safelog(qn)
+    logquotient = safelog(pn / qn)
+    # logp = safelog(pn)
+    # logq = safelog(qn)
     # Calculate the KLD from q to p
-    Dpq = np.dot(pn * (logp - logq), dx * np.ones(len(grid)))
+    Dpq = np.dot(pn * logquotient, np.ones(len(grid)) * dx)
+    assert(Dpq >= 0.)
     return Dpq
 
 def calculate_rmse(p, q, limits=lims, dx=0.01, vb=False):
