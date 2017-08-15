@@ -226,8 +226,12 @@ class PDF(object):
                 min_delta = np.min(extrapoints[1:] - extrapoints[:-1])
                 grid = np.linspace(limits[0], limits[-1], N)
                 icdf = self.truth.cdf(grid)
-                while icdf[0] > quantpoints[0] or icdf[-1] < quantpoints[-1]:
-                    limits = (limits[0] - 1., limits[-1] + 1.)
+                while icdf[0] > quantpoints[0]:
+                    limits = (limits[0] - 1., limits[-1])
+                    grid = np.linspace(limits[0], limits[-1], N)
+                    icdf = self.truth.cdf(grid)
+                while icdf[-1] < quantpoints[-1]:
+                    limits = (limits[0], limits[-1] + 1.)
                     grid = np.linspace(limits[0], limits[-1], N)
                     icdf = self.truth.cdf(grid)
                 new_deltas = icdf[1:] - icdf[:-1]
