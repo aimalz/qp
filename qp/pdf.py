@@ -205,6 +205,7 @@ class PDF(object):
         object stored in `self.truth`. This calculates the inverse CDF.
         See `the Scipy docs <https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_continuous.ppf.html#scipy.stats.rv_continuous.ppf>`_ for details.
         TO DO: reorder these checks
+        TO DO: address what happens when limits are too restrictive
         """
         if quants is not None:
             quantpoints = quants
@@ -225,6 +226,9 @@ class PDF(object):
                 min_delta = np.min(extrapoints[1:] - extrapoints[:-1])
                 grid = np.linspace(limits[0], limits[-1], N)
                 icdf = self.truth.cdf(grid)
+                while icdf[0] > quantpoints[0] or icdf[-1] < quantpoints[-1]:
+                    limits = (limits[0] - 1., limits[-1] + 1.)
+                    icdf = self.truth.cdf(grid)
                 new_deltas = icdf[1:] - icdf[:-1]
                 while np.max(new_deltas) >= min_delta:
                     where_wrong = np.where(new_deltas >= min_delta)[0]
