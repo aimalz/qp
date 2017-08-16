@@ -112,6 +112,7 @@ def normalize_integral(in_data, vb=False):
     norm = np.dot(dy, dx)
     y = y / norm
     if vb:
+        print('almost normalized integrals')
         dy = (y[1:] + y[:-1]) / 2.
         assert(np.isclose(np.dot(dy, dx), 1.))
     return(x, y)
@@ -183,13 +184,14 @@ def normalize_quantiles(q, (x, y)):
     (x, y): tuple, ndarray, float
         tuple of input x and normalized y
     """
-    xmin = x[0] - 2 * q[0] / y[0]
-    xmax = x[-1] + 2 * (1 - q[-1]) / y[-1]
+    nq = (q[1:] + q[:-1]) / 2.
+    xmin = x[0] - 2 * nq[0] / y[0]
+    xmax = x[-1] + 2 * (1 - nq[-1]) / y[-1]
     x = np.insert(x, [0, -1], (xmin, xmax))
     y = np.insert(y, [0, -1], (epsilon, epsilon))
     return(x, y)
 
-def evaluate_quantiles((qs, xs)):
+def evaluate_quantiles((qs, xs), vb=True):
     """
     Produces PDF values given quantile information
 
@@ -199,6 +201,8 @@ def evaluate_quantiles((qs, xs)):
         CDF values
     xs: ndarray, float
         quantile values
+    vb: Boolean
+        print progress to stdout?
 
     Returns
     -------
@@ -216,7 +220,9 @@ def evaluate_quantiles((qs, xs)):
     # xs = np.append(x, np.array([infty]))
     # xs = np.append(np.array([-1. * infty]), x)
     dx = xs[1:] - xs[:-1]
-    assert np.all(dx>0.)
+    if vb:
+        print('almost evaluated quantiles')
+        assert np.all(dx>0.)
     mx = (xs[1:] + xs[:-1]) / 2.
     y = dq / dx
     # print(np.dot(y, dx))

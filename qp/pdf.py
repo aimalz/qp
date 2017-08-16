@@ -137,9 +137,9 @@ class PDF(object):
             evaluated = self.approximate(loc, using=using, vb=vb)
             val = evaluated[1]
 
-        gridded = qp.utils.normalize_gridded((loc, val))
+        gridded = qp.utils.normalize_gridded((loc, val), vb=vb)
         if norm:
-            gridded = qp.utils.normalize_integral(gridded)
+            gridded = qp.utils.normalize_integral(gridded, vb=vb)
 
         return gridded
 
@@ -465,8 +465,8 @@ class PDF(object):
                 if self.quantiles is None:
                     self.quantiles = self.quantize(vb=vb)
 
-                (x, y) = qp.utils.evaluate_quantiles(self.quantiles)
-                (endpoints, weights) = qp.utils.normalize_quantiles(self.quantiles[0], (x, y))
+                (x, y) = qp.utils.evaluate_quantiles(self.quantiles, vb=vb)
+                (endpoints, weights) = qp.utils.normalize_quantiles(self.quantiles[0], (x, y), vb=vb)
                 # endpoints = np.insert(self.quantiles[1], [0, -1], self.limits)
                 # weights = qp.utils.evaluate_quantiles(self.quantiles)[1]# self.evaluate((endpoints[1:]+endpoints[:-1])/2.)
                 # interpolator = self.interpolate(using='quantiles', vb=False)
@@ -532,8 +532,8 @@ class PDF(object):
             if self.quantiles is None:
                 self.quantiles = self.quantize(vb=vb)
 
-            (x, y) = qp.utils.evaluate_quantiles(self.quantiles)
-            (x, y) = qp.utils.normalize_quantiles(self.quantiles[0], (x, y))
+            (x, y) = qp.utils.evaluate_quantiles(self.quantiles, vb=vb)
+            (x, y) = qp.utils.normalize_quantiles(self.quantiles[0], (x, y), vb=vb)
             self.interpolator = spi.interp1d(x, y, kind=self.scheme, bounds_error=False, fill_value=default_eps)
             if vb:
                 print 'Created a `'+self.scheme+'` interpolator for the '+using+' parametrization.'
