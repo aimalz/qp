@@ -311,6 +311,9 @@ grid $(z_{1}, z_{2}, \dots, z_{N_{ff}-1}, z_{N_{ff}})$ with resolution
 $\delta_{ff}\ll\delta_{f}$.  We review the properties of the KLD and deepen 
 intuition for it in App. \ref{sec:kld}.
 
+\subsubsection{Stacked $\hat{n}(z)$ estimator}
+\label{sec:stacked_metric}
+
 \Pz s have thus far been used almost exclusively to estimate the redshift 
 distribution function $n(z)$ necessary for calculating the correlation 
 functions used by many cosmological probes.  The most common way to estimate 
@@ -332,6 +335,9 @@ primary metric is the KLD from the stacked estimator of a catalog of
 evaluations of reconstructed \pz s to the stacked estimator of a catalog of 
 evaluations of the true \pz s.
 
+\subsubsection{Individual \pz s}
+\label{sec:individual_metric}
+
 For most galaxy surveys producing \pz\ catalogs, there is potential value not 
 only in obtaining $\hat{n}(z)$ but also in recovering individual \pz s that, 
 for example, may be used as the basis for targeting spectroscopic follow up for 
@@ -348,96 +354,75 @@ approximate \pz s for some dataset vary with the choice of parametrization.
 \section{Photo-z Test Data}
 \label{sec:data}
 
-With the expectation that \qp\  may indicate a different optimal result for 
-different datasets, we apply it to two mock datasets with different data 
-quality properties.  For example, one can expect storing a small number of 
-samples to be sufficient for unimodal \pz s with low variance but disastrous 
-for broader \pz s, or storing the components of a Gaussian mixture model to 
-only be appropriate.  For this reason, we demonstrate a procedure for making a 
-good choice of format and number of parameters on a pair of mock datasets 
-intended to be realistic projections of anticipated data from upcoming surveys 
-with different data quality.
+With the expectation that the optimal parametrization may differ with the 
+properties of the catalog, we demonstrate a procedure for vetting \pz\ 
+parametrizations on a pair of mock datasets intended to be realistic 
+projections of anticipated data from LSST.  All \pz s were fit using the 
+publicly available Bayesian Photometric Redshift (BPZ) code 
+\citep{benitez_bayesian_2000}, which employs spectral energy distribution (SED) 
+fitting to a template library.  The choice of \pz\ estimation method, however, 
+is not relevant to this study; so long as the mock \pz s are 
+\textit{realistically complex}, meaning they take shapes like those we expect 
+to see in \pz s from real datasets with similar photometric properties, it does 
+not matter whether the \pz s produced by BPZ are accurate redshift posteriors.  
+We seek only to optimize the fidelity of the stored \pz\ relative to the \pz\ 
+output by a representative \pz\ fitting code.  (See 
+\citet{tanaka_photometric_2017}, Schmidt, et al. (in prep.) for other work 
+comparing the accuracy of \pz s produced by different methods.)  As BPZ is a 
+widely used and well established method, we assume that the \pz s produced by 
+it are of realistic complexity.  The default format of BPZ is a $N_{ff}>200$ 
+gridded parametrization with resolution exceeding the available storage for any 
+planned survey.  Because we believe that each galaxy has an underlying redshift 
+interim posterior probability distribution that is a continuous function, to 
+which the output of BPZ is itself a high-resolution approximation, we fit 
+gridded \pz\ with a Gaussian mixture model that we designate as the true \pz.
 
-Both datasets were fit using the publicly available Bayesian Photometric 
-Redshift (BPZ) code \citep{benitez_bayesian_2000}, which employs spectral 
-energy distribution (SED) fitting to a template library.  However, the choice 
-of \pz\ estimation method is not relevant to this study; so long as the mock 
-\pz s are realistically complex, meaning they take shapes like those we expect 
-to see in accurate \pz s from real datasets with similar photometric 
-properties, it does not matter how accurately they describe the probability 
-distribution of galaxy redshifts given their photometric data.  We only seek to 
-optimize the fidelity of the stored \pz\ relative to the \pz\ output by a 
-representative \pz\ fitting code.  (See \citet{tanaka_photometric_2017}, 
-Schmidt, et al. (in prep.) for other work comparing the accuracy of \pz s 
-produced by different methods.)  As BPZ is a widely used and well established 
-method, we assume that the \pz s produced by it are of realistic complexity.
-
-The mock datasets considered here were obtained in a gridded parametrization, 
-the default for BPZ output, with $N_{ff}>200$, the maximum number of floating 
-point numbers available for characterizing all photo-z information obtained by 
-LSST.  \citep{juric_data_2017}  Because we believe that each galaxy has an 
-underlying redshift interim posterior probability distribution that is a 
-continuous function, to which the output of this \pz\ code is itself a 
-high-resolution approximation, we fit each \pz\ in the catalog of densely 
-evaluated gridded evaluations with a Gaussian mixture model and designate that 
-as the true \pz\ $p(z)$.
-
-\begin{figure}
-  \includegraphics[width=0.9\columnwidth]{figures/lsst_pzs.png}\\
-  \includegraphics[width=0.9\columnwidth]{figures/euclid_pzs.png}
-  \caption{The shapes of the \pz s\ in the two datasets considered vary 
-substantially despite using the same \pz\ method, due to the differences in the 
-quality of the photometry.  Different parametrizations may perform better on 
-some \pz\ shapes than others.  Top panel: The lower quality photometry of the 
-ground-based optical photometry catalog yields broader, multimodal \pz s. 
-Bottom panel: The higher quality photometry of the space-based optical + IR 
-photometry catalog yields narrow, unimodal \pz s.
-  \label{fig:pzs}}
-\end{figure}
-
-\subsection{Ground-based optical mock data}
+\subsection{Lower-quality mock data}
 \label{sec:LSST}
 
 
 In order to simulate the expected LSST galaxy sample, we use the 
-Buzzard-highres-v1.0 mock galaxy catalog
-, which adds galaxies with SEDs drawn from an empirical library of 
-$\sim500,000$ SEDs from the Sloan Digital Sky Survey  (SDSS)
-Given an SED, redshift, and absolute r-band magnitude for each galaxy, we 
+Buzzard-highres-v1.0 mock galaxy catalog of deRose, et al. (in prep.) of 
+galaxies with SEDs drawn from an empirical library of $\sim500,000$ SEDs from 
+the Sloan Digital Sky Survey (SDSS)
+Given an SED, redshift, and absolute $r$-band magnitude for each galaxy, we 
 compute the expected apparent magnitudes and magnitude errors in the six 
-broadband LSST filters (ugrizy), assuming full 10-year depth of the survey 
+broadband LSST filters (ugrizy), assuming the full 10-year depth of the survey 
 using the simple model of \citet{ivezic_lsst:_2008}.  The catalog contains 
-111,171 galaxies to a depth of $i<26.9$, 1.5 magnitudes deeper than the 
-expected "LSST Gold sample'' of galaxies that will have S/N$\gtrsim$30 in 
-multiple bands.
+$N_{g}\approx100,000$ galaxies to a depth of $i<26.9$, 1.5 magnitudes deeper 
+than the expected "LSST Gold sample" of galaxies that will have $S/N\gtrsim30$ 
+in multiple bands.
 
 In implementing BPZ, we create a custom Bayesian prior using a subset of the 
-Buzzard-highres-v1.0 catalog, and create a spanning template set via a simple 
-k-means clustering algorithm, selection 100 of the SDSS SEDs used in creating 
-the Buzzard catalog.  BPZ outputs the marginalized redshift posterior on a 
-regular grid of test redshifts, in this case we have 211 points spanning 
-$0.005\leq z\leq2.105$.
+Buzzard-highres-v1.0 catalog and a spanning template set via a simple k-means 
+clustering algorithm based on $100$ of the SDSS SEDs used in creating the 
+Buzzard catalog.  BPZ produces \pz s in the format of probability density 
+evaluations on a regular grid of $N_{ff}=211$ redshifts $0.005\leq z\leq2.105$, 
+a subsample of which are plotted in Fig. \ref{fig:lsst_pzs}.  Even with six 
+filters spanning the optical, there are known degeneracies (e.~g.~the 
+Lyman/Balmer break degeneracy) that lead us to expect the presence of 
+multi-modal \pz s.  We produce true \pz s for the analysis by fitting a 
+five-component Gaussian mixture model to each gridded \pz\ in the catalog.
 
-Even with six filters spanning the optical, there are known degeneracies 
-(e.~g.~the Lyman/Balmer break degeneracy) that lead us to expect the presence 
-of multi-modal \pz's; some examples are shown in the top panel of 
-Fig.~\ref{fig:pzs}.  We produce "true" underlying \pz s by fitting a 
-five-component Gaussian mixture model to each \pz\ output by BPZ.
+\begin{figure}
+  \includegraphics[width=0.9\columnwidth]{figures/lsst_pzs.png}
+  \caption{The lower quality photometry yields broader, multimodal \pz s.
+  \label{fig:lsst_pzs}}
+\end{figure}
 
-
-\subsection{Space-based optical + IR mock data}
+\subsection{Higher-quality mock data}
 \label{sec:Euclid}
 
 
-We start with a 30,000 object subset of the same simulated galaxy catalog used 
-for LSST photometric redshift experiments by Graham, et al. (in prep.), which 
-is based on the Millennium simulation \citep{springel_simulations_2005}, in 
-particular the LC DEEP Gonzalez2014a
+We start with a $N_{g}\approx30,000$ object subset of the same simulated galaxy 
+catalog used for LSST photometric redshift experiments by Graham, et al. (in 
+prep.), which is based on the Millennium simulation 
+\citep{springel_simulations_2005}, in particular the LC DEEP Gonzalez2014a
 catalog based on the galaxy formation models of \cite{gonzalez-perez_how_2014}, 
 and was created using the lightcone construction techniques described by 
 \cite{merson_lightcone_2013}.  We limit the sample to galaxies with a catalog 
 $i$-band magnitude of $i<25$ and true redshifts $z<3.5$. As in Graham, et al. 
-(in prep.) we simulate observed apparent magnitudes from the true catalog 
+(in prep.), we simulate observed apparent magnitudes from the true catalog 
 magnitudes by adding a normal random scatter with a standard deviation equal to 
 the predicted magnitude error for each galaxy (from Section 3.2.1. of 
 \citealt{ivezic_lsst:_2008}, using the software of 
@@ -448,14 +433,19 @@ respectively).  We also ignore any magnitudes fainter than the predicted
 $z<26.1$, and $y<24.9$, as a realistic simulation of non-detections.
 
 The \pz s for this simulated catalog use the CFHTLS set of spectra 
-\citep{ilbert_accurate_2006} and all of the default parameter settings for BPZ, 
-except that we impose a maximum photometric redshift of 3.5 and allow BPZ to 
-use the $i$-band as a magnitude prior during the photo-$z$ fit. The \pz s from 
-BPZ are in the form of $N_{ff} = 351$ floating point numbers represing the 
-probability on a regular grid of redshifts $0.01 < z_{\rm phot} < 3.51$.  We 
-produce "true" underlying \pz s by fitting a three-component Gaussian mixture 
-model to each \pz output by BPZ.
+\citep{ilbert_accurate_2006} and the default parameter settings for BPZ, except 
+that we impose a maximum photometric redshift of 3.5 and allow BPZ to use the 
+$i$-band as a magnitude prior during the photo-$z$ fit. The \pz s from BPZ are 
+in the form of $N_{ff} = 351$ evaluations of the probability density on a 
+regular grid of redshifts $0.01 < z < 3.51$, a subsample of which are plotted 
+in Fig. \ref{fig:euclid_pzs}.  We produce true \pz s for the analysis by 
+fitting a three-component Gaussian mixture model to each \pz\ in the catalog.
 
+\begin{figure}
+  \includegraphics[width=0.9\columnwidth]{figures/euclid_pzs.png}
+  \caption{The higher quality photometry yields narrow, unimodal \pz s.
+  \label{fig:euclid_pzs}}
+\end{figure}
 
 
 \section{Results \& Discussion}
@@ -468,52 +458,8 @@ tests are conducted using the functionality of the \texttt{qp.Ensemble} class
 that is a wrapper for collections of \texttt{qp.PDF} objects.
 
 
-\subsection{Individual \pz s}
-\label{sec:individual}
-
-Parametrizations are compared on the basis of the distributions of the KLD of 
-Sec. \ref{sec:metric} calculated over all \pz s in the ensemble.  An example of 
-the distribution of the KLD is shown in Fig. \ref{fig:individual}.
-
-\begin{figure}
-  \includegraphics[width=0.9\columnwidth]{figures/lsst_individual.png}
-  \caption{Here one can see the general shape of the distribution of log-KLD 
-values for $N_{g}=100$ \pz s from the Optical dataset and one number of 
-parameters $N_{f}=10$ over the quantiles (purple with dashed border), samples 
-(green with dash-dotted border), and histogram (orange with dotted border) 
-formats.  We note that the quantile format has a narrow distribution with a 
-higher KLD, whereas the samples and histogram formats have broader 
-distributions with generally lower KLDs.
-  \label{fig:individual}}
-\end{figure}
-
-To distill what is observed in plots like Fig. \ref{fig:individual} for both 
-datasets and all numbers of parameters, we compare the moments of the 
-distributions of metric values for the individual \pz s under each 
-parametrization, summarized in Fig. \ref{fig:moments}.
-
-\begin{figure}
-  \includegraphics[width=0.9\columnwidth]{lsst_moments.png}\\
-  \includegraphics[width=0.9\columnwidth]{euclid_moments.png}
-  \caption{The mean (star), variance ($+$), and kurtosis ($\times$) of the KLD 
-distributions are plotted for each dataset over all parametrizations (quantiles 
-in purple, samples in green, and histogram in orange).  Top panel: The optical 
-dataset has\dots.  Bottom panel: The optical+IR dataset has\dots.
-  \label{fig:moments}}
-\end{figure}
-
-While it is obvious that one would like the mean (first moment) of the KLD 
-distribution to be low, interpretation of higher-order moments is less clear.  
-In a science application that is robust to \pz\ outliers, a parametrization 
-with a high variance (second moment) may be acceptable, whereas in another 
-science application that simply requires well-characterized errors could 
-tolerate a higher mean in exchange for a lower variance.  To meaningfully 
-interpret the KLD of individual \pz s, it will be necessary for those using \pz 
-s in their science to calculate the requirements on the acceptable degree of 
-information loss.
-
 \subsection{Stacked $\hat{n}(z)$ estimator}
-\label{sec:stacked}
+\label{sec:stacked_results}
 
 Parametrizations are also compared by the accuracy of their stacked redshift 
 distribution estimator $\hat{n}(z)$ relative to that of the \pz s in their 
@@ -577,6 +523,50 @@ a slightly larger $N_{f}$, it may be possible to request additional storage
 capacity for the survey's \pz s.  We note that for these datasets, the KLD 
 achieves its asymptote at different values of $N_{f}$ for each format, with the 
 histogram format taking far larger $N_{f}$ than the other formats.
+
+\subsection{Individual \pz s}
+\label{sec:individual_results}
+
+Parametrizations are compared on the basis of the distributions of the KLD of 
+Sec. \ref{sec:metric} calculated over all \pz s in the ensemble.  An example of 
+the distribution of the KLD is shown in Fig. \ref{fig:individual}.
+
+\begin{figure}
+  \includegraphics[width=0.9\columnwidth]{figures/lsst_individual.png}
+  \caption{Here one can see the general shape of the distribution of log-KLD 
+values for $N_{g}=100$ \pz s from the Optical dataset and one number of 
+parameters $N_{f}=10$ over the quantiles (purple with dashed border), samples 
+(green with dash-dotted border), and histogram (orange with dotted border) 
+formats.  We note that the quantile format has a narrow distribution with a 
+higher KLD, whereas the samples and histogram formats have broader 
+distributions with generally lower KLDs.
+  \label{fig:individual}}
+\end{figure}
+
+To distill what is observed in plots like Fig. \ref{fig:individual} for both 
+datasets and all numbers of parameters, we compare the moments of the 
+distributions of metric values for the individual \pz s under each 
+parametrization, summarized in Fig. \ref{fig:moments}.
+
+\begin{figure}
+  \includegraphics[width=0.9\columnwidth]{lsst_moments.png}\\
+  \includegraphics[width=0.9\columnwidth]{euclid_moments.png}
+  \caption{The mean (star), variance ($+$), and kurtosis ($\times$) of the KLD 
+distributions are plotted for each dataset over all parametrizations (quantiles 
+in purple, samples in green, and histogram in orange).  Top panel: The optical 
+dataset has\dots.  Bottom panel: The optical+IR dataset has\dots.
+  \label{fig:moments}}
+\end{figure}
+
+While it is obvious that one would like the mean (first moment) of the KLD 
+distribution to be low, interpretation of higher-order moments is less clear.  
+In a science application that is robust to \pz\ outliers, a parametrization 
+with a high variance (second moment) may be acceptable, whereas in another 
+science application that simply requires well-characterized errors could 
+tolerate a higher mean in exchange for a lower variance.  To meaningfully 
+interpret the KLD of individual \pz s, it will be necessary for those using \pz 
+s in their science to calculate the requirements on the acceptable degree of 
+information loss.
 
 
 
