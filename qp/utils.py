@@ -186,6 +186,7 @@ def normalize_quantiles(q, (x, y), vb=True):
     (x, y): tuple, ndarray, float
         tuple of input x and normalized y
     """
+    # nq = np.insert(q, [0, -1], (0., 1.))
     nq = (q[1:] + q[:-1]) / 2.
     xmin = x[0] - 2 * nq[0] / y[0]
     xmax = x[-1] + 2 * (1 - nq[-1]) / y[-1]
