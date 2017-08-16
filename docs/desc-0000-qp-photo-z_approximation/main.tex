@@ -113,7 +113,6 @@ described in Sec. \ref{sec:metric}.
 \subsection{Approximation Methods}
 \label{sec:approx}
 
-
 First, we establish a vocabulary for the definitions of approximation methods.  
 Each \textit{parametrization} of a \pz\ is defined in terms of the 
 \textit{format} function $\mathcal{F}$, \textit{metaparameters} comprising 
@@ -121,37 +120,41 @@ $\vec{C}$, and \textit{parameters} comprising $\vec{c}$.  Each parametrization
 in turn corresponds to a \textit{representation}
 \begin{align}
   \label{eq:definition}
-  \hat{p}_{\mathcal{F}, \vec{C}, \vec{c}}(z) &\equiv \mathcal{F}_{\vec{C}}(z | 
+  \hat{p}_{\mathcal{F}, \vec{C}, \vec{c}}(z) &\equiv \mathcal{F}_{\vec{C}}(z; 
 \vec{c})
 \end{align}
 of the \pz, denoted as $\hat{p}(z)$ for brevity.  We often employ interpolation 
 schemes with a generic interpolator functions $F_{\vec{C}'}(z; z', p')$ that 
-comes with its own $N_{M}'$ metaparameters $\vec{C}'$.  The choice of 
-interpolator may be made on a survey-by-survey basis.  \qp\ supports all 
-interpolation options available to the \texttt{scipy.interpolate.interp1d} 
-function.  However, we have chosen a default interpolation scheme for each 
-format to maximize its performance, demonstrating the significance of the 
-choices made in reconstructing a \pz\ from stored parameters.
+comes with its own metaparameters $\vec{C}'$.  The choice of interpolator may 
+be made on a survey-by-survey basis.  \qp\ supports all interpolation options 
+available to the \texttt{scipy.interpolate.interp1d} function.  However, we 
+have chosen a default interpolation scheme for each format to maximize its 
+performance, demonstrating the significance of the choices made in 
+reconstructing a \pz\ from stored parameters.
 
 \qp\ supports conversion of \pz\ catalogs between five formats: step functions, 
 samples, quantiles, evaluations, and mixture model components.  These formats 
 may be associated with any number $N_{f}$ of stored parameters $c_{i}$ per \pz, 
 which are presumed to be floating point numbers unless otherwise specified.  
-The metaparameters are a set of $N_{M}$ numbers $C_{i}$ necessary to convert 
-the stored \pz\ parameters $\vec{c}$ into a probability distribution function 
-over redshift.  Because the metaparameters for a catalog of \pz s released by a 
-survey will only need to be stored once, it does not matter how large $N_{M}$ 
-is.
+The metaparameters are a set of numbers $C_{i}$ necessary to convert the stored 
+\pz\ parameters $\vec{c}$ into a probability distribution function over 
+redshift.  Special cases of three of these formats are considered candidates 
+for large survey \pz\ catalog storage: regular binning (Sec. \ref{sec:bins}), 
+random samples (Sec. \ref{sec:samples}), and regular quantiles (Sec. 
+\ref{sec:quantiles}), while the other two, evaluations on a grid and mixture 
+model components, are used solely for internal manipulations within \qp.
 
-Special cases of three of these formats are considered candidates for large 
-survey \pz\ catalog storage: regular binning (Sec. \ref{sec:bins}), random 
-samples (Sec. \ref{sec:samples}), and regular quantiles (Sec. 
-\ref{sec:quantiles}), while the other two, evaluations on a grid (Sec. 
-\ref{sec:grid}) and mixture model components (Sec. \ref{sec:mm}), are used 
-solely for internal manipulations within \qp.  The different formats are 
-illustrated in Fig. \ref{fig:qp} on a multimodal \pz\ with stored parameters.  
+The different \qp\ formats are illustrated in Fig. \ref{fig:qp} on a multimodal 
+\pz\ with stored parameters.
+\begin{figure}
+  \includegraphics[width=0.9\columnwidth]{figures/demo_pz.png}
+  \caption{\qp\ can approximate a continuous 1D PDF (solid black line) using 
+the step function (orange dotted line), random sample (green dash-dotted line), 
+and quantile formats (purple dashed line) with a specified number of stored 
+parameters ($N_{f}=20$ in this case).
+  \label{fig:qp}}
+\end{figure}
 For each format, we address the following questions:
-
 \begin{itemize}
   \item When/where has this format appeared in the literature as a published 
 catalog format, native \pz\ code output format, and science application input 
@@ -162,14 +165,23 @@ and per catalog (the metaparameters)?
 and weaknesses of this format?
 \end{itemize}
 
-\begin{figure}
-  \includegraphics[width=0.9\columnwidth]{figures/demo_pz.png}
-  \caption{\qp\ can approximate a continuous 1D PDF (solid black line) using 
-the step function (orange dotted line), random sample (green dash-dotted line), 
-and quantile formats (purple dashed line) with a specified number of stored 
-parameters ($N_{f}=20$ in this case).
-  \label{fig:qp}}
-\end{figure}
+Before delving into the formats compared in this study, we must address why we 
+do not include the \texttt{SparsePz} sparse basis representation of 
+\citet{carrasco_kind_sparse_2014}, which uses a mixture model of $N_{f}$ 
+members of a library of $\sim10^{4}$ functions and has impressive compression 
+properties.  However, a mixture model is only appropriate when the true \pz\ is 
+in fact a mixture of the functions in the model, which we cannot in general 
+check with real data.  Furthermore, decomposition with \texttt{SparsePZ} in 
+particular does not enforce that the stored parametrization be a probability 
+distribution in the mathematical sense of integrating to unity and, especially, 
+always being positive semidefinite.  While normalizing a positive semidefinite 
+function to integrate to unity is always possible (if the endpoints of 
+integration are specified), one can motivate multiple schemes for enforcing 
+nonnegativity that result in different reconstructions $\hat{p}(z)$.  To 
+discourage misuse of \qp, we do not permit mixtures of functions that can take 
+negative values at this time.  We anticipate including the sparse basis 
+representation in \qp\ in the future when we can justify a choice of how to 
+handle negative values.
 
 \subsubsection{Regular Binning}
 \label{sec:bins}
@@ -183,58 +195,34 @@ inference, as tomographic binning is a universal step between the \pz\ catalog
 and calculation of any two-point correlation function.
 
 The metaparameters of the binned parametrization are the ordered list of 
-$N_{M}=N_{f}+1$ redshifts $\vec{C} = (z_{1}, z_{2}, \dots, z_{N_{M}-1}, 
-z_{N_{M}})$ with $C_{1} < C_{2} < \dots < C_{N_{M}-1} < C_{N_{M}}$ serving as 
+redshifts $\vec{C} = (z_{1}, z_{2}, \dots, z_{N_{f}}, z_{N_{f}+1})$ serving as 
 bin endpoints shared by all galaxies in the catalog, each adjacent pair of 
 which is associated with a parameter $c_{i}=\int_{C_{i}}^{C_{i+1}}\ p(z)dz$.  
-The standard assumption that $p(z)=0$ when $z<C_{1}$ or $z>C_{N_{M}}$ implies 
-that the $c_{i}$ are normalized according to $\sum_{i} c_{i}\cdot\Delta = 1$.  
-Note that this is not equivalent to the erroneous normalization condition 
-$\sum_{i} c_{i} = 1$ that commonly appears in the literature.
-
-The format function $\mathcal{F}^{b}=\sum_{i=1}^{N_{f}}F_{i}$ is the sum of a 
-set of $N_{f}$ step functions $F_{i}$, where a step function is defined as
+The histogram format assumes $p(z)=0$ when $z<C_{1}$ or $z>C_{N_{f}+1}$ leading 
+to the normalization condition $\sum_{i} c_{i}(C_{i+1}-C_{i})) = 1$.  Note that 
+this is not generally equivalent to the erroneous normalization condition 
+$\sum_{i} c_{i} = 1$ commonly enforced in public catalogs.  The histogram 
+format function $\mathcal{F}^{h}$ is the sum of a set of $N_{f}$ step 
+functions, making the reconstructed estimator of the \pz
 \begin{align}
-  \label{eq:step}
-  F_{C_{i}, C_{i+1}}(z| (C_{i}, C_{i+1})), c_{i}) &= c_{i} 
+  \label{eq:binned}
+  \hat{p}^{h}(z) &= \sum_{i}^{N_{f}}\ c_{i} 
 \left\{\begin{tabular}{cc}$1$&$C_{i}<z<C_{i+1}$\\
 0&$z < C_{i}$\ or\ $z > C_{i+1}$\end{tabular}\right\},
 \end{align}
-making the estimator of the \pz\
-\begin{align}
-  \label{eq:binned}
-  \hat{p}_{b}(z) &= \sum_{i}^{N_{f}}\ c_{i} 
-\left\{\begin{tabular}{cc}$1$&$C_{i}<z<C_{i+1}$\\
-0&$z < C_{i}$\ or\ $z > C_{i+1}$\end{tabular}\right\}
-\end{align}
-under the histogram format.  We note that a step function may be considered its 
-own interpolator that is uniform between given endpoints.  The regular binning 
-considered here has $C_{i+1}=C_{i}+\Delta$ for a constant $\Delta$, as this is 
-the only type of binning that has been used in the literature.
+where the step functions may be considered their own interpolators.  Here we 
+only consider a regular binning, with $C_{i+1}=C_{i}+\delta_{f}$ for a constant 
+$\Delta$, as this is the only type of binning that has been used in the 
+literature.
 
-All known native \pz\ formats are easy to convert to the histogram 
-representation.  However, the corrolary to this statement is that it is an 
-inherently lossy format.  A histogram parametrization with bin widths larger 
-than features of the \pz\ may not accurately represent the underlying 
-probability distribution, as significant structure may be lumped into a single 
-bin value.  This problem may be particularly troubling as the quality of the 
-approximation may not be unbiased among catalog entries; rather, it is likely 
-to correlate with the properties of the \pz\ in question and thus the true 
-redshift of the galaxy.
-
-The binned parametrization may also be considered wasteful in terms of data 
-storage.  A \pz\ with a compact probability distribution, with much of the 
-probability contained within a region far narrower than the redshift range 
-$z_{N_{M}} - z_{1}$, may have many of its catalog entries $c_{i}$ being 
-identically zero.  The storage footprint of this data is wasted in that it is 
-redundant, with each $c_{i}$ requiring the same space even though 
-$c_{i}=c_{i'}$ for many pairs $(i, i')$.  (A similar case can be made for a 
-very flat distribution, where all $c_{i}$ are approximately the same.)
-
-Finally, the binned parametrization requires the researcher to choose the 
-minimum and maximum possible redshifts of the galaxy sample.  These are 
-physical quantities that are unknown, so it would be preferable to not have to 
-choose them at the stage of producing the \pz\ catalog.
+The histogram format may be considered wasteful in terms of data storage: a 
+\pz\ with a very compact (broad) probability distribution may have many 
+parameters taking the same value $c_{i}\approx0$ 
+($c_{i}\approx(C_{N_{f}+1}-C_{1})\delta_{f}^{-1}$) that are redundant in 
+storage.  It also requires the researcher to choose the minimum and maximum 
+possible redshifts $C_{1}$ and $C_{N_{f}+1}$ of the galaxy sample, which are 
+unknown quantities, so it would be preferable to leave them unconstrained when 
+setting up the catalog.
 
 \subsubsection{Random Samples}
 \label{sec:samples}
@@ -244,266 +232,84 @@ dependent on random choices, such as random forests.
 Such approaches typically produce large numbers of samples, far more than can 
 realistically be stored by any survey, so a subsample is commonly stored.
 
-The parameters of the samples format are the set of samples $\vec{c}=(z_{1}, 
-z_{2}, \dots, z_{C_{0}-1}, z_{C_{0}})$.  An implicit metaparameter is simply 
-$C_{0}=N_{f}$, meaning $N_{M}=1$.  Though it is possible to construct a catalog 
-where each galaxy has a different number $N_{f}$ of stored samples (and thus a 
-different value of $C$), optimizing the choice of $N_{f}$ given the shape of 
-the \pz\ in its native format is nontrivial.  As this has not been done in the 
-literature, we leave its investigation to future work.  To reconstruct the 
-probability distribution, the format function $\mathcal{F}^{s}$ is the 
-interpolation scheme $F$, such as a kernel density estimate (KDE), operating on 
-another function $\Phi(z)=p$, such as a KDE's kernel function, that transforms 
-samples into probability density estimates, which also has metaparameters 
-$\vec{C}''$ such as a smoothing bandwidth of the kernel function.  The samples 
-representation is then
+The parameters of the samples format are the set of $N_{f}$ samples 
+$\vec{c}=(z_{1}, z_{2}, \dots, z_{N_{f}-1}, z_{N_{f}})$, where $C=N_{f}$ is an 
+implicit metaparameter.  Though it is possible to construct a catalog where $C$ 
+is not uniform over the catalog, we leave its investigation to future work, as 
+it has not yet appeared in the literature.  The format function 
+$\mathcal{F}^{s}$ is simply the interpolation scheme $F$.  In the tests 
+presented here, $F$ is the Gaussian kernel density estimate (KDE) of 
+\texttt{scipy.stats.gaussian\_kde} with the smoothing bandwidth $C'$ as a 
+metaparameter.  The samples representation is then
 \begin{align}
   \label{eq:sampled}
-  \hat{p}_{s}(z) &= F_{\vec{C}'}(z | \vec{c}, \Phi_{\vec{C}''}(\vec{c})).
+  \hat{p}^{s}(z) &= F_{C'}(z; \vec{c}).
 \end{align}
 
-As with the histogram format, it is in general easy to convert any format into 
-samples, at the risk of loss of information.  One risk of samples is that a 
-small number of samples from a broad \pz\ may not be representative of the 
-overall shape, boosting the variance across the catalog.  On the other hand, a 
-small number of samples can be a very efficient way to store \pz s with narrow 
-features.  As in the case of the histogram parametrization, the quality of the 
-approximation may be correlated to properties of the \pz\ that themselves 
-correlate with redshift.  Unlike the simple reconstruction scheme for the 
-histogram format (Eq. \ref{eq:binned}), there is no straightforward 
-interpolation for samples.  When we need one for the purposes of calculating 
-metrics, we use a kernel density estimate, which may introduce additional loss 
-of information, with the degree of that imprecision depending on nuisance 
-parameters of the interpolation scheme, i.e. the smoothing kernel and bandwidth.
+Though samples are an obvious choice for \pz s with narrow features with high 
+amplitude, a small number of samples from a broad \pz\ may boost the variance 
+across the catalog.  The researcher must also choose an interpolation method to 
+reconstruct a \pz\ from samples.
 
 \subsubsection{Regular Quantiles}
 \label{sec:quantiles}
 
-One parametrization that has not previously been implemented is that of 
+One parametrization that has not previously been investigated is that of 
 quantiles, which are defined in terms of the cumulative distribution function 
-(CDF)
-\begin{align}
-  \label{eq:cdf}
-  CDF(z) &= \int_{-\infty}^{z}\ p(z')\ dz'.
-\end{align}
-Under the quantile format, an ensemble of \pz s shares a set of $N_{M}=N_{f}$ 
-values $\vec{C}=(q_{1}, q_{2}, \dots, q_{N_{f}-1}, q_{N_{f}})$ with 
-$0<q_{1}<q_{2}<\dots<q_{N_{f}-1}<q_{N_{f}}<1$.  Each galaxy's catalog entry is 
-the vector of redshifts $\vec{c}=(z_{1}, z_{2}, \dots, z_{N_{f}-1}, z_{N_{f}})$ 
-satisfying $CDF(c_{i})=C_{i}$, so the quantile format function 
+(CDF).  Under the quantile format, a \pz\ catalog shares $N_{f}$ ordered CDFs 
+$\vec{C}=(q_{1}, q_{2}, \dots, q_{N_{f}-1}, q_{N_{f}})$.  Each galaxy's catalog 
+entry is the vector of redshifts $\vec{c}=(z_{1}, z_{2}, \dots, z_{N_{f}-1}, 
+z_{N_{f}})$ satisfying $CDF(c_{i})=C_{i}$, so the quantile format function 
 $\mathcal{F}_{q}$ is the derivative of an interpolation of the inverse CDF 
-$CDF^{-1}(C_{i})=c_{i}$ under the interpolation scheme $F$.  The format 
-function is then the convolution $\mathcal{F}^{q}=F(CDF^{-1})$, making the 
-quantile representation
+$CDF^{-1}(C_{i})=c_{i}$ under the interpolation scheme $F$.  In this study, we 
+test regular quantiles $C_{i}\equiv i(N_{f}+1)^{-1}$ using a linear 
+interpolation scheme.  The format function is then the convolution 
+$\mathcal{F}^{q}=F(CDF^{-1})$, making the quantile representation
 \begin{align}
   \label{eq:quantiles}
-  \hat{p}_{q}(z) &= F_{\vec{C}'}(z| \vec{c}, \frac{d}{dz}CDF^{-1}(\vec{C})).
+  \hat{p}_{q}(z) &= F(z; \vec{c}, \frac{\Delta\vec{C}}{\Delta\vec{c}}).
 \end{align}
 In our tests, the quantiles are regular, such that $C_{i}\equiv i\bar{C}$, 
 where $\bar{C}\equiv(N_{f}+1)^{-1}$, but \qp\ does not require that this be so. 
  Additionally, in the tests presented here, we use a linear interpolator by 
 default for the quantile format.
 
-As no survey has previously stored quantile \pz s, no existing \pz\ code 
-produces quantiles as output, and no science case pipeline has yet been 
-developed to accept input \pz s in the quantile format.  Given its limited 
-visibility, we share why it is the subject of this study.  The quantile 
-parametrization is the inspiration for this work and namesake of \qp.  Though 
-it has not appeared in the \pz\ literature prior to this point, it is a natural 
-choice for the compression of probability distributions because it keeps more 
-information in areas of higher probability density, so there is inherently less 
-waste in the information that is stored for each catalog entry and minimal risk 
-of bias in the quality of the approximation across \pz\ shapes.  Storing 
-quantiles is equivalent to storing piecewise constant data on an irregular 
-binning optimized to have narrower bins in areas of high probability and wider 
-bins in areas of low probability, effectively performing the optimization in 
-bin size while still permitting an entire catalog to share a single set of 
-metaparameters.  Unlike samples, its performance is uncorrelated with the shape 
-of the \pz.
 
-Though the strengths and weaknesses of quantiles have not yet been formally 
-explored, we know have some ideas of what may be at play.  One obvious issue is 
-that storing more information where there is more probability density may not 
-always be desirable; it is possible that for some applications, information 
-about the tails of the \pz, where $z<c_{1}$ or $z>c_{N_{f}}$, is valuable.  
-This may be mitigated somewhat if endpoints are chosen, as is already done for 
-the histogram format.  Unlike thebounding bins of the histogram format, the 
-quantile format still has substantial freedom if the endpoints are informed by 
-a broad prior (i.e. we have no qualms about demanding $0<z<10$).  As with the 
-samples representation, an interpolation function must be chosen for 
-reconstructing the \pz\ from the stored parameters.  Some native \pz\ output 
-formats, like samples, are easy to convert to regular quantiles, while others, 
-like piecewise constant functions, are not, requiring a numerical optimization 
-for each stored parameter $c_{i}$.
-
-\subsubsection{Regular Evaluations}
-\label{sec:grid}
-
-A common format that appears in the \pz\ literature is that of evaluations of 
-the probability at specified points.  In particular, it is the most popular 
-native format for \pz s produced by template-fitting codes like BPZ.  
-\citep{benitez_bayesian_2000}  The reason for this is that with a large SED 
-template library, it is more efficient to precompute the colors of an SED at a 
-particular redshift than to do it on the fly while fitting the SED and redshift 
-of an individual galaxy's photometry.  The native parametrization of BPZ, for 
-example, has many more parameters than can reasonably be stored, so we do not 
-consider this format in this study.  We do, however, use it for internal 
-manipulations when converting between formats and for the evaluation of 
-metrics, so we describe it in the same notation as the other formats discussed.
-
-The format of grid evaluations has stored parameters $\vec{c}=(p(z_{1}), 
-p(z_{2}), \dots, p(z_{N_{f}-1}, p(z_{N_{f}}))$ on a grid of $N_{M}=N_{f}$ 
-redshifts $\vec{C}=(z_{1}, z_{2}, \dots, z_{N_{M}-1}, z_{N_{M}})$ serving as 
-metaparameters.  To reconstruct the \pz\ from the stored parameters using the 
-format function $\mathcal{F}^{g}$, one must again choose an interpolation 
-scheme $F$.  The reconstruction can then be written as
-\begin{align}
-  \label{eq:gridded}
-  \hat{p}_{g}(z) &= F(z| \vec{C}, \vec{c}).
-\end{align}
-It has thus far only been applied on a regular grid in redshift (i.e. 
-$\Delta=C_{i+1}-C_{i}$ for a constant $\Delta$) shared among the entire 
-catalog.  As irregular grids have not been used in the literature, we do not 
-consider them nor grids that are not homogeneous over the catalog, though \qp\ 
-can accommodate them.  We use a linear interpolator in the tests presented in 
-this study.
-
-The gridded parametrization is in some ways similar to the histogram format of 
-\ref{sec:bins}, suffering from the same risks of losing small-scale features 
-(and the corresponding risk of systematics in the quality of the approximation) 
-when the resolution is too low, wasting a substantial fraction of the $N_{f}$ 
-allocated parameters if the distribution is compact, and having to choose the 
-grid endpoints for the ends of the distribution.  Like the piecewise constant 
-parametrization, the grid evaluations may need to be normalized before they can 
-be used as a mathematically valid \pz.
-
-\subsubsection{Mixture Model}
-\label{sec:mm}
-
-There is some history of using a mixture model parametrization for \pz s, 
-particularly that of a small number of Gaussian components.
-A Gaussian mixture model may be a natural choice for the native output of a 
-method based on a distance metric in the space of photometry because the \pz s 
-could be weighted sums of Gaussians by construction, though for many other 
-methods, there is no such guarantee.  Besides the mixture of Gaussians, other 
-functions have been investigated before in the sparse basis representation of 
-\citet{carrasco_kind_sparse_2014}, which uses a mixture model of members of a 
-library of $N_{M}\sim10^{4}$ functions.
-
-Under the mixture model format, the format function $\mathcal{F}^{m}$ is a 
-weighted sum of $N_{M}'$ continuous functions $\phi^{j}(z)$ chosen from a set 
-of $N_{M}''$ possible functions, each with $N_{M}^{j}$ metaparameters in 
-$\vec{C}^{j}$ and $N_{f}^{j}$ parameters unique to each galaxy.  Because each 
-component need not have the same $N_{M}^{j}$, the number of possible components 
-for a fixed $N_{f}$ is not constrained.  Because $N_{M}^{j}$ is not necessarily 
-the same for all model components $j$, a single $N_{f}$ is not necessarily 
-something that reasonably can be imposed on the catalog if the functional forms 
-are not specified, and even if they are, there is no easy way to require that 
-$\sum_{j=1}^{N_{M}'}N_{M}^{j}=N_{f}$ if $N_{f}$ is fixed.  Each component 
-function would have at least one metaparameter $C_{0}^{j}$ to identify the 
-functional form of $\phi^{j}$, corresponding to $c_{0}^{j}=C_{0}^{j}$.  If 
-$\phi^{j}(z)$ is a function with $N_{M}^{j}$ total parameters, any subset of 
-them may be fixed over the catalog and designated as components of 
-$\vec{C}^{j}$ or left free to be unique for each galaxy, making the remainer 
-components of $\vec{c}^{j}$.
-
-To keep these tests simple, we make three assumptions: (1) there are no 
-metaparameters $\vec{C}_{j}$ of the component functions $\vec{\phi}_{j}(z)$ 
-that are fixed over the catalog, (2) all component functions 
-$\vec{\phi}_{j}(z)$ are probability distribution functions that are positive 
-semidefinite and integrate to unity, and (3) all component probability 
-distribution functions $\phi_{j}(z)$ are Gaussian probability distribution 
-functions $\mathcal{N}(z | 
-\mu_{j},\sigma^{2}_{j})\equiv(2\pi\sigma^{2})^{-1/2}\exp[-(z-\mu)^{2}/2\sigma^{2
-}]$.  (2) is a requirement we actively impose in \qp\ so that even a mixture 
-model with a single component is a valid representation of a \pz.  Together, 
-(1) and (2) also imply that we can designate $c_{0}^{j}=w_{j}$ as a weight 
-coefficient for the $j^{th}$ component of a galaxy's \pz, where 
-$\sum_{j=1}^{N_{M}'}w_{j}=1$.  Knowing that each Gaussian component is 
-specified by the $N_{M}^{j}=3$ parameters of weight $w_{j}$, mean $\mu_{j}$, 
-and variance $\sigma^{2}_{j}$, (3) permits us to constrain $N_{M}'\leq 
-N_{f}/3$.  Under these assumptions, the representation $\mathcal{F}^{m}$ is
-\begin{align}
-  \label{eq:gmm}
-  \hat{p}_{m}(z) &= \sum_{j=1}^{N_{M'}} c_{0}^{j} \mathcal{N}(c_{1}^{j}, 
-c_{2}^{j}),
-\end{align}
-subject to the normalization of the weights mentioned above.
-
-In this work, the common Gaussian mixture model of Eq. \ref{eq:gmm} is the only 
-one we consider, though the \qp\ framework can accommodate mixtures of all 
-probability distribution functions implemented as 
-\texttt{scipy.stats.rv\_continous} objects.  Besides the mixture of Gaussians, 
-other functions have been investigated before in the sparse basis 
-representation of \citet{carrasco_kind_sparse_2014}, which uses a mixture model 
-of members of a library of $N_{M}'\sim10^{4}$ functions with metaparameters 
-$\vec{C}$ that are identification numbers for each function in the library; 
-$\vec{c}$ under this parametrization is just an array of the identification 
-numbers of the $N_{f}$ library functions whose sum best approximates the 
-original \pz.
-
-Though it has promising compression properties, we do not consider the sparse 
-basis format in this work for several reasons.  Decomposition with 
-\texttt{SparsePZ} does not enforce that the stored parametrization be a 
-probability distribution in the mathematical sense of integrating to unity and, 
-especially, always being positive semidefinite.  While normalizing a positive 
-semidefinite function to integrate to unity is always possible (if the 
-endpoints of integration are specified), one can motivate multiple schemes for 
-enforcing nonnegativity that result in different reconstructions $\hat{p}(z)$.  
-To discourage misuse of \qp, we do not permit functions that can take negative 
-values at this time.
-We anticipate including the sparse basis representation in \qp\ in future work 
-when we can justify a choice of how to handle negative values.
+We suggest that the quantile format is appropriate for \pz\ storage because it 
+allocates storage evenly in the space of probability density, as opposed to the 
+histogram format storing data evenly spaced in redshift and the samples format 
+storing data randomly in probability density.  As with the samples 
+representation, an interpolation function must be chosen for reconstructing the 
+\pz\ from the stored parameters.  Depending on the native \pz\ output format, 
+converting to the quantile format may require $N_{f}$ numerical optimizations.
 
 
-Mixture models can be stored with very few parameters per component function 
-and are trivial to convert to piecewise constant functions, samples, and 
-evaluations commonly used for analysis.  Compressing an original \pz\ into this 
-format may be difficult due to necessity of an optimization, such as a 
-least-squares fit.  However, that challenge is balanced by the ease of 
-reconstructing an estimated $\hat{p}(z)$ from its stored parameters, as no 
-interpolation is even necessary.  A mixture model, however, is only an accurate 
-approximation of a \pz\ \textit{if they are actually comprised of the included 
-functions}.  If, for example, the \pz\ is not inherently a sum of Gaussian 
-components, it could take a prohibitive number of Gaussian components to obtain 
-an acceptable approximation.  Because the mock data discussed here is not known 
-to be comprised of a weighted sum of Gaussian components, we do not test the 
-mixture model against other formats.
+
+
 
 \subsection{Comparison Metrics}
 \label{sec:metric}
 
-
 In contrast to popular \pz\ metrics in the literature, we aim to probe how 
-closely a PDF $\hat{p}(z)$ reconstructed from a limited set of parameters 
-approximates a true PDF $p(z)$, so there is no notion of the accuracy of either 
-the approximate nor the original \pz\ relative to a galaxy's true redshift.  
-For a demonstration of how one might approach the different problem of 
-evaluating the accuracy of a \pz\ relative to a true redshift, see Schmidt, et 
-al. (in prep.).)  To quantify how much more information is in a true PDF $P(z)$ 
-than an approximate PDF $P'(z)$, we use the Kullback-Leibler divergence (KLD), 
-defined as
+closely a PDF reconstructed from a limited set of parameters approximates a 
+true PDF without reference to a galaxy's true redshift.  (For a demonstration 
+of how one might approach the different problem of evaluating the accuracy of a 
+\pz\ relative to a true redshift, see Schmidt, et al. (in prep.).)  To quantify 
+how much more information is in a true PDF $P(z)$ than an approximate PDF 
+$\hat{P}(z)$, we use the Kullback-Leibler divergence (KLD), defined as
 \begin{align}
   \label{eq:kld}
-  KLD[P(z) || P'(z)] &= \int_{-\infty}^{\infty}\ P(z)\ 
-\log\left[\frac{P(z)}{P'(z)}\right]\ dz
+  KLD[P(z) || \hat{P}(z)] &= \int_{-\infty}^{\infty}\ P(z)\ 
+\log\left[\frac{P(z)}{\hat{P}(z)}\right]\ dz\\
+  &\approx \delta_{ff}\sum_{z=z_{1}}^{z_{N_{ff}}}\ P(z)\ 
+\log\left[\frac{P(z)}{\hat{P}(z)}\right],
 \end{align}
-Though the KLD is hardly unheard of in astronomy, it is far from established.  
-In App. \ref{sec:kld}, we review its properties and deepen intuition, as it is 
-central to the proposed procedure for choosing the best storage parametrization 
-for \pz\ catalogs.
-
-The most important quirk of the KLD is its asymmetry; it is not a distance, 
-like the root mean square error, that is the same from $P(z)$ to $P'(z)$ as it 
-is from $P'(z)$ to $P(z)$ but a \textit{divergence} in the information lost 
-when using $P'(z)$ to approximate $P(z)$.  The KLD requires not only that both 
-functions $P(z)$ and $P'(z)$ be true probability distributions but also that 
-there must be some notion of a true reference distribution.  The former 
-condition is not always satisfied for the binned, gridded, and mixture model 
-formats produced by \pz\ code so must be explicitly enforced.  The latter is in 
-general not true for real data but can be checked for mock data.  It is also 
-obvious that the KLD is always positive, and a smaller value indicates better 
-agreement between the approximation and the truth.
+where $\log$ is the natural logarithm throughout this paper.  Because there is 
+in general no closed-form expression for the KLD, we calculate the KLDs in this 
+paper using evaluations of the PDF under each format on a very fine, regular 
+grid $(z_{1}, z_{2}, \dots, z_{N_{ff}-1}, z_{N_{ff}})$ with resolution 
+$\delta_{ff}\ll\delta_{f}$.  We review the properties of the KLD and deepen 
+intuition for it in App. \ref{sec:kld}.
 
 \Pz s have thus far been used almost exclusively to estimate the redshift 
 distribution function $n(z)$ necessary for calculating the correlation 
@@ -511,57 +317,29 @@ functions used by many cosmological probes.  The most common way to estimate
 the redshift distribution function is to sum the \pz s according to
 \begin{align}
   \label{eq:nz}
-  \hat{n}(z) &\equiv \frac{1}{N_{g}}\ \sum_{k=1}^{N_{g}}\ \hat{p}^{k}(z),
+  \hat{n}(z) &\equiv \frac{1}{N_{g}}\ \sum_{k=1}^{N_{g}}\ \hat{p}_{k}(z),
 \end{align}
 in terms of the number $N_{g}$ of galaxies $k$ in the catalog, where the 
 estimator is normalized so that it, too, is a probability distribution (though 
 in the literature it is often subject to the fallacy conflating a sum and an 
 integral, first mentioned in Sec. \ref{sec:bins}).  We do not recommend this 
 approach to estimating the redshift distribution (see Malz and Hogg, et al. (in 
-prep.) for a mathematically consistent alternative), however, we use it under 
+prep.) for a mathematically principled alternative), however, we use it under 
 the assumption that any metric calculated on a more principled estimator of the 
 redshift distribution function will have similar behavior with respect to the 
-parametrization of the \pz\ catalog as that of the stacked estimator.
-
-As $n(z)$ is itself a PDF (though in the literature it is often subject to the 
-fallacy conflating a sum and an integral, first mentioned in Sec. 
-\ref{sec:bins}), our primary metric is the KLD from the stacked estimator 
-$\hat{n}_{N_{f}}^{X}(z)$ derived from the catalog of approximate \pz s 
-$\{\hat{p}^{X}_{N_{f}}\}_{N_{g}}$ under a given format $X$ with $N_{f}$ 
-parameters to the stacked estimator $\hat{n}'(z)'$ derived from the true \pz s 
-$\{p_{k}(z)\}_{N_{g}}$.  The metrics calculated on the stacked estimator of the 
-redshift distribution function of a survey may be found in Sec. 
-\ref{sec:stacked}.
+parametrization of the \pz\ catalog as that of the stacked estimator.  Our 
+primary metric is the KLD from the stacked estimator of a catalog of 
+evaluations of reconstructed \pz s to the stacked estimator of a catalog of 
+evaluations of the true \pz s.
 
 For most galaxy surveys producing \pz\ catalogs, there is potential value not 
-only in obtaining $\hat{n}(z)$ but also in reconstructing individual \pz s 
-that, for example, may be used as the basis for targeting spectroscopic follow 
-up for a variety of science applications.
-For this purpose, we also calculate $\{KLD[p_{k}(z) | \hat{p}^{X; 
-N_{f}}_{k}(z)]\}_{N_{g}}$ for each individual \pz\ $k$ in a catalog and 
-characterize the distribution of KLD values $p(KLD_{X; N_{f}})$ by their first, 
-second, and third moments, or, the mean, variance, and kurtosis.  We use these 
-aggregate statistics to observe how the approximate \pz s for some dataset vary 
-with the choice of format $X$ and number of parameters $N_{f}$.  The moments of 
-the distributions of KLDs for each parametrization are compared in Sec. 
-\ref{sec:individual}.
-
-Calculating both of these metrics requires making an approximation of Eq. 
-\ref{eq:kld}, since there is in general no closed form solution to the integral 
-for the approximate \pz s.  To acquire the KLD on individual \pz s, \qp\ uses 
-the gridded format of Sec. \ref{sec:grid}.  The approximate \pz\ is evaluated 
-using the representation function $\mathcal{F}(z | \vec{C}, \vec{c})$ on a very 
-fine, regular grid $(z_{1}, z_{2}, \dots, z_{N_{ff}-1}, z_{N_{ff}})$ with 
-resolution $\Delta=z_{i+1}-z_{i}$, with $N_{ff}\gg N_{f}$, and the true \pz\ is 
-by construction a Gaussian mixture model, introduced in Sec. \ref{sec:mm}, 
-evaluated at the same redshifts.  Then they are combined according to
-\begin{align}
-  \label{eq:kldapprox}
-  \hat{KLD}(p(z) || \hat{p}(z)) &\approx \sum_{z=z_{1}}^{z_{N_{ff}}}\ p(z)\ 
-\log\left[\frac{p(z)}{\hat{p}(z)}\right]\ \cdot\ \Delta
-\end{align}
-to estimate the KLD.  We attempt to use the most appropriate interpolation 
-scheme for each format, noted in Sec. \ref{sec:approx}.
+only in obtaining $\hat{n}(z)$ but also in recovering individual \pz s that, 
+for example, may be used as the basis for targeting spectroscopic follow up for 
+a variety of science applications.  For this purpose, we also calculate the KLD 
+for each individual \pz\ in our catalogs and characterize the PDF of KLD values 
+$\hat{p}(KLD)$ by their first, second, and third moments, or, the mean, 
+variance, and kurtosis.  We use these aggregate statistics to observe how the 
+approximate \pz s for some dataset vary with the choice of parametrization.
 
 
 
@@ -688,6 +466,7 @@ In this study, we perform tests comparing the parametrizations of Sec.
 \ref{sec:approx} as a function of the number of parameters per galaxy.  The 
 tests are conducted using the functionality of the \texttt{qp.Ensemble} class 
 that is a wrapper for collections of \texttt{qp.PDF} objects.
+
 
 \subsection{Individual \pz s}
 \label{sec:individual}
@@ -844,12 +623,69 @@ the format necessary for science calculations.
 \subsection*{Appendix}
 \label{sec:kld}
 
+The KLD measures the loss of information, measured in nats, due to using an 
+approximation of a distribution.  The most important quirk of the KLD is its 
+asymmetry; it is not a distance, like the root mean square error, that is the 
+same from $P(z)$ to $P'(z)$ as it is from $P'(z)$ to $P(z)$ but a 
+\textit{divergence} in the information lost when using $P'(z)$ to approximate 
+$P(z)$.  The KLD requires not only that both functions $P(z)$ and $P'(z)$ be 
+true probability distributions (always positive semidefinite and integrating to 
+unity) but also that there must be some notion of a true reference 
+distribution.  The latter is in general not true for real data but can be 
+checked for mock data, and the former may need to be explicitly enforced for 
+formats other than quantiles.  It is also obvious that the KLD is always 
+positive, and a smaller value indicates better agreement between the 
+approximation and the truth.
+
+To develop some intuition, consider the simple example of a Gaussian 
+$P(z)=\mathcal{N}(\mu_{0}, \sigma_{0}^{2})$ being approximated by a Gaussian 
+$P'(z)=\mathcal{N}(\mu, \sigma^{2})$, whose KLD is
+\begin{align}
+  \label{eq:gaussian}
+  KLD &= \frac{1}{2}\left(\log\left[\frac{\sigma^{2}}{\sigma_{0}^{2}}\right] + 
+\frac{\sigma_{0}^{2}}{\sigma^{2}} + \frac{(\mu-\mu_{0})^{2}}{\sigma^{2}} - 
+1\right)
+\end{align}
+To get a sense of the units of information, we can calculate the KLD in some 
+limiting cases.  If $\sigma=\sigma_{0}$ but $\mu=\mu_{0}+1$, we obtain 
+$KLD=\frac{1}{2}$ in units of nats -- if the mean of the approximation is wrong 
+by an additive factor of $1\sigma$, half a nat of information is lost.  If 
+$\mu=\mu_{0}$ but $\sigma=\sqrt{2\pi}\sigma_{0}$, we find 
+$KLD\approx\frac{1}{2}$ in units of nats -- half a nat of information is also 
+lost if the variance of the approximation is off by a multiplicative factor of 
+$2\pi$.
+
+We can use the KLD to identify notions of imprecision and inaccuracy.  
+Intuitively, precision must be related to how close $\sigma$ is to $\sigma_{0}$ 
+and accuracy must be related to how close $\mu$ is to $\mu_{0}$.  If 
+$\mu\approx\mu_{0}$, we can say $KLD\sim\log[r] + \frac{1}{2}r^{-2} - 
+\frac{1}{2}$ in terms of the "precision" 
+$r^{-1}\equiv\frac{\sigma_{0}}{\sigma}$, whose behavior is illustrated in Fig. 
+\ref{fig:precision}.
+\begin{figure}
+  \includegraphics[width=0.9\columnwidth]{figures/kld_precision.png}
+  \caption{The KLD (solid black line) is proportional to the log of the inverse 
+precision $r$ for $\sigma>\sigma_{0}$ but is more complicated for 
+$\sigma<\sigma_{0}$.
+  \label{fig:precision}}
+\end{figure}
+We observe that an overestimated variance increases the KLD as the log of the 
+square root of the ratio of the estimated variance to the true variance.  When 
+$\sigma\approx\sigma_{0}$, $KLD\sim t^{2}$ in terms of the "tension" 
+$t\equiv\frac{(\mu-\mu_{0})^{2}}{\sigma^{2}}$, whose behavior is illustrated in 
+Fig. \ref{fig:tension}.
+\begin{figure}
+  \includegraphics[width=0.9\columnwidth]{figures/kld_tension.png}
+  \caption{The KLD (solid black line) is equal to the square of the tension 
+$t$, with a small additive offset when $r\neq1$.
+  \label{fig:tension}}
+\end{figure}
 
 \subsection*{Acknowledgments}
 
 
 SJS was partially supported by the National Science Foundation under grant 
-N56981CC
+N56981CC.
 
 
 \input{acknowledgments}
