@@ -166,7 +166,7 @@ def normalize_histogram(in_data, vb=True):
     # if vb: print(np.sum(y * delta))
     return (x, y)
 
-def normalize_quantiles(q, (x, y)):
+def normalize_quantiles(q, (x, y), vb=True):
     """
     Adds valid endpoints to quantile parametrization
 
@@ -178,6 +178,8 @@ def normalize_quantiles(q, (x, y)):
         quantile values
     y: numpy.ndarray, float
         probability evaluated at quantiles
+    vb: boolean
+        print progress to stdout?
 
     Returns
     -------
