@@ -166,7 +166,7 @@ reconstructions $\hat{p}(z)$.
 We postpone to future work the exploration of adaptations of non-positive 
 semidefinite representations and inclusion of the sparse basis representation 
 in \qp, restricting ourselves to mixture models of 
-\texttt{scipy.stats.rv_continuous} objects.
+\texttt{scipy.stats.rv\_continuous} objects.
 
 The various \qp\ formats are illustrated in Figure~\ref{fig:qp} on a multimodal 
 \pz\ with stored parameters.
@@ -486,7 +486,7 @@ evaluated their accuracy using the metrics described above.
 \label{sec:results}
 
 
-We calculate the metrics of Section~\ref{sec:metrics} on 10 random 
+We calculate the metrics of Section~\ref{sec:metric} on 10 random 
 instantiations of catalogs of $N_{g}=100$ galaxies drawn randomly from each of 
 the datasets discussed in Section~\ref{sec:data} and with each of $N_{f}=3,\ 
 10,\ 30,\ 100$ stored parameters.
@@ -509,7 +509,7 @@ stacked estimator.
 
 
 \begin{figure}
-  \includegraphics[width=0.9\columnwidth]{figures/graham_stacked.png}
+  \includegraphics[width=0.9\columnwidth]{figures/stacked.png}
   \caption{An example of the stacked estimator of the redshift distribution, 
 for a subsample of $N_{g}=100$ galaxies drawn from the higher-quality data mock 
 catalog and with just $N_{f}=10$ parameters used for each \pz.
@@ -529,13 +529,15 @@ The two datasets share some features:
 \begin{enumerate}
 \item The histogram format leads to substantial loss of information relative to 
 the other formats.
-\item The samples and quantile formats have similar KLDs at low $N_{f}$.
+\item The samples and quantile formats have similar KLDs, particularly at low 
+$N_{f}$.
 \item The quantile format achieves the lowest KLD of all formats in the high 
 $N_{f}$ regime.
-\item The samples format asymptotically approaches a limit in KLD at 
-$N_{f}\geq30$.
 \item The samples format is more consistent in terms of the variance between 
 instantiations.
+\item The samples format asymptotically approaches a limit in KLD at 
+$N_{f}\geq30$, likely because that is the limit at which the samples-induced 
+shot noise becomes subdominant.
 \end{enumerate}
 Because the data quality has a significant impact on the behavior of the 
 metric, we proceed to discuss the two datasets separately, in terms of relative 
@@ -544,114 +546,118 @@ $N_{f}$.
 
 For the higher quality data mock catalog, the histogram format not only has a 
 consistently higher $\hat{n}(z)$ KLD but one that does not improve with 
-increasing $N_{f}$; this is actually expected because a great majority of the 
-probability will be in a single bin $c^{h}_{i=j}$ with all other $c^{h}_{i\neq 
-j}\approx 0$ \textit{regardless} of $N_{f}$.
+increasing $N_{f}$.
+This poor performance independent of resource allocation is actually expected 
+because, due to the narrow, unimodal \pz s of Figure~\ref{fig:graham_pzs}, a 
+great majority of the probability density will fall into a single bin 
+$c^{h}_{i=j}$ with all other $c^{h}_{i\neq j}\approx 0$ \textit{regardless} of 
+$N_{f}$.
 The quantile format consistently produces the lowest $\hat{n}(z)$ KLDs, with a 
 larger improvement over the samples format as $N_{f}$ increases.
-The quantile format also has a larger variance than the samples format, likely 
-due to the imperfections of the procedures for deriving the quantile parameters 
-$\vec{c}^{q}$ from the true $p(z)$ and for interpolating the quantile 
-parameters to obtain a reconstructed $\hat{p}^{q}(z)$.
-With narrow, unimodal \pz s, the KLD of samples undergoes smaller and smaller 
-improvements in KLD with increasing $N_{f}$, meaning there is essentially no 
-reason to store $N_{f}>30$ parameters.
+The improvement with larger $N_{f}$ is a surprising result because the shot 
+noise due to samples should decrease with higher $N_{f}$.
+The quantile format also has a larger variance between instantiations than the 
+samples format, likely due to the imperfections of the procedures for deriving 
+the quantile parameters $\vec{c}^{q}$ from the true $p(z)$ and for 
+reconstructing $\hat{p}^{q}(z)$ from the quantile parameters $\vec{c}^{q}$.
 
 In the lower quality data mock catalog, the histogram format does improve with 
 increasing $N_{f}$, however, it takes a whopping $N_{f}=100$ stored parameters 
 before the histogram format can supercede the KLD of the samples and quantile 
 formats at a mere $N_{f}=3$ stored parameters, where the histogram format takes 
 a staggering value $KLD>1$.
-As in the higher-quality data mock catalog, the samples and quantile formats 
-have comparable KLDs with
-
-that lower KLDs are achievable with the lower quality data mock catalog
-
- and [the discrepancy between formats is greater for the higher quality 
-dataset], indicating that multimodal and broader distributions are more 
-sensitive to the parametrization.
+With \pz s that take nontrivial values across a wider range of redshifts, the 
+histogram format is expected to capture more structure with more bins, 
+consistent with the aforementioned improvement.
+The samples format's asymptote is surprisingly achieved at a lower KLD for the 
+low-quality data mock catalog than for the high-quality data mock catalog.
+The variance between instantiations of the quantile format increases at high 
+$N_{f}$, a possible indication of room for improvement with the procedures for 
+deriving the quantile parameters $\vec{c}^{q}$ from the true $p(z)$ and for 
+reconstructing $\hat{p}^{q}(z)$ from the quantile parameters $\vec{c}^{q}$
 
 \begin{figure}
-  \includegraphics[width=0.9\columnwidth]{figures/schmidt_kld.png}\\
-  \includegraphics[width=0.9\columnwidth]{figures/graham_kld.png}
+  \includegraphics[width=0.9\columnwidth]{figures/graham_kld.png}\\
+  \includegraphics[width=0.9\columnwidth]{figures/schmidt_kld.png}
   \caption{KLD between approximate $\hat{n}(z)$ and true $\hat{n}(z)$ as a 
 function of number of stored parameters, for the three different approximation 
 schemes: quantiles (purple dashed line), samples (green dash-dotted line), and 
-histogram (orange dotted line).  Top panel: The histogram format is not 
-well-suited to the lower-quality dataset of Section~\ref{sec:schmidt}, while 
-the quantiles and samples formats perform comparably well.  Bottom panel: The 
-higher-quality data mock catalog of Section~\ref{sec:graham} favors the 
-quantiles format and strongly disfavors the histogram format, with samples 
-being slightly less favorable than quantiles.
+histogram (orange dotted line).
+  Top panel: The mock catalog of higher-quality data of 
+Section~\ref{sec:graham} favors the quantiles format and strongly disfavors the 
+histogram format, with quantiles being slightly more favorable than samples.
+  Bottom panel: The histogram format is not well-suited to the mock catalog of 
+lower-quality data of Section~\ref{sec:schmidt}, while the quantiles and 
+samples formats perform comparably well.
   \label{fig:kld}}
 \end{figure}
 
-We interpret Fig. \ref{fig:kld} in the context of constraints on storage 
+We interpret Figure~\ref{fig:kld} in the context of constraints on storage 
 allocation imposed by the survey and constraints on the acceptable degree of 
-information loss imposed by the science requirements.  The former corresponds 
-to a vertical line at $N_{f, lim}$ in Fig. \ref{fig:kld}; the best format would 
-be the one that achieves the lowest KLD at $N_{f, lim}$.  The latter 
-corresponds to a horizontal line at $KLD_{lim}$ in Fig. \ref{fig:kld}; the best 
-parametrization would be the one that achieves $KLD_{lim}$ at the smallest 
-value of $N_{f}$.
-
+information loss imposed by the science requirements.
+The former corresponds to a vertical line at a given $N_{f, lim}$ in Fig. 
+\ref{fig:kld}; the best format would be the one that achieves the lowest KLD at 
+$N_{f, lim}$.
+The latter corresponds to a horizontal line at $KLD_{lim}$ in 
+Figure~\ref{fig:kld}; the best format would be the one that achieves 
+$KLD_{lim}$ at the smallest value of $N_{f}$.
 If there is some flexibility in the acceptable degree of information loss on 
 $\hat{n}(z)$ and/or the allocation of storage for \pz s, as is the case for 
 LSST, it may be best to examine the asymptotic behavior of the KLD as a 
-function of $N_{f}$ for each format considered to make a choice based on a 
-marginal difference.  For example, if the KLD can be significantly reduced with 
-a slightly larger $N_{f}$, it may be possible to request additional storage 
-capacity for the survey's \pz s.  We note that for these datasets, the KLD 
-achieves its asymptote at different values of $N_{f}$ for each format, with the 
-histogram format taking far larger $N_{f}$ than the other formats.
+function of $N_{f}$ for each format considered.
+For example, if the KLD can be significantly reduced with a slightly larger 
+$N_{f}$, it may be possible to request additional storage capacity for the 
+survey's \pz s.
 
 \subsection{Individual \pz s}
 \label{sec:individual_results}
 
-Parametrizations are also compared on the basis of the distributions of the KLD 
-of Sec. \ref{sec:metric} calculated for all \pz s in the catalog of each 
-dataset.  An example of the individual \pz\ KLD distribution is shown in Fig. 
-\ref{fig:individual} for the low-quality dataset with $N_{f}=10$.
+We also compare our three parametrizations on the basis of the distributions of 
+the KLD calculated for every \pz\ in the dataset's ensemble.
+An example of the individual \pz\ KLD distribution is shown in 
+Figure~\ref{fig:individual} with $N_{f}=10$.
 
 \begin{figure}
-  \includegraphics[width=0.9\columnwidth]{figures/lsst_individual.png}
-  \caption{Here one can see the general shape of the distribution of log-KLD 
-values for $N_{g}=100$ \pz s from the low-quality dataset with $N_{f}=10$ over 
-the quantiles (purple with dashed border), samples (green with dash-dotted 
-border), and histogram (orange with dotted border) formats.  In this case, the 
-quantile format has a narrow distribution with a higher KLD, whereas the 
-samples and histogram formats have broader distributions with generally lower 
-KLDs.
+  \includegraphics[width=0.9\columnwidth]{figures/individual.png}
+  \caption{The distribution of log-KLD values for $N_{g}=100$ \pz s from the 
+low-quality dataset with $N_{f}=10$ over the quantiles (purple with dashed 
+border), samples (green with dash-dotted border), and histogram (orange with 
+dotted border) formats.
+  For the individual \pz s, the samples format has far better KLDs than the 
+histogram or quantile formats, which are comparable to one another.
   \label{fig:individual}}
 \end{figure}
 
-To distill what is observed in plots like Fig. \ref{fig:individual} for both 
+To distill what is observed in plots like Figure~\ref{fig:individual} for both 
 datasets and all parametrizations, we compare the moments of the distributions 
 of metric values for the distribution of the KLDs of individual \pz s under 
-each parametrization, summarized in Fig. \ref{fig:moments}.  While it is 
-obvious that one would like the mean (first moment) of the KLD distribution to 
-be low, interpretation of higher-order moments is less clear.  In a science 
-application that is robust to \pz\ outliers, a parametrization with a high 
-variance (second moment) may be acceptable, whereas in another science 
-application that simply requires well-characterized errors could tolerate a 
-higher mean in exchange for a lower variance.  To meaningfully interpret the 
-KLD of individual \pz s, it will be necessary for those using \pz s in their 
-science to calculate the requirements on the acceptable degree of information 
-loss.
+each parametrization, summarized in Figure~\ref{fig:moments}.
+While it is obvious that one would like the mean (first moment) of the KLD 
+distribution to be low, interpretation of higher-order moments is less clear.
+In a science application that is robust to \pz\ outliers, a parametrization 
+with a high variance (second moment) may be acceptable, whereas in another 
+science application that simply requires well-characterized errors could 
+tolerate a higher mean in exchange for a lower variance.
+To meaningfully interpret the KLDs of individual \pz s, it will be necessary 
+for those using \pz s in their science to calculate the requirements on the 
+acceptable degree of information loss.
 
 \begin{figure}
-  \includegraphics[width=0.9\columnwidth]{lsst_moments.png}\\
-  \includegraphics[width=0.9\columnwidth]{euclid_moments.png}
+  \includegraphics[width=0.9\columnwidth]{graham_moments.png}\\
+  \includegraphics[width=0.9\columnwidth]{schmidt_moments.png}
   \caption{The mean ($\bigstar$), variance ($+$), and kurtosis ($\times$) of 
-the KLD distributions are plotted for each dataset over all parametrizations 
-(quantiles in purple, samples in green, and histogram in orange).  The moments 
-and their error regions have been offset about $N_{f}$ to improve readability.  
-Top panel: The lower-quality dataset has\dots.  Bottom panel: The optical+IR 
-dataset has\dots.
+the log-KLD distributions for each dataset as a function of $N_{f}$ for the 
+quantile (purple), samples (green), and histogram (orange) formats.
+  The moments and their error regions are offset about $N_{f}$ to improve 
+readability.
+  Top panel: The samples format consistently minimizes the moments of the 
+log-KLD distribution of the higher quality data mock catalog at low $N_{f}$, 
+and the moments are similar across formats at the highest $N_{f}=100$.
+  Bottom panel: The lower quality data mock catalog exhibits no clear pattern 
+at low $N_{f}$ but the moments of all formats decrease at high $N_{f}$ with the 
+histogram format achieving the lowest moments in that regime.
   \label{fig:moments}}
 \end{figure}
-
-
 
 
 
@@ -661,56 +667,57 @@ dataset has\dots.
 \label{sec:conclusions}
 
 
-This work develops a principled approach to choosing a storage format and 
-resolution for storing a catalog of \pz s from a survey of known data quality 
-to balance the accuracy of \pz s and science products thereof reconstructed 
-from the stored parameters against the available storage constraints.  We 
-demonstrate the recommended method on two realistic mock datasets 
+This work develops a principled approach to choosing a parametrization for 
+storing a catalog of \pz s from a survey of known data quality to balance the 
+accuracy of \pz s and science products thereof reconstructed from the stored 
+parameters against the available storage constraints.
+We demonstrate the recommended method on two realistic mock datasets 
 representative of upcoming \pz\ catalogs and draw the following conclusions:
 \begin{itemize}
-  \item
-  \item As indicated by the KLD, the quantile parametrization is a promising 
-option for minimizing loss of information in \pz\ storage.
-  \item Given the constraint that LSST will be able to store 200 floating point 
-numbers to quantify the redshift of each galaxy and intends to include several 
-\pz\ codes, we can safely say that LSST can store the output of more than one 
-\pz\ code without any significant risk of loss of information.
+  \item The optimal parametrization depends on the properties of the data and 
+the science-driven metric used.
+  \item A larger number of available parameters in which to store a \pz\ 
+catalog does not necessarily imply a significant reduction in loss of 
+information.
+  \item The histogram format has a high rate of loss of information over high- 
+and low-quality data mock catalogs and across a wide range of number of stored 
+parameters, particularly under an aggregate function of individual 
+reconstructed \pz\ approximations.
+  \item The samples format is an excellent option for storage of high-quality 
+\pz\ catalogs, balancing loss of information for both individual \pz\ s and a 
+catalog-wide metric.
+  \item The quantile format is a promising option for minimizing loss of 
+information in \pz\ storage, competitive with samples for an estimator of the 
+redshift distribution function.
 \end{itemize}
 
-We also make publicly available the \qp\ Python package central to this 
-procedure and invite the community to contribute additional formats and metrics 
-to the project.  \qp\ is a tool that can be used to optimize the choice of 
-stored parametrization and number of stored parameters of a catalog of \pz s 
-based on the accuracy needs of the use cases of the catalog.  Further 
-applications of \qp\ functionality for manipulations of \pz s is demonstrated 
-in the LSST-DESC PZ DC1 paper (in prep.).
-
+Given the constraint that LSST will be able to store only 200 floating point 
+numbers to quantify the redshift of each galaxy and intends to include the 
+results of several \pz\ codes, we can safely say that LSST can store the output 
+of more than one \pz\ code without risk of significant loss of information.
 We do not advocate for a one-size-fits-all solution to the problem and 
 emphasize that the optimal choice must depend on the requirements of the 
-science metric(s) and characteristics of the underlying \pz\ catalog.  
-Furthermore, this procedure does not address the computational resources that 
-may be necessary to perform the storage operation and to reconstruct \pz s into 
-the format necessary for science calculations.
-
-\dots
+science metric(s) and characteristics of the underlying \pz\ catalog.
+We invite the community to contribute additional formats and metrics to the 
+publicly available \qp\ Python package developed for this project.  \qp\ is a 
+tool that can be used to optimize the choice of stored parametrization of a 
+catalog of \pz s based on the accuracy needs of the use cases of the catalog.
 
 
 \subsection*{Appendix}
 \label{sec:kld}
 
-The KLD measures the loss of information, measured in nats, due to using an 
-approximation of a distribution.  The most important quirk of the KLD is its 
-asymmetry; it is not a distance, like the root mean square error, that is the 
-same from $P(z)$ to $P'(z)$ as it is from $P'(z)$ to $P(z)$ but a 
-\textit{divergence} in the information lost when using $P'(z)$ to approximate 
-$P(z)$.  The KLD requires not only that both functions $P(z)$ and $P'(z)$ be 
-true probability distributions (always positive semidefinite and integrating to 
-unity) but also that there must be some notion of a true reference 
-distribution.  The latter is in general not true for real data but can be 
-checked for mock data, and the former may need to be explicitly enforced for 
-formats other than quantiles.  It is also obvious that the KLD is always 
-positive, and a smaller value indicates better agreement between the 
-approximation and the truth.
+The Kullback-Leibler divergence quantifies the loss of information, measured in 
+nats (base $e$ bits), due to using an approximation of a distribution.
+The most important feature of the KLD is its asymmetry; it is not a distance, 
+like the root mean square error, that is the same from $P(z)$ to $P'(z)$ as it 
+is from $P'(z)$ to $P(z)$ but a \textit{divergence} in the information lost 
+when using $P'(z)$ to approximate $P(z)$.
+The KLD requires that both functions $P(z)$ and $P'(z)$ be probability 
+distributions (always positive semidefinite and integrating to unity); this may 
+need to be explicitly enforced for some approximation formats.
+The KLD is always positive, and a smaller value indicates better agreement 
+between the approximation and the truth.
 
 To develop some intuition, consider the simple example of a Gaussian 
 $P(z)=\mathcal{N}(\mu_{0}, \sigma_{0}^{2})$ being approximated by a Gaussian 
@@ -722,33 +729,34 @@ $P'(z)=\mathcal{N}(\mu, \sigma^{2})$, whose KLD is
 1\right)
 \end{align}
 To get a sense of the units of information, we can calculate the KLD in some 
-limiting cases.  If $\sigma=\sigma_{0}$ but $\mu=\mu_{0}+1$, we obtain 
-$KLD=\frac{1}{2}$ in units of nats -- if the mean of the approximation is wrong 
-by an additive factor of $1\sigma$, half a nat of information is lost.  If 
-$\mu=\mu_{0}$ but $\sigma=\sqrt{2\pi}\sigma_{0}$, we find 
-$KLD\approx\frac{1}{2}$ in units of nats -- half a nat of information is also 
-lost if the variance of the approximation is off by a multiplicative factor of 
-$2\pi$.
+limiting cases.
+If $\sigma=\sigma_{0}$ but $\mu=\mu_{0}+1$, we obtain $KLD=\frac{1}{2}$ nat -- 
+if the mean of the approximation is wrong by an additive factor of $1\sigma$, 
+half a nat of information is lost.
+If $\mu=\mu_{0}$ but $\sigma=\sqrt{2\pi}\sigma_{0}$, we find 
+$KLD\approx\frac{1}{2}$ nat -- half a nat of information is also lost if the 
+variance of the approximation is off by a multiplicative factor of $2\pi$.
 
-We can use the KLD to identify notions of imprecision and inaccuracy.  
+We can use the KLD to identify notions of imprecision and inaccuracy.
 Intuitively, precision must be related to how close $\sigma$ is to $\sigma_{0}$ 
-and accuracy must be related to how close $\mu$ is to $\mu_{0}$.  If 
-$\mu\approx\mu_{0}$, we can say $KLD\sim\log[r] + \frac{1}{2}r^{-2} - 
-\frac{1}{2}$ in terms of the "precision" 
-$r^{-1}\equiv\frac{\sigma_{0}}{\sigma}$, whose behavior is illustrated in Fig. 
-\ref{fig:precision}.
+and accuracy must be related to how close $\mu$ is to $\mu_{0}$.
+If $\mu\approx\mu_{0}$, we can say $KLD\sim\log[r] + \frac{1}{2}r^{-2} - 
+\frac{1}{2}$ where $r^{-1}\equiv\frac{\sigma_{0}}{\sigma}$ is a measure of 
+"precision," whose behavior is illustrated in Figure~\ref{fig:precision}.
+
 \begin{figure}
   \includegraphics[width=0.9\columnwidth]{figures/kld_precision.png}
   \caption{The KLD (solid black line) is proportional to the log of the inverse 
-precision $r$ for $\sigma>\sigma_{0}$ but is more complicated for 
-$\sigma<\sigma_{0}$.
+precision $r$ for $\sigma>\sigma_{0}$.
   \label{fig:precision}}
 \end{figure}
+
 We observe that an overestimated variance increases the KLD as the log of the 
-square root of the ratio of the estimated variance to the true variance.  When 
-$\sigma\approx\sigma_{0}$, $KLD\sim t^{2}$ in terms of the "tension" 
+square root of the ratio of the estimated variance to the true variance.
+When $\sigma\approx\sigma_{0}$, $KLD\sim t^{2}$ in terms of the "tension" 
 $t\equiv\frac{(\mu-\mu_{0})^{2}}{\sigma^{2}}$, whose behavior is illustrated in 
-Fig. \ref{fig:tension}.
+Figure~\ref{fig:tension}.
+
 \begin{figure}
   \includegraphics[width=0.9\columnwidth]{figures/kld_tension.png}
   \caption{The KLD (solid black line) is equal to the square of the tension 
@@ -759,6 +767,8 @@ $t$, with a small additive offset when $r\neq1$.
 \subsection*{Acknowledgments}
 
 
+The work of PJM was supported by the U.S. Department of Energy under contract 
+number DE-AC02-76SF00515.
 SJS was partially supported by the National Science Foundation under grant 
 N56981CC.
 
