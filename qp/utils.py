@@ -1,3 +1,9 @@
+"""
+Notes
+-----
+TO DO: change dx --> dz (or delta)
+"""
+
 import numpy as np
 import scipy as sp
 from scipy import stats as sps
@@ -9,7 +15,9 @@ import matplotlib.pyplot as plt
 global epsilon
 epsilon = sys.float_info.epsilon
 global infty
-infty = 100.
+infty = sys.float_info.max * epsilon
+global lims
+lims = (epsilon, 1.)
 
 def cdf(weights):
     """
@@ -77,6 +85,38 @@ def safelog(arr, threshold=epsilon):
     logged = np.log(np.array([max(a, threshold) for a in flat])).reshape(shape)
     return logged
 
+def normalize_integral(in_data, vb=False):
+    """
+    Normalizes integrals over full range from grid
+
+    Parameters
+    ----------
+    in_data: None or tuple, ndarray, float
+        tuple of points at which function is evaluated and the PDF at those points
+    vb: boolean
+        print progress to stdout?
+
+    Returns
+    -------
+    (x, y): tuple, ndarray, float
+        tuple of input x and normalized y
+    """
+    if in_data is None:
+        return in_data
+    (x, y) = in_data
+    # a = x.argsort()
+    # x.sort()
+    # ys = y[a]
+    dx = x[1:] - x[:-1]
+    dy = (y[1:] + y[:-1]) / 2.
+    norm = np.dot(dy, dx)
+    y = y / norm
+    if vb:
+        print('almost normalized integrals')
+        dy = (y[1:] + y[:-1]) / 2.
+        assert(np.isclose(np.dot(dy, dx), 1.))
+    return(x, y)
+
 def normalize_gridded(in_data, vb=True):
     """
     Normalizes gridded parametrizations assuming evenly spaced grid
@@ -96,11 +136,8 @@ def normalize_gridded(in_data, vb=True):
     if in_data is None:
         return in_data
     (x, y) = in_data
-    #delta = (np.max(x) - np.min(x)) / len(x)
-    # if vb: print('before normalization: '+str(np.sum(y * delta)))
     y[y < epsilon] = epsilon
-    #y /= np.sum(y * delta)
-    # if vb: print('after normalization: '+str(np.sum(y * delta)))
+    y[y > infty] = infty
     return (x, y)
 
 def normalize_histogram(in_data, vb=True):
@@ -129,7 +166,35 @@ def normalize_histogram(in_data, vb=True):
     # if vb: print(np.sum(y * delta))
     return (x, y)
 
-def evaluate_quantiles((qs, xs)):
+def normalize_quantiles(q, (x, y), vb=True):
+    """
+    Adds valid endpoints to quantile parametrization
+
+    Parameters
+    ----------
+    q: numpy.ndarray, float
+        CDF values corresponding to quantiles
+    x: numpy.ndarray, float
+        quantile values
+    y: numpy.ndarray, float
+        probability evaluated at quantiles
+    vb: boolean
+        print progress to stdout?
+
+    Returns
+    -------
+    (x, y): tuple, ndarray, float
+        tuple of input x and normalized y
+    """
+    # nq = np.insert(q, [0, -1], (0., 1.))
+    nq = (q[1:] + q[:-1]) / 2.
+    xmin = x[0] - 2 * nq[0] / y[0]
+    xmax = x[-1] + 2 * (1 - nq[-1]) / y[-1]
+    x = np.insert(x, [0, -1], (xmin, xmax))
+    y = np.insert(y, [0, -1], (epsilon, epsilon))
+    return(x, y)
+
+def evaluate_quantiles((qs, xs), vb=True):
     """
     Produces PDF values given quantile information
 
@@ -139,19 +204,28 @@ def evaluate_quantiles((qs, xs)):
         CDF values
     xs: ndarray, float
         quantile values
+    vb: Boolean
+        print progress to stdout?
 
     Returns
     -------
     (x, y): tuple, float
         quantile values and corresponding PDF
+
+    Notes
+    -----
+    TO DO: make this use linear interpolation instead of piecewise constant
     """
     # q = np.append(q, np.array([1.]))
     # qs = np.append(np.array([0.]), q)
-    norm = max(qs) - min(qs)
+    # norm = max(qs) - min(qs)
     dq = qs[1:] - qs[:-1]
     # xs = np.append(x, np.array([infty]))
     # xs = np.append(np.array([-1. * infty]), x)
     dx = xs[1:] - xs[:-1]
+    if vb:
+        print('almost evaluated quantiles')
+        assert np.all(dx>0.)
     mx = (xs[1:] + xs[:-1]) / 2.
     y = dq / dx
     # print(np.dot(y, dx))
@@ -173,6 +247,10 @@ def evaluate_histogram((xp, y)):
     -------
     (x, y): tuple, float
         bin midpoints and CDFs over bins
+
+    Notes
+    -----
+    This shouldn't be necessary at all, see qp.PDF.interpolate notes
     """
     x = (xp[1:] + xp[:-1]) / 2.
     return((x, y))
@@ -197,7 +275,39 @@ def evaluate_samples(x):
     y = kde(sx)
     return ((sx, y))
 
-def calculate_kl_divergence(p, q, limits=(-10.0,10.0), dx=0.01, vb=True):
+def calculate_moment(p, N, using=None, limits=lims, dx=0.01, vb=False):
+    """
+    Calculates moments of a distribution
+
+    Parameters
+    ----------
+    p: qp.PDF object
+        the PDF whose moment will be calculated
+    N: int
+        order of the moment to be calculated
+    limits: tuple of floats
+        endpoints of integration interval over which to calculate moments
+    dx: float
+        resolution of integration grid
+
+    Returns
+    -------
+    M: float
+        values of the moment
+    """
+    if using is None:
+        using = p.first
+    # Make a grid from the limits and resolution
+    grid = np.arange(limits[0], limits[1], dx)
+    grid_to_N = grid ** N
+    # Evaluate the functions on the grid
+    pe = p.evaluate(grid, using=using, vb=vb)[1]
+    # pe = normalize_gridded(pe)[1]
+    # calculate the moment
+    M = dx * np.dot(grid_to_N, pe)
+    return M
+
+def calculate_kl_divergence(p, q, limits=lims, dx=0.01, vb=False):
     """
     Calculates the Kullback-Leibler Divergence between two PDFs.
 
@@ -218,25 +328,33 @@ def calculate_kl_divergence(p, q, limits=(-10.0,10.0), dx=0.01, vb=True):
     -------
     Dpq: float
         the value of the Kullback-Leibler Divergence from `q` to `p`
+
+    Notes
+    -----
+    TO DO: change this to calculate_kld
     """
     # Make a grid from the limits and resolution
-    grid = np.linspace(limits[0], limits[1], int((limits[1]-limits[0])/dx))
-    # Evaluate the functions on the grid
-    pe = p.evaluate(grid, vb=vb)[1]
-    qe = q.evaluate(grid, vb=vb)[1]
+    grid = np.arange(limits[0], limits[1], dx)
+    # Evaluate the functions on the grid and normalize
+    pe = p.evaluate(grid, vb=vb, norm=True)
+    pn = pe[1]
+    qe = q.evaluate(grid, vb=vb, norm=True)
+    qn = qe[1]
     # Normalize the evaluations, so that the integrals can be done
     # (very approximately!) by simple summation:
-    pn = pe / np.sum(pe)
+    # pn = pe / np.sum(pe)
     #denominator = max(np.sum(qe), epsilon)
-    qn = qe / np.sum(qe)#denominator
+    # qn = qe / np.sum(qe)#denominator
     # Compute the log of the normalized PDFs
-    logp = safelog(pn)
-    logq = safelog(qn)
+    logquotient = safelog(pn / qn)
+    # logp = safelog(pn)
+    # logq = safelog(qn)
     # Calculate the KLD from q to p
-    Dpq = np.sum(pn * (logp - logq))
+    Dpq = np.dot(pn * logquotient, np.ones(len(grid)) * dx)
+    assert(Dpq >= 0.)
     return Dpq
 
-def calculate_rmse(p, q, limits=(-10.,10.), dx=0.01, vb=True):
+def calculate_rmse(p, q, limits=lims, dx=0.01, vb=False):
     """
     Calculates the Root Mean Square Error between two PDFs.
 

@@ -33,11 +33,12 @@ class PDFTestCase(unittest.TestCase):
         component_2['coefficient'] = 0.9
         dist_info = [component_1, component_2]
         dist = qp.composite(dist_info)
-        P = qp.PDF(truth=dist)
+        test_limits = (0., 5.)
+        P = qp.PDF(truth=dist, limits=test_limits)
         # Quantile approximate:
-        Q = qp.PDF(quantiles=P.quantize(N=10))
+        Q = qp.PDF(quantiles=P.quantize(N=10, limits=test_limits), limits=test_limits)
         # Compute KLD:
-        KLD = qp.calculate_kl_divergence(P, Q)
+        KLD = qp.utils.calculate_kl_divergence(P, Q, limits=test_limits)
         self.assertFalse(np.isnan(KLD))
 
 

@@ -1,17 +1,21 @@
 import numpy as np
 from pathos.multiprocessing import ProcessingPool as Pool
 import psutil
+import timeit
 import os
 # import sqlalchemy
 import scipy.interpolate as spi
 import matplotlib.pyplot as plt
 
 import qp
-from qp.utils import infty as default_infty
+import utils as u
+from utils import infty as default_infty
+from utils import epsilon as default_eps
+from utils import lims as default_lims
 
 class Ensemble(object):
 
-    def __init__(self, N, pdfs=None, truth=None, quantiles=None, histogram=None, gridded=None, samples=None, scheme='linear', vb=True, procs=None):# where='ensemble.db', procs=None):#
+    def __init__(self, N, truth=None, quantiles=None, histogram=None, gridded=None, samples=None, limits=None, scheme='linear', vb=True, procs=None):# where='ensemble.db', procs=None):#
         """
         Creates an object comprised of many qp.PDF objects to efficiently
         perform operations on all of them
@@ -35,6 +39,8 @@ class Ensemble(object):
             pdf at those points
         samples: ndarray, optional
             Array of size (npdfs, nsamples) containing sampled values
+        limits: tuple, float, optional
+            shared limits of the space over which the PDFs are defined
         scheme: string, optional
             name of interpolation scheme to use.
         vb: boolean, optional
@@ -52,15 +58,29 @@ class Ensemble(object):
         parameters corresponding to a large collection of PDFs.  The excessive
         quantities of commented code were building toward this ambitious goal
         but have been temporarily abandoned to meet a deadline.)
+        TO DO: change dx --> dz (or delta)
+        TO DO: standardize n/N
+        TO DO: add an option to carry around ID numbers
         """
+        start_time = timeit.default_timer()
         if procs is not None:
             self.n_procs = procs
         else:
             self.n_procs = psutil.cpu_count()
         self.pool = Pool(self.n_procs)
+        print('made the pool of '+str(self.n_procs)+' in '+str(timeit.default_timer() - start_time))
 
         self.n_pdfs = N
         self.pdf_range = range(N)
+
+        if truth is None and quantiles is None and histogram is None and gridded is None and samples is None:
+            print 'Warning: initializing an Ensemble object without inputs'
+            return
+
+        if limits is None:
+            self.limits = default_lims
+        else:
+            self.limits = limits
 
         if truth is None:
             self.truth = [None] * N
@@ -87,10 +107,6 @@ class Ensemble(object):
 
         self.scheme = scheme
 
-        if vb and self.truth is None and self.quantiles is None and self.histogram is None and self.gridded is None and self.samples is None:
-            print 'Warning: initializing an Ensemble object without inputs'
-            return
-
         self.make_pdfs()
 
         self.stacked = {}
@@ -105,11 +121,12 @@ class Ensemble(object):
             #     logfile.write('making pdf '+str(i)+'\n')
             return qp.PDF(truth=self.truth[i], quantiles=self.quantiles[i],
                             histogram=self.histogram[i],
-                            gridded=self.gridded[i], samples=self.samples[i],
+                            gridded=self.gridded[i], samples=self.samples[i], limits=self.limits,
                             scheme=self.scheme, vb=False)
 
+        start_time = timeit.default_timer()
         self.pdfs = self.pool.map(make_pdfs_helper, self.pdf_range)
-        self.pdf_range = range(len(self.pdfs))
+        print('made the catalog in '+str(timeit.default_timer() - start_time))
 
         return
 
@@ -119,7 +136,7 @@ class Ensemble(object):
 
         Parameters
         ----------
-        N: int, optional
+        samps: int, optional
             number of samples to produce
         infty: float, optional
             approximate value at which CDF=1.
@@ -132,6 +149,10 @@ class Ensemble(object):
         -------
         samples: ndarray
             array of sampled values
+
+        Notes
+        -----
+        TODO: change syntax samps --> N
         """
         def sample_helper(i):
             # with open(self.logfilename, 'wb') as logfile:
@@ -142,7 +163,7 @@ class Ensemble(object):
 
         return self.samples
 
-    def quantize(self, quants=None, percent=10., N=None, infty=default_infty, vb=True):
+    def quantize(self, quants=None, N=None, limits=None, vb=True):
         """
         Computes an array of evenly-spaced quantiles for each PDF
 
@@ -167,8 +188,8 @@ class Ensemble(object):
         def quantize_helper(i):
             # with open(self.logfilename, 'wb') as logfile:
             #     logfile.write('quantizing pdf '+str(i)+'\n')
-            return self.pdfs[i].quantize(quants=quants, percent=percent,
-                                            N=N, infty=infty, vb=False)
+            return self.pdfs[i].quantize(quants=quants,
+                                            N=N, limits=None, vb=False)
 
         self.quantiles = self.pool.map(quantize_helper, self.pdf_range)
         self.quantiles = np.swapaxes(np.array(self.quantiles), 0, 1)
@@ -240,7 +261,7 @@ class Ensemble(object):
 
         return self.mix_mod
 
-    def evaluate(self, loc, using=None, vb=True):
+    def evaluate(self, loc, using=None, norm=False, vb=True):
         """
         Evaluates all PDFs
 
@@ -250,6 +271,8 @@ class Ensemble(object):
             location(s) at which to evaluate the pdfs
         using: string
             which parametrization to evaluate, defaults to initialization
+        norm: boolean, optional
+            True to normalize the evaluation, False if expected probability outside loc
         vb: boolean
             report on progress
 
@@ -262,14 +285,14 @@ class Ensemble(object):
         def evaluate_helper(i):
             # with open(self.logfilename, 'wb') as logfile:
             #     logfile.write('evaluating pdf '+str(i)+'\n')
-            return self.pdfs[i].evaluate(loc=loc, using=using, vb=False)
+            return self.pdfs[i].evaluate(loc=loc, using=using, norm=norm, vb=False)
         self.gridded = self.pool.map(evaluate_helper, self.pdf_range)
         self.gridded = np.swapaxes(np.array(self.gridded), 0, 1)
         self.gridded = (self.gridded[0][0], self.gridded[1])
 
         return self.gridded
 
-    def integrate(self, limits, using, dx=0.0001):
+    def integrate(self, limits, using, dx=0.001):
         """
         Computes the integral under the ensemble of PDFs between the given limits.
 
@@ -288,11 +311,125 @@ class Ensemble(object):
             value of the integral
         """
         def integrate_helper(i):
-            return self.pdfs[i].integrate(limits[i], using=using, dx=dx)
+            return self.pdfs[i].integrate(limits[i], using=using, dx=dx, vb=False)
 
         integrals = self.pool.map(integrate_helper, self.pdf_range)
 
         return integrals
+
+    def kld(self, using=None, limits=None, dx=0.01):
+        """
+        Calculates the KLD for each PDF in the ensemble
+
+        Parameters
+        ----------
+        using: string
+            which parametrization to use
+        limits: tuple of floats, optional
+            endpoints of integration interval in which to calculate KLD
+        dx: float
+            resolution of integration grid
+
+        Returns
+        -------
+        klds: numpy.ndarray, float
+            KLD values of each PDF under the using approximation relative to the truth
+        """
+        if self.truth is None:
+            print('Metrics can only be calculated relative to the truth.')
+            return
+        else:
+            def P_func(pdf):
+                return qp.PDF(truth=pdf.truth, vb=False)
+
+        if limits is None:
+            limits = self.limits
+
+        if using == 'quantiles':
+            def Q_func(pdf):
+                assert(pdf.quantiles is not None)
+                return qp.PDF(quantiles=pdf.quantiles, limits=limits, vb=False)
+        elif using == 'histogram':
+            def Q_func(pdf):
+                assert(pdf.histogram is not None)
+                return qp.PDF(histogram=pdf.histogram, limits=limits, vb=False)
+        elif using == 'samples':
+            def Q_func(pdf):
+                assert(pdf.samples is not None)
+                return qp.PDF(samples=pdf.samples, limits=limits, vb=False)
+        elif using == 'gridded':
+            def Q_func(pdf):
+                assert(pdf.gridded is not None)
+                return qp.PDF(gridded=pdf.gridded, limits=limits, vb=False)
+        else:
+            print(using + ' not available; try a different parametrization.')
+            return
+
+        def kld_helper(i):
+            P = P_func(self.pdfs[i])
+            Q = Q_func(self.pdfs[i])
+            return u.calculate_kl_divergence(P, Q, limits=limits, dx=dx)
+
+        klds = self.pool.map(kld_helper, self.pdf_range)
+
+        klds = np.array(klds)
+
+        return klds
+
+    def rmse(self, using=None, limits=None, dx=0.01):
+        """
+        Calculates the RMSE for each PDF in the ensemble
+
+        Parameters
+        ----------
+        using: string
+            which parametrization to use
+        limits: tuple of floats
+            endpoints of integration interval in which to calculate RMSE
+        dx: float
+            resolution of integration grid
+
+        Returns
+        -------
+        rmses: numpy.ndarray, float
+            RMSE values of each PDF under the using approximation relative to the truth
+        """
+        if self.truth is None:
+            print('Metrics can only be calculated relative to the truth.')
+            return
+        else:
+            def P_func(pdf):
+                return qp.PDF(truth=pdf.truth, vb=False)
+
+        if limits is None:
+            limits = self.limits
+
+        if using == 'quantiles':
+            def Q_func(pdfs):
+                return qp.PDF(quantiles=pdf.quantiles, vb=False)
+        elif using == 'histogram':
+            def Q_func(pdfs):
+                return qp.PDF(histogram=pdf.histogram, vb=False)
+        elif using == 'samples':
+            def Q_func(pdfs):
+                return qp.PDF(samples=pdf.samples, vb=False)
+        elif using == 'gridded':
+            def Q_func(pdfs):
+                return qp.PDF(quantiles=pdf.gridded, vb=False)
+        else:
+            print(using + ' not available; try a different parametrization.')
+            return
+
+        def rmse_helper(i):
+            P = P_func(pdfs[i])
+            Q = Q_func(pdfs[i])
+            return utils.calculate_rmse(P, Q, limits=limits, dx=dx)
+
+        rmses = self.pool.map(rmse_helper, self.pdf_range)
+
+        rmses = np.array(rmses)
+
+        return rmses
 
     def stack(self, loc, using, vb=True):
         """
@@ -319,7 +456,7 @@ class Ensemble(object):
         """
         loc_range = max(loc) - min(loc)
         delta = loc_range / len(loc)
-        evaluated = self.evaluate(loc, using=using, vb=True)
+        evaluated = self.evaluate(loc, using=using, norm=True, vb=False)
         stack = np.mean(evaluated[1], axis=0)
         stack /= np.sum(stack) * delta
         assert(np.isclose(np.sum(stack) * delta, 1.))

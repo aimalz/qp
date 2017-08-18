@@ -17,6 +17,10 @@ class composite(object):
             aggregation of dicts defining component functions and their coefficients
         vb: boolean
             report on progress to stdout?
+
+        Notes
+        -----
+        TO DO: change x --> z
         """
         self.components = components
         self.n_components = len(self.components)
@@ -87,7 +91,7 @@ class composite(object):
                 samples.append(self.functions[c].rvs())
         return np.array(samples)
 
-    def ppf(self, cdfs, vb=True):
+    def ppf(self, cdfs, ivals=None, vb=True):
         """
         Evaluates the composite PPF at locations
 
@@ -95,26 +99,34 @@ class composite(object):
         ----------
         cdfs: float or numpy.ndarray, float
             value(s) at which to find quantiles
+        ivals: float or numpy.ndarray, float
+            initial guesses for quantiles
+        vb: boolean
+            print progress to stdout?
 
         Returns
         -------
         xs: float or numpy.ndarray, float
             quantiles
         """
-        N = np.shape(cdfs)
+        N = np.shape(cdfs)[0]
         xs = np.zeros(N)
 
-        all_cdfs = np.zeros(N)
-        for c in self.component_range:
-            all_cdfs += self.functions[c].ppf(cdfs)
-        xs0 = all_cdfs / self.n_components
+        if ivals is not None:
+            xs0 = ivals
+        else:
+            all_cdfs = np.zeros(N)
+            for c in self.component_range:
+                all_cdfs += self.functions[c].ppf(cdfs)
+            xs0 = all_cdfs / self.n_components
 
-        for n in range(N[0]):
+        for n in range(N):
             def ppf_helper(x):
                 return np.absolute(cdfs[n] - self.cdf(x))
-            res = op.minimize(ppf_helper, xs0[n], method="Nelder-Mead", options={"maxfev": 1e5, "maxiter":1e5})
-            # res = op.basinhopping(ppf_helper, xs0[n])#, method="Nelder-Mead", options={"maxfev": 1e5, "maxiter":1e5})
+            res = op.minimize(ppf_helper, xs0[n], method="Nelder-Mead", options={"maxfev": 1e5, "maxiter":1e5}, tol=1e-8)
+                    # res = op.basinhopping(ppf_helper, xs0[n])#, method="Nelder-Mead", options={"maxfev": 1e5, "maxiter":1e5})
             xs[n] += res.x
             # if vb:
             #     print(res.message, res.success)
+
         return xs
