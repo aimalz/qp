@@ -1,6 +1,6 @@
 import numpy as np
 from pathos.multiprocessing import ProcessingPool as Pool
-import psutil
+# import psutil
 import timeit
 import os
 # import sqlalchemy
@@ -66,7 +66,7 @@ class Ensemble(object):
         if procs is not None:
             self.n_procs = procs
         else:
-            self.n_procs = psutil.cpu_count()
+            self.n_procs = pathos.helpers.cpu_count()
         self.pool = Pool(self.n_procs)
         print('made the pool of '+str(self.n_procs)+' in '+str(timeit.default_timer() - start_time))
 
@@ -285,7 +285,7 @@ class Ensemble(object):
         def evaluate_helper(i):
             # with open(self.logfilename, 'wb') as logfile:
             #     logfile.write('evaluating pdf '+str(i)+'\n')
-            return self.pdfs[i].evaluate(loc=loc, using=using, norm=norm, vb=False)
+            return self.pdfs[i].evaluate(loc=loc, using=using, norm=norm, vb=vb)
         self.gridded = self.pool.map(evaluate_helper, self.pdf_range)
         self.gridded = np.swapaxes(np.array(self.gridded), 0, 1)
         self.gridded = (self.gridded[0][0], self.gridded[1])
@@ -316,6 +316,36 @@ class Ensemble(object):
         integrals = self.pool.map(integrate_helper, self.pdf_range)
 
         return integrals
+
+    def moment(self, N, using=None, limits=limits, dx=0.01, vb=False):
+        """
+        Calculates a given moment for each PDF in the ensemble
+
+        Parameters
+        ----------
+        N: int
+            number of moment
+        using: string
+            which parametrization to use
+        limits: tuple of floats, optional
+            endpoints of integration interval in which to calculate KLD
+        dx: float
+            resolution of integration grid
+        vb: boolean
+            print progress to stdout?
+
+        Returns
+        -------
+        moments: numpy.ndarray, float
+            moment values of each PDF under the using approximation or truth
+        """
+        def moment_helper(i):
+            return u.calculate_moment(self.pdfs[i], using=using, limits=limits, dx=dx, vb=vb)
+
+        moments = self.pool.map(moment_helper, self.pdf_range)
+
+        moments = np.array(moments)
+        return moments
 
     def kld(self, using=None, limits=None, dx=0.01):
         """
@@ -456,7 +486,7 @@ class Ensemble(object):
         """
         loc_range = max(loc) - min(loc)
         delta = loc_range / len(loc)
-        evaluated = self.evaluate(loc, using=using, norm=True, vb=False)
+        evaluated = self.evaluate(loc, using=using, norm=True, vb=vb)
         stack = np.mean(evaluated[1], axis=0)
         stack /= np.sum(stack) * delta
         assert(np.isclose(np.sum(stack) * delta, 1.))

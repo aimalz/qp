@@ -10,8 +10,6 @@ from scipy import stats as sps
 import sys
 import bisect
 
-import matplotlib.pyplot as plt
-
 global epsilon
 epsilon = sys.float_info.epsilon
 global infty
