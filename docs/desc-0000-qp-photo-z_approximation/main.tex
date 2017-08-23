@@ -13,9 +13,13 @@
 
 
 \newcommand{\textul}{\underline}
-\newcommand{\qp}{\texttt{qp}\xspace}
-\newcommand{\pz}{photo-$z$ PDF\xspace}
-\newcommand{\Pz}{Photo-$z$ PDF\xspace}
+\newcommand{\qp}{\texttt{qp}}
+\newcommand{\pz}{photo-$z$ PDF}
+\newcommand{\Pz}{Photo-$z$ PDF}
+\newcommand{\mgdata}{deep\xspace}
+\newcommand{\Mgdata}{Deep\xspace}
+\newcommand{\ssdata}{shallow\xspace}
+\newcommand{\Ssdata}{Shallow\xspace}
 
 
 \begin{document}
@@ -115,7 +119,9 @@ representation of a \pz\ relative to a given parametrization that has been
 designated as "true."
 The currently implemented metrics are described in Section~\ref{sec:metric}.
 Large-scale tests can be conducted using the \texttt{qp.Ensemble} class that 
-provides a wrapper for collections of \texttt{qp.PDF} objects.
+provides a wrapper for parallelized operations over collections of 
+\texttt{qp.PDF} objects; parallelization is facilitated by the \texttt{pathos} 
+package.  \citep{mckerns_building_2012, mckerns_pathos:_2010}
 
 \subsection{Approximation Methods}
 \label{sec:approx}
@@ -228,11 +234,7 @@ required by \qp.
 The regular histogram format may be considered wasteful in terms of data 
 storage; a \pz\ with a very compact (broad) probability distribution may have 
 many parameters taking the same value $c_{i}\approx0$ 
-($c_{i}\approx(C_{N_{f}+1}-C_{1})\delta^{-1}$) that are redundant in storage.  
-%It also requires the researcher to choose the minimum and maximum possible 
-redshifts $C_{1}$ and $C_{N_{f}+1}$ of the galaxy sample, which are unknown 
-quantities, so it would be preferable to leave them unconstrained when setting 
-up the catalog.
+($c_{i}\approx(C_{N_{f}+1}-C_{1})\delta^{-1}$) that are redundant in storage.
 
 \subsubsection{Random Samples}
 \label{sec:samples}
@@ -287,8 +289,9 @@ making the quantile representation
 \end{align}
 
 
-We expect the quantile format to be an efficient approximation for \pz s 
-because it allocates storage evenly in the space of probability density.
+A quantiles parametrization (the namesake of the \texttt{qp} code) is expected 
+to be an efficient approximation for \pz s because it allocates storage evenly 
+in the space of probability density.
 In contrast, the histogram format stores data evenly spaced in redshift, and 
 the samples format stores data randomly in probability density.
 As with the samples representation, an interpolation function must be chosen 
@@ -391,12 +394,12 @@ output of BPZ is itself a high-resolution approximation in the form of
 evaluations on a grid, we fit the gridded \pz\ with a Gaussian mixture model 
 that we designate as the "true" \pz\ for our accuracy tests.
 
-\subsection{Higher-quality data mock catalog}
+\subsection{\Mgdata data mock catalog}
 \label{sec:graham}
 
 Our first dataset is an $N_{g}\approx30,000$ object subset of the simulated 
-galaxy catalog used for LSST photometric redshift experiments by Graham, et 
-al.\ (in preparation).
+galaxy catalog used for LSST photometric redshift experiments by 
+\citet{graham_photometric_2017}.
 The data builds on the Millennium simulation \citep{springel_simulations_2005}, 
 and in particular the LC DEEP catalog based on the galaxy formation models of 
 \cite{gonzalez-perez_how_2014}, and was created using the lightcone 
@@ -438,7 +441,7 @@ mixture model to each \pz\ in the catalog.
 We then calculate the three approximations to each \pz\ and evaluate their 
 accuracy using the metrics described above.
 
-\subsection{Lower-quality data mock catalog}
+\subsection{\Ssdata mock catalog}
 \label{sec:schmidt}
 
 Our second dataset is an independent simulation of the expected LSST galaxy 

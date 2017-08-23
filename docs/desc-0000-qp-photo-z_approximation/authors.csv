@@ -32,6 +32,6 @@ Lastname,Firstname,Authorname,AuthorType,Affiliation,Contribution,Email
 Malz,Alex,A.I.~Malz,Contact,"Center for Cosmology and Particle Physics, New York University, 726 Broadway, New York, 10003","Initiated project, led development work.",aimalz@nyu.edu
 Marshall,Phil,P.J.~Marshall,Contributor,"SLAC National Accelerator Laboratory, Menlo Park, CA 94025, USA","Advised on statistics, and project design and management.",dr.phil.marshall@gmail.com
 Schmidt,Samuel,S.J.~Schmidt,Contributor,"Dept. of Physics, University of California, One Shields Ave., Davis, CA, 95616","Provided the lower quality data mock catalog.",sschmidt@physics.usdavis.edu
-Graham,Melissa,M.~Graham,Contributor,"University of Washington","Provided the higher quality data mock catalog.",mlg3k@uw.edu
+Graham,Melissa,M.L.~Graham,Contributor,"Department of Astronomy, University of Washington, Box 351580 U.W., Seattle, WA 98195-1580","Provided the higher quality data mock catalog.",mlg3k@uw.edu
 DeRose,Joe,J.~DeRose,Contributor,"Stanford University","Contributed to the production of the lower quality data mock catalog.",jderose@stanford.edu
 Wechsler,Risa,R.~Wechsler,Contributor,"Stanford University","Contributed to the production of the lower quality data mock catalog.",rwechsler@stanford.edu
