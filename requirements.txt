@@ -1,7 +1,5 @@
-hickle
 matplotlib
 numpy
 pathos
-psutil
 scipy
 sklearn
