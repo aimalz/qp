@@ -273,7 +273,7 @@ def evaluate_samples(x):
     y = kde(sx)
     return ((sx, y))
 
-def calculate_moment(p, N, using=None, limits=lims, dx=0.01, vb=False):
+def calculate_moment(p, N, using=None, limits=None, dx=0.01, vb=False):
     """
     Calculates moments of a distribution
 
@@ -293,6 +293,8 @@ def calculate_moment(p, N, using=None, limits=lims, dx=0.01, vb=False):
     M: float
         values of the moment
     """
+    if limits is None:
+        limits = p.limits
     if using is None:
         using = p.first
     # Make a grid from the limits and resolution

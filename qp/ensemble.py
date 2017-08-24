@@ -1,4 +1,5 @@
 import numpy as np
+import pathos
 from pathos.multiprocessing import ProcessingPool as Pool
 # import psutil
 import timeit
@@ -317,7 +318,7 @@ class Ensemble(object):
 
         return integrals
 
-    def moment(self, N, using=None, limits=limits, dx=0.01, vb=False):
+    def moment(self, N, using=None, limits=None, dx=0.01, vb=False):
         """
         Calculates a given moment for each PDF in the ensemble
 
@@ -340,7 +341,7 @@ class Ensemble(object):
             moment values of each PDF under the using approximation or truth
         """
         def moment_helper(i):
-            return u.calculate_moment(self.pdfs[i], using=using, limits=limits, dx=dx, vb=vb)
+            return u.calculate_moment(self.pdfs[i], N, using=using, limits=limits, dx=dx, vb=vb)
 
         moments = self.pool.map(moment_helper, self.pdf_range)
 
