@@ -39,8 +39,8 @@ class PDF(object):
             Array of length nsamples containing sampled values
         limits: tuple, float, optional
             limits past which PDF is considered to be 0.
-        scheme: string, optional
-            name of interpolation scheme to use.
+        scheme: string or int, optional
+            name of interpolation scheme to use, or order of spline interpolation.
         vb: boolean
             report on progress to stdout?
 
@@ -532,19 +532,42 @@ class PDF(object):
             if self.quantiles is None:
                 self.quantiles = self.quantize(vb=vb)
 
+            if type(self.scheme) != int:
+                order = 3
+            else:
+                order = self.scheme
+
             (x, y) = qp.utils.evaluate_quantiles(self.quantiles, vb=vb)
-            (x, y) = qp.utils.normalize_quantiles(self.quantiles[0], (x, y), vb=vb)
-            self.interpolator = spi.interp1d(x, y, kind=self.scheme, bounds_error=False, fill_value=default_eps)
+            x = qp.utils.normalize_quantiles(self.quantiles[0], (x, y), vb=vb)[0]
+            # cdf_interpolator = spi.interp1d(self.quantiles[1], self.quantiles[0])
+            # self.interpolator = spi.interp1d(x, y, kind=len(x), bounds_error=False, fill_value=default_eps)
+            minz, maxz = x[0], x[-1]
+            z = np.insert(self.quantiles[1], 0, minz)
+            z = np.append(z, maxz)
+            q = np.insert(self.quantiles[0], 0, 0.)
+            q = np.append(q, 1.)
+            b = spi.make_interp_spline(z, q, k=order).derivative()#, k=len(quantiles[0]))
+            # if vb:
+            #     print(tck)
+
+            #still not enforcing integration at ends
+            def quantile_interpolator(xf):
+                yf = np.ones(len(xf)) * default_eps
+                subset = ((xf>=minz) == (xf<=maxz))
+                yf[subset] = b(xf[subset])
+                return(yf)
+            self.interpolator = quantile_interpolator
+
             if vb:
-                print 'Created a `'+self.scheme+'` interpolator for the '+using+' parametrization.'
-            return self.interpolator
+                print 'Created a k=`'+str(order)+'`B-spline interpolator for the '+using+' parametrization.'
 
         if using == 'histogram':
             # First find the histogram if none exists:
             if self.histogram is None:
                 self.histogram = self.histogramize(vb=vb)
 
-            extra_y = np.insert(self.histogram[1], [0, -1], (default_eps, default_eps))
+            extra_y = np.insert(self.histogram[1], 0, default_eps)
+            extra_y = np.append(extra_y, default_eps)
 
             def histogram_interpolator(xf):
                 nx = len(xf)
@@ -560,8 +583,6 @@ class PDF(object):
 
             if vb:
                 print 'Created a piecewise constant interpolator for the '+using+' parametrization.'
-
-            return self.interpolator
 
         if using == 'samples':
             # First sample if not already done:
@@ -581,18 +602,16 @@ class PDF(object):
             # self.interpolator = spi.interp1d(x, y, kind=self.scheme, bounds_error=False, fill_value=default_eps)
             # if vb: print('interpolator support between '+str(min(x))+' and '+str(max(x))+' with extrapolation of '+str(default_eps))
 
-            return self.interpolator
-
         if using == 'gridded':
             if self.gridded is None:
                 print 'Interpolation from a gridded parametrization requires a previous gridded parametrization.'
                 return
             (x, y) = self.gridded
 
-        self.interpolator = spi.interp1d(x, y, kind=self.scheme, fill_value="extrapolate")
+            self.interpolator = spi.interp1d(x, y, kind=self.scheme, fill_value="extrapolate")
 
-        if vb:
-            print 'Created a `'+self.scheme+'` interpolator for the '+using+' parametrization.'
+            if vb:
+                print 'Created a `'+self.scheme+'` interpolator for the '+using+' parametrization.'
 
         return self.interpolator
 
@@ -606,9 +625,9 @@ class PDF(object):
             the value(s) at which to evaluate the interpolated function
         using: string, optional
             approximation parametrization
-        scheme: string, optional
+        scheme: int or string, optional
             interpolation scheme, from the [`scipy.interpolate.interp1d`
-            options](https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interp1d.html).
+            options](https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interp1d.html) or order of spline interpolation.
             If passed as `None`, the internal `self.scheme` attribute
             is used - this defaults to `linear` in the constructor.
             Otherwise, this attribute is reset to the one chosen.

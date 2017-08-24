@@ -58,7 +58,7 @@ def choice(pop, weights):
     assert len(pop) == len(weights)
     cdf_vals = cdf(weights)
     x = np.random.random()
-    index = bisect.bisect(cdf_vals,x)
+    index = bisect.bisect(cdf_vals, x)
     output = pop[index]
     return output
 
@@ -188,8 +188,10 @@ def normalize_quantiles(q, (x, y), vb=True):
     nq = (q[1:] + q[:-1]) / 2.
     xmin = x[0] - 2 * nq[0] / y[0]
     xmax = x[-1] + 2 * (1 - nq[-1]) / y[-1]
-    x = np.insert(x, [0, -1], (xmin, xmax))
-    y = np.insert(y, [0, -1], (epsilon, epsilon))
+    x = np.insert(x, 0, xmin)
+    x = np.append(x, xmax)
+    y = np.insert(y, 0, epsilon)
+    y = np.append(y, epsilon)
     return(x, y)
 
 def evaluate_quantiles((qs, xs), vb=True):
