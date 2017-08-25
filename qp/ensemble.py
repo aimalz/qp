@@ -190,7 +190,7 @@ class Ensemble(object):
             # with open(self.logfilename, 'wb') as logfile:
             #     logfile.write('quantizing pdf '+str(i)+'\n')
             return self.pdfs[i].quantize(quants=quants,
-                                            N=N, limits=None, vb=False)
+                                            N=N, limits=None, vb=vb)
 
         self.quantiles = self.pool.map(quantize_helper, self.pdf_range)
         self.quantiles = np.swapaxes(np.array(self.quantiles), 0, 1)

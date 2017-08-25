@@ -231,22 +231,27 @@ class PDF(object):
                 min_delta = np.min(extrapoints[1:] - extrapoints[:-1])
                 grid = np.linspace(limits[0], limits[-1], N)
                 icdf = self.truth.cdf(grid)
+                unit_ext = 1. / order
                 low_extended = 0
                 while icdf[0] > quantpoints[0]:# and low_extended < 5:
                     low_extended += 1
+                    subgrid = np.linspace(limits[0] - 1., limits[0] - unit_ext, order)
+                    subcdf = self.truth.cdf(subgrid)
+                    grid = np.concatenate((subgrid, grid))
+                    icdf = np.concatenate((subcdf, icdf))
                     limits = (limits[0] - 1., limits[-1])
-                    grid = np.linspace(limits[0], limits[-1], N)
-                    icdf = self.truth.cdf(grid)
-                if vb:
-                    print('lower limits extended '+str(low_extended)+' times')
+                    if vb:
+                        print('lower limits extended '+str(low_extended)+' times')
                 high_extended = 0
                 while icdf[-1] < quantpoints[-1]:# and high_extended < 5:
                     high_extended += 1
+                    subgrid = np.linspace(limits[-1] + unit_ext, limits[-1] + 1., order)
+                    subcdf = self.truth.cdf(subgrid)
+                    grid = np.concatenate((grid, subgrid))
+                    icdf = np.concatenate((icdf, subcdf))
                     limits = (limits[0], limits[-1] + 1.)
-                    grid = np.linspace(limits[0], limits[-1], N)
-                    icdf = self.truth.cdf(grid)
-                if vb:
-                    print('upper_limits extended '+str(high_extended)+' times')
+                    if vb:
+                        print('upper_limits extended '+str(high_extended)+' times')
                 new_deltas = icdf[1:] - icdf[:-1]
                 expanded = 0
                 while np.max(new_deltas) >= min_delta:
@@ -254,14 +259,27 @@ class PDF(object):
                     where_wrong = np.where(new_deltas >= min_delta)[0]
                     flipped = np.flip(where_wrong, axis=0)
                     for i in flipped:
-                        delta_i = new_deltas[i] / (order + 1)
+                        delta_i = new_deltas[i] / (order + 1.)
                         subgrid = np.linspace(grid[i] + delta_i, grid[i+1] - delta_i, order)
-                        grid = np.insert(grid, i+1, subgrid)
-                        icdf = np.insert(icdf, i+1, self.truth.cdf(subgrid))
+                        grid = np.insert(grid, i, subgrid)
+                        if vb:
+                            if np.allclose(grid, np.sort(grid)):
+                                print('yay, grid was sorted!')
+                            else:
+                                print('oh noes, bad grid at '+str(i)+'! '+str(grid))
+                        subcdf = self.truth.cdf(subgrid)
+                        icdf = np.insert(icdf, i, subcdf)
+                        if vb:
+                            if np.allclose(icdf, np.sort(icdf)):
+                                print('yay, cdf was sorted!')
+                            else:
+                                print('oh noes, bad cdf at '+str(i)+'! '+str(icdf))
                     new_deltas = icdf[1:] - icdf[:-1]
-                if vb:
-                    print('grid expanded '+str(expanded)+' times')
+                    if vb:
+                        print('grid expanded '+str(expanded)+' times')
                 # locs = np.array([bisect.bisect_right(icdf[:-1], quantpoints[n]) for n in range(N)])
+                # if vb:
+                #     print(icdf, grid)
                 b = spi.make_interp_spline(icdf, grid, k=order)
                 quantiles = b(quantpoints)#self.truth.ppf(quantpoints, ivals=grid[locs])
             else:
@@ -270,11 +288,11 @@ class PDF(object):
             print('New quantiles can only be computed from a truth distribution in this version.')
             return
 
-        if vb:
-            print("Resulting "+str(len(quantiles))+" quantiles: "+str(quantiles))
         # integrals = self.truth.cdf(quantiles)
         # assert np.isclose(integrals, quantpoints)
         self.quantiles = (quantpoints, quantiles)
+        if vb:
+            print("Resulting "+str(len(quantiles))+" quantiles: "+str(self.quantiles))
         self.limits = (min(limits[0], np.min(quantiles)), max(limits[-1], np.max(quantiles)))
         self.last = 'quantiles'
         return self.quantiles
