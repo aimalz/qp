@@ -48,17 +48,15 @@ def choice(pop, weights):
     pop: ndarray or list, float or int or str
         possible classes to assign to sample
     weights: ndarray, float
-        array of relative probabilities for classes
+        array of normalized probabilities for classes
 
     Returns
     -------
     output: float or int or str
         the label on the class for the sample
     """
-    assert len(pop) == len(weights)
-    cdf_vals = cdf(weights)
     x = np.random.random()
-    index = bisect.bisect(cdf_vals, x)
+    index = bisect.bisect(weights, x)
     output = pop[index]
     return output
 

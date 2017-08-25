@@ -85,10 +85,9 @@ class composite(object):
         groups = [0]*self.n_components
         for item in range(size):
             groups[qp.utils.choice(self.component_range, self.coefficients)] += 1
-        samples = [] * size
+        samples = []
         for c in self.component_range:
-            for n in range(groups[c]):
-                samples.append(self.functions[c].rvs())
+            samples.append(self.functions[c].rvs(groups[c]))
         return np.array(samples)
 
     def ppf(self, cdfs, ivals=None, vb=True):
