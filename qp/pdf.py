@@ -89,9 +89,6 @@ class PDF(object):
         # first one:
         self.last = self.first
 
-        # We'll make an interpolator if and when we need it:
-        self.interpolator = None
-
         return
 
     def evaluate(self, loc, using=None, norm=False, vb=True):
@@ -229,11 +226,12 @@ class PDF(object):
 
                 extrapoints = np.concatenate((np.array([0.]), quantpoints, np.array([1.])))
                 min_delta = np.min(extrapoints[1:] - extrapoints[:-1])
-                grid = np.linspace(limits[0], limits[-1], N)
+
+                grid = np.linspace(limits[0], limits[-1], N + 1)
                 icdf = self.truth.cdf(grid)
-                unit_ext = 1. / order
+                unit_ext = 1. / (order + 1.)
                 low_extended = 0
-                while icdf[0] > quantpoints[0]:# and low_extended < 5:
+                while icdf[0] >= quantpoints[0]:
                     low_extended += 1
                     subgrid = np.linspace(limits[0] - 1., limits[0] - unit_ext, order)
                     subcdf = self.truth.cdf(subgrid)
@@ -243,7 +241,7 @@ class PDF(object):
                     if vb:
                         print('lower limits extended '+str(low_extended)+' times')
                 high_extended = 0
-                while icdf[-1] < quantpoints[-1]:# and high_extended < 5:
+                while icdf[-1] <= quantpoints[-1]:
                     high_extended += 1
                     subgrid = np.linspace(limits[-1] + unit_ext, limits[-1] + 1., order)
                     subcdf = self.truth.cdf(subgrid)
@@ -261,27 +259,30 @@ class PDF(object):
                     for i in flipped:
                         delta_i = new_deltas[i] / (order + 1.)
                         subgrid = np.linspace(grid[i] + delta_i, grid[i+1] - delta_i, order)
-                        grid = np.insert(grid, i, subgrid)
-                        if vb:
-                            if np.allclose(grid, np.sort(grid)):
-                                print('yay, grid was sorted!')
-                            else:
-                                print('oh noes, bad grid at '+str(i)+'! '+str(grid))
+                        grid = np.sort(np.insert(grid, i, subgrid))
+                        # if vb:
+                        #     if np.allclose(grid, np.sort(grid)):
+                        #         print('yay, grid was sorted!')
+                        #     else:
+                        #         print('oh noes, bad grid at '+str(i)+'! '+str(grid))
                         subcdf = self.truth.cdf(subgrid)
-                        icdf = np.insert(icdf, i, subcdf)
-                        if vb:
-                            if np.allclose(icdf, np.sort(icdf)):
-                                print('yay, cdf was sorted!')
-                            else:
-                                print('oh noes, bad cdf at '+str(i)+'! '+str(icdf))
+                        icdf = np.sort(np.insert(icdf, i, subcdf))
+                        # if vb:
+                        #     if np.allclose(icdf, np.sort(icdf)):
+                        #         print('yay, cdf was sorted!')
+                        #     else:
+                        #         print('oh noes, bad cdf at '+str(i)+'! '+str(icdf))
                     new_deltas = icdf[1:] - icdf[:-1]
                     if vb:
                         print('grid expanded '+str(expanded)+' times')
                 # locs = np.array([bisect.bisect_right(icdf[:-1], quantpoints[n]) for n in range(N)])
                 # if vb:
                 #     print(icdf, grid)
-                b = spi.make_interp_spline(icdf, grid, k=order)
+                # if vb: print('about to interpolate the CDF: '+str(icdf)+', '+str(grid))
+                b = spi.InterpolatedUnivariateSpline(icdf, grid, k=order)
+                # if vb: print('made the interpolator')
                 quantiles = b(quantpoints)#self.truth.ppf(quantpoints, ivals=grid[locs])
+                # if vb: print('found the quantiles')
             else:
                 quantiles = self.truth.ppf(quantpoints)
         else:
@@ -531,17 +532,16 @@ class PDF(object):
 
         Returns
         -------
-        self.interpolator
+        interpolator
             an interpolator object
 
         Notes
         -----
-        The `self.interpolator` object is a function that is used by the
+        The `interpolator` object is a function that is used by the
         `approximate` method. It employs
         [`scipy.interpolate.interp1d`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interp1d.html)
-        to carry out the interpolation, using the internal
-        `self.scheme` attribute to choose the interpolation scheme.
-        TO DO: There's got to be a better to do quantile interpolation!  Maybe use inverse CDF?
+        to carry out the interpolation for the gridded format, using the internal
+        `self.scheme` attribute to choose the interpolation scheme.  For quantile interpolation, it uses a `scipy.interpolate.InterpolatedUnivariateSpline` object, with self.scheme being the integer order of the spline.
         """
         if using is None:
             using = self.last
@@ -563,23 +563,24 @@ class PDF(object):
             (x, y) = qp.utils.evaluate_quantiles(self.quantiles, vb=vb)
             x = qp.utils.normalize_quantiles(self.quantiles[0], (x, y), vb=vb)[0]
             # cdf_interpolator = spi.interp1d(self.quantiles[1], self.quantiles[0])
-            # self.interpolator = spi.interp1d(x, y, kind=len(x), bounds_error=False, fill_value=default_eps)
+            # interpolator = spi.interp1d(x, y, kind=len(x), bounds_error=False, fill_value=default_eps)
             minz, maxz = x[0], x[-1]
             z = np.insert(self.quantiles[1], 0, minz)
             z = np.append(z, maxz)
             q = np.insert(self.quantiles[0], 0, 0.)
             q = np.append(q, 1.)
-            b = spi.make_interp_spline(z, q, k=order).derivative()#, k=len(quantiles[0]))
+            # b = spi.InterpolatedUnivariateSpline(z, q, k=order).derivative()#, k=len(quantiles[0]))
             # if vb:
             #     print(tck)
 
             #still not enforcing integration at ends
             def quantile_interpolator(xf):
+                b = spi.InterpolatedUnivariateSpline(z, q, k=order).derivative()
                 yf = np.ones(len(xf)) * default_eps
-                subset = ((xf>=minz) == (xf<=maxz))
+                subset = ((xf>z[0]) == (xf<z[-1]))
                 yf[subset] = b(xf[subset])
                 return(yf)
-            self.interpolator = quantile_interpolator
+            interpolator = quantile_interpolator
 
             if vb:
                 print 'Created a k=`'+str(order)+'`B-spline interpolator for the '+using+' parametrization.'
@@ -602,7 +603,7 @@ class PDF(object):
 
             #(x, y) = qp.utils.evaluate_histogram(self.histogram)
 
-            self.interpolator = histogram_interpolator#qp.utils.evaluate_histogram()
+            interpolator = histogram_interpolator#qp.utils.evaluate_histogram()
 
             if vb:
                 print 'Created a piecewise constant interpolator for the '+using+' parametrization.'
@@ -617,12 +618,12 @@ class PDF(object):
                 kde = sps.gaussian_kde(self.samples)# , bw_method=bandwidth)
                 yf = kde(xf)
                 return (yf)
-            self.interpolator = samples_interpolator
+            interpolator = samples_interpolator
             if vb:
                 print 'Created a KDE interpolator for the '+using+' parametrization.'
 
             # (x, y) = qp.evaluate_samples(self.samples)
-            # self.interpolator = spi.interp1d(x, y, kind=self.scheme, bounds_error=False, fill_value=default_eps)
+            # interpolator = spi.interp1d(x, y, kind=self.scheme, bounds_error=False, fill_value=default_eps)
             # if vb: print('interpolator support between '+str(min(x))+' and '+str(max(x))+' with extrapolation of '+str(default_eps))
 
         if using == 'gridded':
@@ -631,12 +632,12 @@ class PDF(object):
                 return
             (x, y) = self.gridded
 
-            self.interpolator = spi.interp1d(x, y, kind=self.scheme, fill_value="extrapolate")
+            interpolator = spi.interp1d(x, y, kind=self.scheme, fill_value="extrapolate")
 
             if vb:
                 print 'Created a `'+self.scheme+'` interpolator for the '+using+' parametrization.'
 
-        return self.interpolator
+        return interpolator
 
     def approximate(self, points, using=None, scheme=None, vb=True):
         """
@@ -678,9 +679,9 @@ class PDF(object):
             self.scheme = scheme
 
         # Now make the interpolation, using the current scheme:
-        self.interpolator = self.interpolate(using=using, vb=vb)
+        interpolator = self.interpolate(using=using, vb=vb)
         if vb: print('interpolating between '+str(min(points))+' and '+str(max(points))+' using '+using)
-        interpolated = self.interpolator(points)
+        interpolated = interpolator(points)
         interpolated = qp.utils.normalize_gridded((points, interpolated), vb=vb)
         # interpolated[interpolated<0.] = 0.
 
