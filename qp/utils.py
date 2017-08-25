@@ -67,7 +67,9 @@ def normalize_integral(in_data, vb=False):
     if vb:
         print('almost normalized integrals')
         dy = (y[1:] + y[:-1]) / 2.
-        assert(np.isclose(np.dot(dy, dx), 1.))
+        if not np.isclose(np.dot(dy, dx), 1.):
+            print('broken integral = '+str(np.dot(dy, dx)))
+            assert False
     return(x, y)
 
 def normalize_gridded(in_data, vb=True):
@@ -119,7 +121,7 @@ def normalize_histogram(in_data, vb=True):
     # if vb: print(np.sum(y * delta))
     return (x, y)
 
-def normalize_quantiles(q, (x, y), vb=True):
+def normalize_quantiles((q, z), (x, y), vb=True):
     """
     Adds valid endpoints to quantile parametrization
 
@@ -127,10 +129,12 @@ def normalize_quantiles(q, (x, y), vb=True):
     ----------
     q: numpy.ndarray, float
         CDF values corresponding to quantiles
+    z: numpy.ndarray, float
+        original quantiles
     x: numpy.ndarray, float
-        quantile values
+        averaged quantile values
     y: numpy.ndarray, float
-        probability evaluated at quantiles
+        probability evaluated at averaged quantiles
     vb: boolean
         print progress to stdout?
 
@@ -138,15 +142,24 @@ def normalize_quantiles(q, (x, y), vb=True):
     -------
     (x, y): tuple, ndarray, float
         tuple of input x and normalized y
+
+    Notes
+    -----
+    Finds actual endpoints via linear interpolation from evaluation
     """
     # nq = np.insert(q, [0, -1], (0., 1.))
-    nq = (q[1:] + q[:-1]) / 2.
-    xmin = x[0] - 2 * nq[0] / y[0]
-    xmax = x[-1] + 2 * (1 - nq[-1]) / y[-1]
+    q = np.insert(q, 0, 0.)
+    q = np.append(q, 1.)
+    # nq = (q[1:] + q[:-1]) / 2.
+    dq = q[1:] - q[:-1]
+    # if vb:
+    #     if not np.all(nq>0.)...
+    xmin = z[0] - 2 * (dq[0] + dq[1] / 2. - y[0] * (x[0] - z[0])) / y[0]
+    xmax = z[-1] + 2 * (dq[-1] + dq[-2]/2. - y[-1] * (z[-1] - x[-1])) / y[-1]
     x = np.insert(x, 0, xmin)
     x = np.append(x, xmax)
-    y = np.insert(y, 0, epsilon)
-    y = np.append(y, epsilon)
+    y = np.insert(y, 0, 0.)
+    y = np.append(y, 0.)
     return(x, y)
 
 def evaluate_quantiles((qs, xs), vb=True):
@@ -179,8 +192,9 @@ def evaluate_quantiles((qs, xs), vb=True):
     # xs = np.append(np.array([-1. * infty]), x)
     dx = xs[1:] - xs[:-1]
     if vb:
-        print('almost evaluated quantiles')
-        assert np.all(dx>0.)
+        if not np.all(dx>0.):
+            print('broken delta quantile values: '+str(xs))
+            assert(np.all(dx>0.))
     mx = (xs[1:] + xs[:-1]) / 2.
     y = dq / dx
     # print(np.dot(y, dx))
@@ -291,7 +305,7 @@ def calculate_kl_divergence(p, q, limits=lims, dx=0.01, vb=False):
     TO DO: change this to calculate_kld
     """
     # Make a grid from the limits and resolution
-    grid = np.arange(limits[0], limits[1], dx)
+    grid = np.arange(limits[0], limits[1]+dx, dx)
     # Evaluate the functions on the grid and normalize
     pe = p.evaluate(grid, vb=vb, norm=True)
     pn = pe[1]
@@ -308,7 +322,8 @@ def calculate_kl_divergence(p, q, limits=lims, dx=0.01, vb=False):
     # logq = safelog(qn)
     # Calculate the KLD from q to p
     Dpq = np.dot(pn * logquotient, np.ones(len(grid)) * dx)
-    assert(Dpq >= 0.)
+    if Dpq < 0.:
+        return(Dpq, pn, qn, dx)
     return Dpq
 
 def calculate_rmse(p, q, limits=lims, dx=0.01, vb=False):

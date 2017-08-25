@@ -220,7 +220,7 @@ class PDF(object):
         if self.truth is not None:
             if isinstance(self.truth, qp.composite):
                 if type(self.scheme) != int:
-                    order = 3
+                    order = min(5, N-1)
                 else:
                     order = self.scheme
 
@@ -273,16 +273,19 @@ class PDF(object):
                         #     else:
                         #         print('oh noes, bad cdf at '+str(i)+'! '+str(icdf))
                     new_deltas = icdf[1:] - icdf[:-1]
-                    if vb:
-                        print('grid expanded '+str(expanded)+' times')
+                if vb:
+                    print('grid expanded '+str(expanded)+' times')
                 # locs = np.array([bisect.bisect_right(icdf[:-1], quantpoints[n]) for n in range(N)])
-                # if vb:
-                #     print(icdf, grid)
+                u, i = np.unique(icdf, return_index=True)
+                icdf = u
+                grid = grid[i]
+                if vb:
+                    print('icdf, grid = '+str(icdf)+', '+str(grid))
                 # if vb: print('about to interpolate the CDF: '+str(icdf)+', '+str(grid))
-                b = spi.InterpolatedUnivariateSpline(icdf, grid, k=order)
+                b = spi.InterpolatedUnivariateSpline(icdf, grid, k=order, ext=1)
                 # if vb: print('made the interpolator')
                 quantiles = b(quantpoints)#self.truth.ppf(quantpoints, ivals=grid[locs])
-                # if vb: print('found the quantiles')
+                if vb: print('output quantiles = '+str(quantiles))
             else:
                 quantiles = self.truth.ppf(quantpoints)
         else:
@@ -416,7 +419,7 @@ class PDF(object):
             stdevs = np.sqrt(estimator.covariances_[:, 0, 0])
 
         if vb:
-            print(weights, means, stdevs)
+            print('weights, means, stds = '+str((weights, means, stdevs)))
 
         components = []
         for i in comp_range:
@@ -430,7 +433,7 @@ class PDF(object):
         if vb:
             statement = ''
             for c in comp_range:
-                statement += str(weights[c])+r'$\cdot\mathcal{N}($'+str(means[c])+r','+str(stdevs[c])+r')\n'
+                statement += str(weights[c])+'$\cdot\mathcal{N}($'+str(means[c])+r','+str(stdevs[c])+r')\n'
             print(statement)
         self.mix_mod = qp.composite(components)
         return self.mix_mod
@@ -490,7 +493,7 @@ class PDF(object):
                     self.quantiles = self.quantize(vb=vb)
 
                 (x, y) = qp.utils.evaluate_quantiles(self.quantiles, vb=vb)
-                (endpoints, weights) = qp.utils.normalize_quantiles(self.quantiles[0], (x, y), vb=vb)
+                (endpoints, weights) = qp.utils.normalize_quantiles(self.quantiles, (x, y), vb=vb)
                 # endpoints = np.insert(self.quantiles[1], [0, -1], self.limits)
                 # weights = qp.utils.evaluate_quantiles(self.quantiles)[1]# self.evaluate((endpoints[1:]+endpoints[:-1])/2.)
                 # interpolator = self.interpolate(using='quantiles', vb=False)
@@ -556,30 +559,41 @@ class PDF(object):
                 self.quantiles = self.quantize(vb=vb)
 
             if type(self.scheme) != int:
-                order = 3
+                order = min(5, len(self.quantiles[0]))
             else:
                 order = self.scheme
 
             (x, y) = qp.utils.evaluate_quantiles(self.quantiles, vb=vb)
-            x = qp.utils.normalize_quantiles(self.quantiles[0], (x, y), vb=vb)[0]
+            if vb: print('evaluated quantile PDF: '+str((x, y)))
+            evalled = qp.utils.normalize_quantiles(self.quantiles, (x, y), vb=vb)
+            if vb: print('complete evaluated quantile PDF: '+str(evalled))
             # cdf_interpolator = spi.interp1d(self.quantiles[1], self.quantiles[0])
             # interpolator = spi.interp1d(x, y, kind=len(x), bounds_error=False, fill_value=default_eps)
+            (x, y) = evalled
             minz, maxz = x[0], x[-1]
             z = np.insert(self.quantiles[1], 0, minz)
             z = np.append(z, maxz)
             q = np.insert(self.quantiles[0], 0, 0.)
             q = np.append(q, 1.)
-            # b = spi.InterpolatedUnivariateSpline(z, q, k=order).derivative()#, k=len(quantiles[0]))
+            if vb:
+                if not np.all(np.unique(z)==z):
+                    print('z='+str(z))
+                if not np.all(np.unique(q)==q):
+                    print('q='+str(q))
+                # assert(np.all(q[1:]-q[:-1] == np.array([b.integral(z[i], z[i+1])) for i in range(0, len(z)-1)]))
+            # u, i = np.unique(z, return_index=True)
+            # z = u
+            # q = q[i]
+            quantile_interpolator = spi.InterpolatedUnivariateSpline(z, q, k=order, ext=1).derivative()#, k=len(quantiles[0]))
             # if vb:
             #     print(tck)
 
             #still not enforcing integration at ends
-            def quantile_interpolator(xf):
-                b = spi.InterpolatedUnivariateSpline(z, q, k=order).derivative()
-                yf = np.ones(len(xf)) * default_eps
-                subset = ((xf>z[0]) == (xf<z[-1]))
-                yf[subset] = b(xf[subset])
-                return(yf)
+            # def quantile_interpolator(xf):
+            #     yf = np.ones(len(xf)) * default_eps
+            #     subset = ((xf>z[0]) == (xf<z[-1]))
+            #     yf[subset] = b(xf[subset])
+            #     return(yf)
             interpolator = quantile_interpolator
 
             if vb:
@@ -748,7 +762,7 @@ class PDF(object):
 
         if self.quantiles is not None:
             (z, p) = self.evaluate(self.quantiles[1], using='quantiles', vb=vb)
-            (x, y) = qp.utils.normalize_quantiles(self.quantiles[0], (z, p))
+            (x, y) = qp.utils.normalize_quantiles(self.quantiles, (z, p))
             min_x = min(min(x), extrema[0])
             max_x = max(max(x), extrema[-1])
             x = np.linspace(min_x, max_x, 100)
