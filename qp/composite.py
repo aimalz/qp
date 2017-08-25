@@ -89,7 +89,7 @@ class composite(object):
             samples = np.append(samples, self.functions[u[i]].rvs(counts[i]))
         return np.array(samples).flatten()
 
-    def ppf(self, cdfs, ivals=None, vb=True):
+    def ppf(self, cdfs, ivals=None):
         """
         Evaluates the composite PPF at locations
 
@@ -99,8 +99,6 @@ class composite(object):
             value(s) at which to find quantiles
         ivals: float or numpy.ndarray, float
             initial guesses for quantiles
-        vb: boolean
-            print progress to stdout?
 
         Returns
         -------
