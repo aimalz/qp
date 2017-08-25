@@ -8,7 +8,7 @@ import numpy as np
 import scipy as sp
 from scipy import stats as sps
 import sys
-import bisect
+# import bisect
 
 global epsilon
 epsilon = sys.float_info.epsilon
@@ -16,49 +16,6 @@ global infty
 infty = sys.float_info.max * epsilon
 global lims
 lims = (epsilon, 1.)
-
-def cdf(weights):
-    """
-    Creates a normalized CDF from an arbitrary discrete distribution
-
-    Parameters
-    ----------
-    weights: ndarray, float
-        array of relative probabilities for classes
-
-    Returns
-    -------
-    result: ndarray, float
-        discrete CDF
-    """
-    tot = sum(weights)
-    result = []
-    cumsum = 0.
-    for w in weights:
-        cumsum += w
-        result.append(cumsum / tot)
-    return np.array(result)
-
-def choice(pop, weights):
-    """
-    Samples classes from a discrete CDF
-
-    Parameters
-    ----------
-    pop: ndarray or list, float or int or str
-        possible classes to assign to sample
-    weights: ndarray, float
-        array of normalized probabilities for classes
-
-    Returns
-    -------
-    output: float or int or str
-        the label on the class for the sample
-    """
-    x = np.random.random()
-    index = bisect.bisect(weights, x)
-    output = pop[index]
-    return output
 
 def safelog(arr, threshold=epsilon):
     """

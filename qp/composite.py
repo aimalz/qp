@@ -82,13 +82,12 @@ class composite(object):
         xs: numpy.ndarray, float
             samples from the PDF
         """
-        groups = [0]*self.n_components
-        for item in range(size):
-            groups[qp.utils.choice(self.component_range, self.coefficients)] += 1
-        samples = []
-        for c in self.component_range:
-            samples.append(self.functions[c].rvs(groups[c]))
-        return np.array(samples)
+        groups = np.random.choice(self.component_range, size, p=self.coefficients)
+        u, counts = np.unique(groups, return_counts=True)
+        samples = np.empty(0)
+        for i in range(len(u)):
+            samples = np.append(samples, self.functions[u[i]].rvs(counts[i]))
+        return np.array(samples).flatten()
 
     def ppf(self, cdfs, ivals=None, vb=True):
         """
