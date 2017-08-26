@@ -220,7 +220,7 @@ class PDF(object):
         if self.truth is not None:
             if isinstance(self.truth, qp.composite):
                 if type(self.scheme) != int:
-                    order = min(5, N-1)
+                    order = 5
                 else:
                     order = self.scheme
 
@@ -260,28 +260,18 @@ class PDF(object):
                         delta_i = new_deltas[i] / (order + 1.)
                         subgrid = np.linspace(grid[i] + delta_i, grid[i+1] - delta_i, order)
                         grid = np.sort(np.insert(grid, i, subgrid))
-                        # if vb:
-                        #     if np.allclose(grid, np.sort(grid)):
-                        #         print('yay, grid was sorted!')
-                        #     else:
-                        #         print('oh noes, bad grid at '+str(i)+'! '+str(grid))
                         subcdf = self.truth.cdf(subgrid)
                         icdf = np.sort(np.insert(icdf, i, subcdf))
-                        # if vb:
-                        #     if np.allclose(icdf, np.sort(icdf)):
-                        #         print('yay, cdf was sorted!')
-                        #     else:
-                        #         print('oh noes, bad cdf at '+str(i)+'! '+str(icdf))
                     new_deltas = icdf[1:] - icdf[:-1]
                 if vb:
                     print('grid expanded '+str(expanded)+' times')
                 # locs = np.array([bisect.bisect_right(icdf[:-1], quantpoints[n]) for n in range(N)])
-                u, i = np.unique(icdf, return_index=True)
-                icdf = u
-                grid = grid[i]
-                if vb:
-                    print('icdf, grid = '+str(icdf)+', '+str(grid))
-                # if vb: print('about to interpolate the CDF: '+str(icdf)+', '+str(grid))
+                i = np.min(np.where(icdf > default_eps**(1./order)))
+                f = np.max(np.where(1.-icdf > default_eps**(1./order)))
+                icdf = icdf[i:f+1]
+                grid = grid[i:f+1]
+
+                if vb: print('about to interpolate the CDF: '+str((icdf, grid)))
                 b = spi.InterpolatedUnivariateSpline(icdf, grid, k=order, ext=1)
                 # if vb: print('made the interpolator')
                 quantiles = b(quantpoints)#self.truth.ppf(quantpoints, ivals=grid[locs])
