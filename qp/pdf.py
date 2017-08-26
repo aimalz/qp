@@ -272,9 +272,14 @@ class PDF(object):
                 grid = grid[i:f+1]
 
                 if vb: print('about to interpolate the CDF: '+str((icdf, grid)))
-                b = spi.InterpolatedUnivariateSpline(icdf, grid, k=order, ext=1)
                 # if vb: print('made the interpolator')
-                quantiles = b(quantpoints)#self.truth.ppf(quantpoints, ivals=grid[locs])
+                #quantiles self.truth.ppf(quantpoints, ivals=grid[locs])
+                quantiles = np.flip(quantpoints, axis=0)
+                while not np.array_equal(quantiles, np.sort(quantiles)):
+                    b = spi.InterpolatedUnivariateSpline(icdf, grid, k=order, ext=1)
+                    quantiles = b(quantpoints)
+                    order -= 1
+                    if vb: print('order is '+str(order))
                 if vb: print('output quantiles = '+str(quantiles))
             else:
                 quantiles = self.truth.ppf(quantpoints)
@@ -565,11 +570,11 @@ class PDF(object):
             z = np.append(z, maxz)
             q = np.insert(self.quantiles[0], 0, 0.)
             q = np.append(q, 1.)
-            if vb:
-                if not np.all(np.unique(z)==z):
-                    print('z='+str(z))
-                if not np.all(np.unique(q)==q):
-                    print('q='+str(q))
+            # if vb:
+            #     if not np.all(np.unique(z)==z):
+            #         print('z='+str(z))
+            #     if not np.all(np.unique(q)==q):
+            #         print('q='+str(q))
                 # assert(np.all(q[1:]-q[:-1] == np.array([b.integral(z[i], z[i+1])) for i in range(0, len(z)-1)]))
             # u, i = np.unique(z, return_index=True)
             # z = u
