@@ -271,15 +271,22 @@ class PDF(object):
                 icdf = icdf[i:f+1]
                 grid = grid[i:f+1]
 
-                if vb: print('about to interpolate the CDF: '+str((icdf, grid)))
+                # if vb: print('about to interpolate the CDF: '+str((icdf, grid)))
                 # if vb: print('made the interpolator')
                 #quantiles self.truth.ppf(quantpoints, ivals=grid[locs])
                 quantiles = np.flip(quantpoints, axis=0)
-                while not np.array_equal(quantiles, np.sort(quantiles)):
-                    b = spi.InterpolatedUnivariateSpline(icdf, grid, k=order, ext=1)
-                    quantiles = b(quantpoints)
-                    order -= 1
-                    if vb: print('order is '+str(order))
+                try:
+                    while (order>0) and (not np.array_equal(quantiles, np.sort(quantiles))):
+                        if vb: print('order is '+str(order))
+                        b = spi.InterpolatedUnivariateSpline(icdf, grid, k=order, ext=1)
+                        quantiles = b(quantpoints)
+                        order -= 1
+                    assert(not np.any(np.isnan(quantiles)))
+                except AssertionError:
+                    if vb: print('splines failed, defaulting to optimization for '+str((icdf, grid)))
+                    locs = np.array([bisect.bisect_right(icdf[:-1], quantpoints[n]) for n in range(N)])
+                    quantiles = self.truth.ppf(quantpoints, ivals=grid[locs])
+                    assert(not np.any(np.isnan(quantiles)))
                 if vb: print('output quantiles = '+str(quantiles))
             else:
                 quantiles = self.truth.ppf(quantpoints)
@@ -579,6 +586,7 @@ class PDF(object):
             # u, i = np.unique(z, return_index=True)
             # z = u
             # q = q[i]
+
             quantile_interpolator = spi.InterpolatedUnivariateSpline(z, q, k=order, ext=1).derivative()#, k=len(quantiles[0]))
             # if vb:
             #     print(tck)
@@ -690,7 +698,10 @@ class PDF(object):
         # Now make the interpolation, using the current scheme:
         interpolator = self.interpolate(using=using, vb=vb)
         if vb: print('interpolating between '+str(min(points))+' and '+str(max(points))+' using '+using)
-        interpolated = interpolator(points)
+        try:
+            interpolated = interpolator(points)
+        except:
+            print('error in '+using+' interpolation of '+str(points))
         interpolated = qp.utils.normalize_gridded((points, interpolated), vb=vb)
         # interpolated[interpolated<0.] = 0.
 
