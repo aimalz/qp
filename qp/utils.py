@@ -303,9 +303,10 @@ def calculate_kl_divergence(p, q, limits=lims, dx=0.01, vb=False):
     Notes
     -----
     TO DO: change this to calculate_kld
+    TO DO: have this take number of points not dx!
     """
     # Make a grid from the limits and resolution
-    grid = np.arange(limits[0], limits[1]+dx, dx)
+    grid = np.arange(limits[0], limits[1], dx)
     # Evaluate the functions on the grid and normalize
     pe = p.evaluate(grid, vb=vb, norm=True)
     pn = pe[1]
