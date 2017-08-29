@@ -323,7 +323,7 @@ def calculate_kl_divergence(p, q, limits=lims, dx=0.01, vb=False):
     # Calculate the KLD from q to p
     Dpq = np.dot(pn * logquotient, np.ones(len(grid)) * dx)
     if Dpq < 0.:
-        return(Dpq, pn, qn, dx)
+        print('broken KLD: '+str((Dpq, pn, qn, dx)))
     return Dpq
 
 def calculate_rmse(p, q, limits=lims, dx=0.01, vb=False):
