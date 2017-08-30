@@ -784,7 +784,7 @@ class PDF(object):
             max_x = max(max(x), extrema[-1])
             x = np.linspace(min_x, max_x, 100)
             (grid, qinterpolated) = self.approximate(x, vb=vb, using='quantiles')
-            plt.plot(z, np.zeros(np.shape(z)), color=colors['quantiles'], marker='|', ms=20, label='Quantiles')
+            plt.scatter(z, np.zeros(np.shape(z)), color=colors['quantiles'], marker='|', ms=20, label='Quantiles')
             # plt.vlines(z, np.zeros(len(self.quantiles[1])), p, color=colors['quantiles'], linestyle=styles['quantiles'], lw=1.0, alpha=1.0, label='Quantiles')
             plt.plot(grid, qinterpolated, color=colors['quantiles'], lw=2.0, alpha=1.0, linestyle=styles['quantiles'], label='Quantile Interpolated PDF')
             extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
@@ -797,7 +797,7 @@ class PDF(object):
             x = np.linspace(min_x, max_x, 100)
             # plt.vlines(self.histogram[0], self.histogram[0][:-1],
             #            self.histogram[0][1:], color=colors['histogram'], linestyle=styles['histogram'], lw=1.0, alpha=1., label='histogram bin ends')
-            plt.plot(self.histogram[0], np.zeros(np.shape(self.histogram[0])), color=colors['histogram'], marker='|', ms=20, label='Histogram Bin Ends')
+            plt.scatter(self.histogram[0], np.zeros(np.shape(self.histogram[0])), color=colors['histogram'], marker='|', ms=20, label='Histogram Bin Ends')
             (grid, hinterpolated) = self.approximate(x, vb=vb,
                                                      using='histogram')
             plt.plot(grid, hinterpolated, color=colors['histogram'], lw=2.0, alpha=1.0,
@@ -821,7 +821,7 @@ class PDF(object):
             min_x = min(self.samples)
             max_x = max(self.samples)
             x = np.linspace(min_x, max_x, 100)
-            plt.plot(self.samples, np.zeros(np.shape(self.samples)), color=    colors['samples'], marker='|', ms=20, label='Samples')
+            plt.scatter(self.samples, np.zeros(np.shape(self.samples)), color=    colors['samples'], marker='|', ms=20, label='Samples')
             (grid, sinterpolated) = self.approximate(x, vb=vb,
                                                      using='samples')
             plt.plot(grid, sinterpolated, color=colors['samples'], lw=2.0,
