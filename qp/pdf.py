@@ -784,7 +784,7 @@ class PDF(object):
             max_x = max(max(x), extrema[-1])
             x = np.linspace(min_x, max_x, 100)
             (grid, qinterpolated) = self.approximate(x, vb=vb, using='quantiles')
-            plt.scatter(z, np.zeros(np.shape(z)), color=colors['quantiles'], marker='|', s=100, label='Quantiles', alpha=0.75)
+            plt.scatter(self.quantiles[1], np.zeros(np.shape(self.quantiles[1])), color=colors['quantiles'], marker='|', s=100, label='Quantiles', alpha=0.75)
             # plt.vlines(z, np.zeros(len(self.quantiles[1])), p, color=colors['quantiles'], linestyle=styles['quantiles'], lw=1.0, alpha=1.0, label='Quantiles')
             plt.plot(grid, qinterpolated, color=colors['quantiles'], lw=2.0, alpha=1.0, linestyle=styles['quantiles'], label='Quantile Interpolated PDF')
             extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
