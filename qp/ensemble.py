@@ -329,7 +329,7 @@ class Ensemble(object):
         using: string
             which parametrization to use
         limits: tuple of floats, optional
-            endpoints of integration interval in which to calculate KLD
+            endpoints of integration interval in which to calculate moment
         dx: float
             resolution of integration grid
         vb: boolean

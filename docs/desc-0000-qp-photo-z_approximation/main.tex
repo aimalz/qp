@@ -16,10 +16,10 @@
 \newcommand{\qp}{\texttt{qp}}
 \newcommand{\pz}{photo-$z$ PDF}
 \newcommand{\Pz}{Photo-$z$ PDF}
-\newcommand{\mgdata}{deep\xspace}
-\newcommand{\Mgdata}{Deep\xspace}
-\newcommand{\ssdata}{shallow\xspace}
-\newcommand{\Ssdata}{Shallow\xspace}
+\newcommand{\mgdata}{bright\xspace}
+\newcommand{\Mgdata}{Bright\xspace}
+\newcommand{\ssdata}{faint\xspace}
+\newcommand{\Ssdata}{Faint\xspace}
 
 
 \begin{document}
@@ -83,9 +83,10 @@ parameters associated with it, will depend on the science case and its
 requirements on \pz\ accuracy: different science cases will need different 
 accuracy metrics.
 In this paper, we address the question of \textit{how} these choices should be 
-made in general, by providing the publicly available \qp\ Python package to 
-enable each survey to optimize their \pz\ approximation via mathematically 
-motivated and science-driven metrics.
+made in general, by providing the publicly available \qp\ Python 
+package\footnote{\url{https://github.com/aimalz/qp}} to enable each survey to 
+optimize their \pz\ approximation via mathematically motivated and 
+science-driven metrics.
 We demonstrate this approach on two sets of realistic mock data.
 
 In Section~\ref{sec:methods}, we outline how \qp\ can be used to optimize the 
@@ -112,16 +113,23 @@ We have developed the \qp\ Python package to facilitate the parametrization and
 approximation of \pz s.
 A \texttt{qp.PDF} object can carry a number of different parametrizations, each 
 associated with a representation.
+Conversions between parametrizations are facilitated by the 
+\texttt{numpy}\footnote{\url{http://www.numpy.org/}}, \texttt{scipy} 
+\footnote{\url{https://www.scipy.org/}}, and 
+\texttt{scikit-learn}\footnote{\url{http://scikit-learn.org}} tools.
 The currently supported parametrizations are described in 
 Section~\ref{sec:approx}.
 The \qp\ package also provides a few built-in metrics of the accuracy of a 
 representation of a \pz\ relative to a given parametrization that has been 
 designated as "true."
+Built-in plots are made using 
+\texttt{matplotlib}\footnote{\url{https://matplotlib.org/}}.
 The currently implemented metrics are described in Section~\ref{sec:metric}.
 Large-scale tests can be conducted using the \texttt{qp.Ensemble} class that 
 provides a wrapper for parallelized operations over collections of 
 \texttt{qp.PDF} objects; parallelization is facilitated by the \texttt{pathos} 
-package.  \citep{mckerns_building_2012, mckerns_pathos:_2010}
+package\footnote{\url{http://trac.mystic.cacr.caltech.edu/project/pathos/wiki.ht
+ml}}.  \citep{mckerns_building_2012, mckerns_pathos:_2010}
 
 \subsection{Approximation Methods}
 \label{sec:approx}
@@ -158,10 +166,11 @@ regular quantiles (Section~\ref{sec:quantiles}), while the other two,
 evaluations and mixture models, are used solely for internal manipulations 
 within \qp.
 
-We have not yet included the \texttt{SparsePz} sparse basis representation of 
-\citet{carrasco_kind_sparse_2014}, which uses a mixture model of $N_{f}$ 
-members of a library of $\sim10^{4}$ functions and has impressive compression 
-properties.
+We have not yet included the 
+\texttt{SparsePz}\footnote{\url{https://github.com/mgckind/SparsePz}} sparse 
+basis representation of \citet{carrasco_kind_sparse_2014}, which uses a mixture 
+model of $N_{f}$ members of a library of $\sim10^{4}$ functions and has 
+impressive compression properties.
 We omit this format because decomposition with \texttt{SparsePZ} does not 
 enforce that the stored parametrization be a probability distribution in the 
 mathematical sense of nonnegativity and integration to unity.
@@ -200,7 +209,8 @@ and weaknesses of this format?
 \label{sec:bins}
 
 By far the most popular format for approximating and storing \pz s is that of a 
-piecewise constant step function, also called a histogram binning.
+piecewise constant step function, also called a histogram binning.  
+\citep{carrasco_kind_somz:_2014, sadeh_annz2:_2016, cavuoti_metaphor:_2017}
 It is the only format that has been used for public release of \pz\ catalogs 
 \citep{tanaka_photometric_2017, sheldon_photometric_2012}; it is unclear 
 whether this is a consequence or cause of the fact that it is the most common 
@@ -239,10 +249,12 @@ many parameters taking the same value $c_{i}\approx0$
 \subsubsection{Random Samples}
 \label{sec:samples}
 
-Samples are the native output format of many machine learning algorithms 
-dependent on random choices, such as random forests.
+Samples are the native output format of many machine learning algorithms due to 
+the discrete nature of training sets.  \citep{de_vicente_dnf_2016}
 Such approaches typically produce large numbers of samples, far more than can 
 realistically be stored by any survey, so a subsample is commonly stored.
+Samples are easy to use in standard science applications developed for redshift 
+point estimates, so they have an established presence in the literature.
 
 The parameters of the samples format are the $N_{f}$ samples $\vec{c}=(z_{1}, 
 z_{2}, \dots, z_{N_{f}-1}, z_{N_{f}})$, where $C=N_{f}$ is an implicit 
@@ -270,9 +282,13 @@ from samples.
 \subsubsection{Regular Quantiles}
 \label{sec:quantiles}
 
-One parametrization that has not previously been investigated is that of 
-quantiles, which are defined in terms of the cumulative distribution function 
-(CDF).
+One parametrization that has not previously been investigated in the context of 
+photometric redshifts is that of quantiles, which are defined in terms of the 
+cumulative distribution function (CDF).
+The quantile format for expressing a PDF, however, has appeared in the 
+astronomy literature.  \citep{sun_star_2015, pizzocaro_results_2016, 
+laycock_x-ray_2017}
+
 Under the quantile format, a \pz\ catalog shares $N_{f}$ ordered CDFs 
 $\vec{C}=(q_{1}, q_{2}, \dots, q_{N_{f}-1}, q_{N_{f}})$.
 Each galaxy's catalog entry is the vector of redshifts $\vec{c}=(z_{1}, z_{2}, 
@@ -308,8 +324,8 @@ quantiles based on CDF evaluations on a grid.
 \subsection{Comparison Metrics}
 \label{sec:metric}
 
-In this work, out aim is to probe how closely \pz s reconstructed from limited 
-set of stored parameters approximates the "true" PDF.
+In this work, our aim is to probe how closely \pz s reconstructed from limited 
+set of stored parameters approximate their "true" representation.
 This is done without reference to a galaxy's true redshift; there is, in fact, 
 no notion of a true redshift in our analysis.
 (For a demonstration of how one might approach the distinct problem of 
@@ -320,7 +336,7 @@ instead of the true PDF $P(z)$ is given by the Kullback-Leibler divergence
 (KLD), which is defined as
 \begin{align}
   \label{eq:kld}
-  KLD[P(z) || \hat{P}(z)] &= \int_{-\infty}^{\infty}\ P(z)\ 
+  \mathrm{KLD}[P(z) || \hat{P}(z)] &= \int_{-\infty}^{\infty}\ P(z)\ 
 \log\left[\frac{P(z)}{\hat{P}(z)}\right]\ dz\\
   &\approx \delta_{ff}\sum_{z=z_{1}}^{z_{N_{ff}}}\ P(z)\ 
 \log\left[\frac{P(z)}{\hat{P}(z)}\right],
@@ -429,12 +445,12 @@ subsample of which are plotted in Figure~\ref{fig:graham_pzs}.
   \includegraphics[width=0.9\columnwidth]{figures/graham_pzs.png}
   \caption{Example \pz s from the mock LSST data of Graham, et al.\ (in 
 preparation).
-  The high-quality mock photometry yields largely narrow, unimodal \pz s.
+  The \mgdata mock photometry yields largely narrow, unimodal \pz s.
   \label{fig:graham_pzs}}
 \end{figure}
 
 As the figure shows, the \pz s from this dataset tend to be unimodal and 
-sharply peaked, as if coming from "higher quality" photometric data due to the 
+sharply peaked, as if coming from brighter photometric data due to the 
 conservative cuts in photometric magnitudes of this dataset.
 We produce "true" \pz s for the analysis by fitting a three-component Gaussian 
 mixture model to each \pz\ in the catalog.
@@ -470,7 +486,7 @@ which are plotted in Figure~\ref{fig:schmidt_pzs}.
   \caption{Example \pz s from the mock LSST data of deRose, et al.\ (in 
 preparation).
   This sample contains a higher proportion of broad and/or multimodal \pz s, as 
-if from lower quality data.
+if from the \ssdata data.
   \label{fig:schmidt_pzs}}
 \end{figure}
 
@@ -504,6 +520,8 @@ of individual \pz s, the KLD for $\hat{n}(z)$, or $N_{f}$
 Figure~\ref{fig:stacked} shows an example of $\hat{n}(z)$ estimated from \pz s 
 reconstructed from just $N_{f}=10$ parameters under each of our three 
 approximation formats, evaluated on the same fine grid as the input \pz s.
+The strong features in the curve are due to the very small sample size of $100$ 
+galaxies.
 As expected, the stacked histogram is quite coarse because of the step function 
 interpolation.
 The samples and quantiles can be interpolated such that the stacked $n(z)$ 
@@ -514,7 +532,7 @@ stacked estimator.
 \begin{figure}
   \includegraphics[width=0.9\columnwidth]{figures/stacked.png}
   \caption{An example of the stacked estimator of the redshift distribution, 
-for a subsample of $N_{g}=100$ galaxies drawn from the higher-quality data mock 
+for a subsample of $N_{g}=100$ galaxies drawn from the \mgdata data mock 
 catalog and with just $N_{f}=10$ parameters used for each \pz.
   The most striking characteristic of $\hat{n}(z)$ with a relatively small 
 number of parameters on a small number of galaxies is the coarseness of the 
@@ -547,7 +565,8 @@ metric, we proceed to discuss the two datasets separately, in terms of relative
 performance between formats and absolute $\hat{n}(z)$ KLDs as a function of 
 $N_{f}$.
 
-For the higher quality data mock catalog, the histogram format not only has a 
+
+For the \mgdata data mock catalog, the histogram format not only has a 
 consistently higher $\hat{n}(z)$ KLD but one that does not improve with 
 increasing $N_{f}$.
 This poor performance independent of resource allocation is actually expected 
@@ -564,7 +583,7 @@ samples format, likely due to the imperfections of the procedures for deriving
 the quantile parameters $\vec{c}^{q}$ from the true $p(z)$ and for 
 reconstructing $\hat{p}^{q}(z)$ from the quantile parameters $\vec{c}^{q}$.
 
-In the lower quality data mock catalog, the histogram format does improve with 
+In the \ssdata data mock catalog, the histogram format does improve with 
 increasing $N_{f}$, however, it takes a whopping $N_{f}=100$ stored parameters 
 before the histogram format can supercede the KLD of the samples and quantile 
 formats at a mere $N_{f}=3$ stored parameters, where the histogram format takes 
@@ -573,7 +592,7 @@ With \pz s that take nontrivial values across a wider range of redshifts, the
 histogram format is expected to capture more structure with more bins, 
 consistent with the aforementioned improvement.
 The samples format's asymptote is surprisingly achieved at a lower KLD for the 
-low-quality data mock catalog than for the high-quality data mock catalog.
+\ssdata data mock catalog than for the \mgdata data mock catalog.
 The variance between instantiations of the quantile format increases at high 
 $N_{f}$, a possible indication of room for improvement with the procedures for 
 deriving the quantile parameters $\vec{c}^{q}$ from the true $p(z)$ and for 
@@ -586,12 +605,12 @@ reconstructing $\hat{p}^{q}(z)$ from the quantile parameters $\vec{c}^{q}$
 function of number of stored parameters, for the three different approximation 
 schemes: quantiles (purple dashed line), samples (green dash-dotted line), and 
 histogram (orange dotted line).
-  Top panel: The mock catalog of higher-quality data of 
-Section~\ref{sec:graham} favors the quantiles format and strongly disfavors the 
-histogram format, with quantiles being slightly more favorable than samples.
+  Top panel: The mock catalog of \mgdata data of Section~\ref{sec:graham} 
+favors the quantiles format and strongly disfavors the histogram format, with 
+quantiles being slightly more favorable than samples.
   Bottom panel: The histogram format is not well-suited to the mock catalog of 
-lower-quality data of Section~\ref{sec:schmidt}, while the quantiles and 
-samples formats perform comparably well.
+\ssdata data of Section~\ref{sec:schmidt}, while the quantiles and samples 
+formats perform comparably well.
   \label{fig:kld}}
 \end{figure}
 
@@ -623,9 +642,9 @@ Figure~\ref{fig:individual} with $N_{f}=10$.
 \begin{figure}
   \includegraphics[width=0.9\columnwidth]{figures/individual.png}
   \caption{The distribution of log-KLD values for $N_{g}=100$ \pz s from the 
-low-quality dataset with $N_{f}=10$ over the quantiles (purple with dashed 
-border), samples (green with dash-dotted border), and histogram (orange with 
-dotted border) formats.
+\ssdata dataset with $N_{f}=10$ over the quantiles (purple with dashed border), 
+samples (green with dash-dotted border), and histogram (orange with dotted 
+border) formats.
   For the individual \pz s, the samples format has far better KLDs than the 
 histogram or quantile formats, which are comparable to one another.
   \label{fig:individual}}
@@ -654,10 +673,10 @@ quantile (purple), samples (green), and histogram (orange) formats.
   The moments and their error regions are offset about $N_{f}$ to improve 
 readability.
   Top panel: The samples format consistently minimizes the moments of the 
-log-KLD distribution of the higher quality data mock catalog at low $N_{f}$, 
-and the moments are similar across formats at the highest $N_{f}=100$.
-  Bottom panel: The lower quality data mock catalog exhibits no clear pattern 
-at low $N_{f}$ but the moments of all formats decrease at high $N_{f}$ with the 
+log-KLD distribution of the \mgdata data mock catalog at low $N_{f}$, and the 
+moments are similar across formats at the highest $N_{f}=100$.
+  Bottom panel: The\ssdata data mock catalog exhibits no clear pattern at low 
+$N_{f}$ but the moments of all formats decrease at high $N_{f}$ with the 
 histogram format achieving the lowest moments in that regime.
   \label{fig:moments}}
 \end{figure}
@@ -682,12 +701,12 @@ the science-driven metric used.
   \item A larger number of available parameters in which to store a \pz\ 
 catalog does not necessarily imply a significant reduction in loss of 
 information.
-  \item The histogram format has a high rate of loss of information over high- 
-and low-quality data mock catalogs and across a wide range of number of stored 
-parameters, particularly under an aggregate function of individual 
+  \item The histogram format has a high rate of loss of information over 
+brighter and fainter data mock catalogs and across a wide range of number of 
+stored parameters, particularly under an aggregate function of individual 
 reconstructed \pz\ approximations.
-  \item The samples format is an excellent option for storage of high-quality 
-\pz\ catalogs, balancing loss of information for both individual \pz\ s and a 
+  \item The samples format is an excellent option for storage of brighter \pz\ 
+catalogs, balancing loss of information for both individual \pz\ s and a 
 catalog-wide metric.
   \item The quantile format is a promising option for minimizing loss of 
 information in \pz\ storage, competitive with samples for an estimator of the 
@@ -701,6 +720,14 @@ of more than one \pz\ code without risk of significant loss of information.
 We do not advocate for a one-size-fits-all solution to the problem and 
 emphasize that the optimal choice must depend on the requirements of the 
 science metric(s) and characteristics of the underlying \pz\ catalog.
+
+Though we discussed the previous use of each format in science calculations, we 
+do not endorse the preference of any format on the basis of existing 
+infrastructure for its use.
+Rather, we hope that the community will continue to develop analysis methods 
+that best make use of the information in \pz s and then choose parametrizations 
+that most effectively serve the needs of those intended practices.
+
 We invite the community to contribute additional formats and metrics to the 
 publicly available \qp\ Python package developed for this project.  \qp\ is a 
 tool that can be used to optimize the choice of stored parametrization of a 
