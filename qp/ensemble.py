@@ -484,6 +484,7 @@ class Ensemble(object):
         Notes
         -----
         Stacking refers to taking the sum of PDFs evaluated on a shared grid and normalizing it such that it integrates to unity.  This is equivalent to calculating an average probability (based on the PDFs in the ensemble) over the grid.  This probably should be done in a script and not by qp!  The right way to do it would be to call qp.Ensemble.evaluate() and sum those outputs appropriately.
+        TO DO: make this do something more efficient for mixmod, grid, histogram, samples
         """
         loc_range = max(loc) - min(loc)
         delta = loc_range / len(loc)
