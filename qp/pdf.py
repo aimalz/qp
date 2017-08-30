@@ -3,9 +3,20 @@ import bisect
 import scipy.stats as sps
 import scipy.interpolate as spi
 import scipy.optimize as spo
-import matplotlib.pyplot as plt
 import sklearn as skl
 from sklearn import mixture
+
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+mpl.rcParams['text.usetex'] = True
+mpl.rcParams['mathtext.rm'] = 'serif'
+mpl.rcParams['font.family'] = 'serif'
+mpl.rcParams['font.serif'] = 'Times New Roman'
+mpl.rcParams['axes.titlesize'] = 16
+mpl.rcParams['axes.labelsize'] = 16
+mpl.rcParams['savefig.dpi'] = 250
+mpl.rcParams['savefig.format'] = 'pdf'
+mpl.rcParams['savefig.bbox'] = 'tight'
 
 import qp
 from qp.utils import infty as default_infty
@@ -707,7 +718,7 @@ class PDF(object):
 
         return interpolated#(points, interpolated)
 
-    def plot(self, limits=None, loc='plot.png', vb=True):
+    def plot(self, limits=None, loc='plot.pdf', vb=True):
         """
         Plots the PDF, in various ways.
 
@@ -752,7 +763,7 @@ class PDF(object):
             x = np.linspace(min_x, max_x, 100)
             extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
             y = self.truth.pdf(x)
-            plt.plot(x, y, color=colors['truth'], linestyle=styles['truth'], lw=3.0, alpha=1.0, label='True PDF')
+            plt.plot(x, y, color=colors['truth'], linestyle=styles['truth'], lw=3.0, alpha=0.5, label='True PDF')
             if vb:
                 print 'Plotted truth.'
 
@@ -773,7 +784,8 @@ class PDF(object):
             max_x = max(max(x), extrema[-1])
             x = np.linspace(min_x, max_x, 100)
             (grid, qinterpolated) = self.approximate(x, vb=vb, using='quantiles')
-            plt.vlines(z, np.zeros(len(self.quantiles[1])), p, color=colors['quantiles'], linestyle=styles['quantiles'], lw=1.0, alpha=1.0, label='Quantiles')
+            plt.plot(z, np.zeros(np.shape(z)), color=colors['quantiles'], marker='|', ms=20, label='Quantiles')
+            # plt.vlines(z, np.zeros(len(self.quantiles[1])), p, color=colors['quantiles'], linestyle=styles['quantiles'], lw=1.0, alpha=1.0, label='Quantiles')
             plt.plot(grid, qinterpolated, color=colors['quantiles'], lw=2.0, alpha=1.0, linestyle=styles['quantiles'], label='Quantile Interpolated PDF')
             extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
             if vb:
@@ -783,8 +795,9 @@ class PDF(object):
             min_x = self.histogram[0][0]
             max_x = self.histogram[0][-1]
             x = np.linspace(min_x, max_x, 100)
-            plt.hlines(self.histogram[1], self.histogram[0][:-1],
-                       self.histogram[0][1:], color=colors['histogram'], linestyle=styles['histogram'], lw=1.0, alpha=1., label='Histogram')
+            # plt.vlines(self.histogram[0], self.histogram[0][:-1],
+            #            self.histogram[0][1:], color=colors['histogram'], linestyle=styles['histogram'], lw=1.0, alpha=1., label='histogram bin ends')
+            plt.plot(self.histogram[0], np.zeros(np.shape(self.histogram[0])), color=colors['histogram'], marker='|', ms=20, label='Histogram Bin Ends')
             (grid, hinterpolated) = self.approximate(x, vb=vb,
                                                      using='histogram')
             plt.plot(grid, hinterpolated, color=colors['histogram'], lw=2.0, alpha=1.0,
@@ -808,7 +821,7 @@ class PDF(object):
             min_x = min(self.samples)
             max_x = max(self.samples)
             x = np.linspace(min_x, max_x, 100)
-            plt.plot(self.samples, np.zeros(np.shape(self.samples)), color=    colors['samples'], marker='+', ms=20, label='Samples')
+            plt.plot(self.samples, np.zeros(np.shape(self.samples)), color=    colors['samples'], marker='|', ms=20, label='Samples')
             (grid, sinterpolated) = self.approximate(x, vb=vb,
                                                      using='samples')
             plt.plot(grid, sinterpolated, color=colors['samples'], lw=2.0,
@@ -819,9 +832,9 @@ class PDF(object):
                 print('Plotted samples')
 
         plt.xlim(extrema[0], extrema[-1])
-        plt.legend()
-        plt.xlabel(r'$z$', fontsize=14)
-        plt.ylabel(r'$p(z)$', fontsize=14)
+        plt.legend(fontsize='large')
+        plt.xlabel(r'$z$', fontsize=16)
+        plt.ylabel(r'$p(z)$', fontsize=16)
         plt.tight_layout()
         plt.savefig(loc, dpi=250)
 
