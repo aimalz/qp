@@ -558,6 +558,7 @@ class PDF(object):
         [`scipy.interpolate.interp1d`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interp1d.html)
         to carry out the interpolation for the gridded format, using the internal
         `self.scheme` attribute to choose the interpolation scheme.  For quantile interpolation, it uses a `scipy.interpolate.InterpolatedUnivariateSpline` object, with self.scheme being the integer order of the spline.
+        TO DO: store the interpolators separately with using tags
         """
         if using is None:
             using = self.last
@@ -578,14 +579,15 @@ class PDF(object):
 
             (x, y) = qp.utils.evaluate_quantiles(self.quantiles, vb=vb)
             if vb: print('evaluated quantile PDF: '+str((x, y)))
-            evalled = qp.utils.normalize_quantiles(self.quantiles, (x, y), vb=vb)
-            if vb: print('complete evaluated quantile PDF: '+str(evalled))
+            (x, y) = qp.utils.normalize_quantiles(self.quantiles, (x, y), vb=vb)
+            if vb: print('complete evaluated quantile PDF: '+str((x, y)))
+            tan_lo = y[1] / (x[1] - x[0])
+            tan_hi = y[-2] / (x[-1] - x[-2])
             # cdf_interpolator = spi.interp1d(self.quantiles[1], self.quantiles[0])
             # interpolator = spi.interp1d(x, y, kind=len(x), bounds_error=False, fill_value=default_eps)
-            (x, y) = evalled
-            minz, maxz = x[0], x[-1]
-            z = np.insert(self.quantiles[1], 0, minz)
-            z = np.append(z, maxz)
+            # limits = (min(x), max(x))
+            z = np.insert(self.quantiles[1], 0, min(x))
+            z = np.append(z, max(x))
             q = np.insert(self.quantiles[0], 0, 0.)
             q = np.append(q, 1.)
             # if vb:
@@ -597,8 +599,29 @@ class PDF(object):
             # u, i = np.unique(z, return_index=True)
             # z = u
             # q = q[i]
+            inside = spi.InterpolatedUnivariateSpline(z, q, k=order, ext=1).derivative()
 
-            quantile_interpolator = spi.InterpolatedUnivariateSpline(z, q, k=order, ext=1).derivative()#, k=len(quantiles[0]))
+            def quantile_interpolator(xf):
+                yf = np.zeros(np.shape(xf))
+
+                in_inds = ((xf >= self.quantiles[1][0]) & (xf <= self.quantiles[1][-1])).nonzero()[0]
+                lo_inds = ((xf < self.quantiles[1][0]) & (xf >= z[0])).nonzero()[0]
+                hi_inds = ((xf > self.quantiles[1][-1]) & (xf <= z[-1])).nonzero()[0]
+                # if vb:
+                #     print('divided into '+str((lo_inds, in_inds, hi_inds)))
+
+                yf[in_inds] = inside(xf[in_inds])
+                # if vb:
+                #     print('evaluated '+str((x, y)))
+
+                yf[lo_inds] = tan_lo * (xf[lo_inds] - z[0])# yf[in_inds[0]] / (xf[in_inds[0]] - z[0])
+                # if vb:
+                #     print('evaluated '+str((x, y)))
+
+                yf[hi_inds] = tan_hi * (z[-1] - xf[hi_inds])# yf[in_inds[-1]] * (xf[hi_inds] - z[-1]) / (xf[in_inds[-1]] - z[-1])
+                # if vb:
+                #     print('evaluated '+str((x, y)))
+                return(yf)
             # if vb:
             #     print(tck)
 
@@ -708,11 +731,12 @@ class PDF(object):
 
         # Now make the interpolation, using the current scheme:
         interpolator = self.interpolate(using=using, vb=vb)
-        if vb: print('interpolating between '+str(min(points))+' and '+str(max(points))+' using '+using)
-        try:
-            interpolated = interpolator(points)
-        except:
-            print('error in '+using+' interpolation of '+str(points))
+        # if vb: print('interpolating over '+str(points)+' using '+using)
+        # try:
+        points.sort()
+        interpolated = interpolator(points)
+        # except:
+        #     print('error in '+using+' interpolation of '+str(points))
         interpolated = qp.utils.normalize_gridded((points, interpolated), vb=vb)
         # interpolated[interpolated<0.] = 0.
 
