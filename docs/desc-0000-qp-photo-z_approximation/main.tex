@@ -187,12 +187,14 @@ in \qp, restricting ourselves to mixture models of
 The various \qp\ formats are illustrated in Figure~\ref{fig:qp} on a multimodal 
 \pz\ with stored parameters.
 \begin{figure}
-  \includegraphics[width=0.9\columnwidth]{figures/demo_pz.pdf}
-  \caption{\qp\ approximation of a continuous 1-dimensional PDF (solid black 
+  \begin{center}
+    \includegraphics[width=\columnwidth]{figures/demo_pz.pdf}
+    \caption{\qp\ approximation of a continuous 1-dimensional PDF (solid black 
 line) using the step function (orange dotted line), samples (green dash-dotted 
 line), and quantile formats (purple dashed line) with the same number of stored 
 parameters ($N_{f}=7$ in this case).
-  \label{fig:qp}}
+    \label{fig:qp}}
+  \end{center}
 \end{figure}
 
 For each format, we address the following questions:
@@ -297,12 +299,14 @@ Each galaxy's catalog entry is the vector of redshifts $\vec{c}=(z_{1}, z_{2},
 format function $\mathcal{F}_{q}$ is the derivative of an interpolation of the 
 inverse CDF $CDF^{-1}(C_{i})=c_{i}$ under the interpolation scheme $F$.
 In this study, we test regular quantiles $C_{i}\equiv i(N_{f}+1)^{-1}$ using a 
-linear interpolation scheme but note that \qp\ does not require them.
+\texttt{scipy.interpolate} spline interpolation scheme in the quantile range 
+and linear extrapolation outside it.
 The format function is then the convolution $\mathcal{F}^{q}=F(CDF^{-1})$, 
 making the quantile representation
 \begin{align}
   \label{eq:quantiles}
-  \hat{p}^{q}(z) &= F(z; \vec{c}, \frac{\Delta\vec{C}}{\Delta\vec{c}}).
+  \hat{p}^{q}(z) &= F\left(z; \vec{c}, 
+\frac{\Delta\vec{C}}{\Delta\vec{c}}\right).
 \end{align}
 
 
@@ -332,23 +336,39 @@ no notion of a true redshift in our analysis.
 (For a demonstration of how one might approach the distinct problem of 
 evaluating the accuracy of a \pz\ relative to a true redshift, see Schmidt, et 
 al.\ in preparation.)
-The loss of information incurred when using an approximate PDF $\hat{P}(z)$ 
-instead of the true PDF $P(z)$ is given by the Kullback-Leibler divergence 
-(KLD), which is defined as
+The loss of information, measured in nats (base $e$ bits), incurred when using 
+an approximate PDF $\hat{P}(z)$ instead of the true PDF $P(z)$ is given by the 
+Kullback-Leibler divergence (KLD), which is defined as
 \begin{align}
   \label{eq:kld}
   \mathrm{KLD}[P(z) || \hat{P}(z)] &= \int_{-\infty}^{\infty}\ P(z)\ 
-\log\left[\frac{P(z)}{\hat{P}(z)}\right]\ dz\\
-  &\approx \delta_{ff}\sum_{z=z_{1}}^{z_{N_{ff}}}\ P(z)\ 
-\log\left[\frac{P(z)}{\hat{P}(z)}\right],
+\log\left[\frac{P(z)}{\hat{P}(z)}\right]\ dz,
 \end{align}
 where $\log$ is the natural logarithm throughout this paper.
+
+The most important feature of the KLD is its asymmetry; it is not a distance, 
+like the root mean square error, that is the same from $P(z)$ to $P'(z)$ as it 
+is from $P'(z)$ to $P(z)$ but a \textit{divergence} in the information lost 
+when using $P'(z)$ to approximate $P(z)$.
+The KLD requires that both functions $P(z)$ and $P'(z)$ be probability 
+distributions (always positive semidefinite and integrating to unity); this may 
+need to be explicitly enforced for some approximation formats.
+The KLD is always positive, and a smaller value indicates better agreement 
+between the approximation and the truth.
+We review the properties of the KLD and provide some intuition for it in the 
+Appendix.
+
 Because there is in general no closed-form expression for the KLD, we calculate 
-the KLD using evaluations of the PDF under each format on a very fine, regular 
-grid $(z_{1}, z_{2}, \dots, z_{N_{ff}-1}, z_{N_{ff}})$ with resolution 
+the discrete KLD
+\begin{align}
+  \label{eq:kld_approx}
+  \mathrm{KLD}[P(z) || \hat{P}(z)] &\approx 
+\delta_{ff}\sum_{z=z_{1}}^{z_{N_{ff}}}\ P(z)\ 
+\log\left[\frac{P(z)}{\hat{P}(z)}\right]
+\end{align}
+using evaluations of the PDF under each format on a very fine, regular grid 
+$(z_{1}, z_{2}, \dots, z_{N_{ff}-1}, z_{N_{ff}})$ with resolution 
 $\delta_{ff}\ll\delta_{f}$.
-We review the properties of the KLD and provide some intuition for it in 
-Appendix~\ref{sec:kld}.
 
 \subsubsection{Individual \pz s}
 \label{sec:individual_metric}
@@ -443,11 +463,13 @@ probability density on a regular grid of redshifts $0.01 < z < 3.51$, a
 subsample of which are plotted in Figure~\ref{fig:graham_pzs}.
 
 \begin{figure}
-  \includegraphics[width=0.9\columnwidth]{figures/graham_pzs.png}
-  \caption{Example \pz s from the mock LSST data of Graham, et al.\ (in 
+  \begin{center}
+    \includegraphics[width=\columnwidth]{figures/graham_pzs.png}
+    \caption{Example \pz s from the mock LSST data of Graham, et al.\ (in 
 preparation).
-  The \mgdata mock photometry yields largely narrow, unimodal \pz s.
-  \label{fig:graham_pzs}}
+    The \mgdata mock photometry yields largely narrow, unimodal \pz s.
+    \label{fig:graham_pzs}}
+  \end{center}
 \end{figure}
 
 As the figure shows, the \pz s from this dataset tend to be unimodal and 
@@ -483,12 +505,14 @@ regular grid of $N_{ff}=211$ redshifts $0.005\leq z\leq2.105$, a subsample of
 which are plotted in Figure~\ref{fig:schmidt_pzs}.
 
 \begin{figure}
-  \includegraphics[width=0.9\columnwidth]{figures/schmidt_pzs.png}
-  \caption{Example \pz s from the mock LSST data of deRose, et al.\ (in 
+  \begin{center}
+    \includegraphics[width=\columnwidth]{figures/schmidt_pzs.png}
+    \caption{Example \pz s from the mock LSST data of deRose, et al.\ (in 
 preparation).
-  This sample contains a higher proportion of broad and/or multimodal \pz s, as 
-if from the \ssdata data.
-  \label{fig:schmidt_pzs}}
+    This sample contains a higher proportion of broad and/or multimodal \pz s, 
+as if from the \ssdata data.
+    \label{fig:schmidt_pzs}}
+  \end{center}
 \end{figure}
 
 Even with six filters spanning the optical, there are known degeneracies 
@@ -531,17 +555,19 @@ stacked estimator.
 
 
 \begin{figure}
-  \includegraphics[width=0.9\columnwidth]{figures/stacked.png}
-  \caption{An example of the stacked estimator of the redshift distribution, 
+  \begin{center}
+    \includegraphics[width=\columnwidth]{figures/stacked.png}
+    \caption{An example of the stacked estimator of the redshift distribution, 
 for a subsample of $N_{g}=100$ galaxies drawn from the \mgdata data mock 
 catalog and with just $N_{f}=10$ parameters used for each \pz.
-  The most striking characteristic of $\hat{n}(z)$ with a relatively small 
+    The most striking characteristic of $\hat{n}(z)$ with a relatively small 
 number of parameters on a small number of galaxies is the coarseness of the 
 histogram format (orange dotted line) relative to the quantile format (purple 
 dashed line) and samples format (green dash-dotted line), both of which are 
 fairly close to $\hat{n}(z)$ derived from evaluating the true \pz s (thick gray 
 line).
-  \label{fig:stacked}}
+    \label{fig:stacked}}
+  \end{center}
 \end{figure}
 
 The $\hat{n}(z)$ KLD values for each parametrization on both mock datasets are 
@@ -600,19 +626,21 @@ deriving the quantile parameters $\vec{c}^{q}$ from the true $p(z)$ and for
 reconstructing $\hat{p}^{q}(z)$ from the quantile parameters $\vec{c}^{q}$
 
 \begin{figure}
-  \includegraphics[width=0.9\columnwidth]{figures/graham_kld.png}\\
-  \includegraphics[width=0.9\columnwidth]{figures/schmidt_kld.png}
-  \caption{KLD between approximate $\hat{n}(z)$ and true $\hat{n}(z)$ as a 
+  \begin{center}
+    \includegraphics[width=\columnwidth]{figures/graham_kld.png}\\
+    \includegraphics[width=\columnwidth]{figures/schmidt_kld.png}
+    \caption{KLD between approximate $\hat{n}(z)$ and true $\hat{n}(z)$ as a 
 function of number of stored parameters, for the three different approximation 
 schemes: quantiles (purple dashed line), samples (green dash-dotted line), and 
 histogram (orange dotted line).
-  Top panel: The mock catalog of \mgdata data of Section~\ref{sec:graham} 
+    Top panel: The mock catalog of \mgdata data of Section~\ref{sec:graham} 
 favors the quantiles format and strongly disfavors the histogram format, with 
 quantiles being slightly more favorable than samples.
-  Bottom panel: The histogram format is not well-suited to the mock catalog of 
-\ssdata data of Section~\ref{sec:schmidt}, while the quantiles and samples 
+    Bottom panel: The histogram format is not well-suited to the mock catalog 
+of \ssdata data of Section~\ref{sec:schmidt}, while the quantiles and samples 
 formats perform comparably well.
-  \label{fig:kld}}
+    \label{fig:kld}}
+  \end{center}
 \end{figure}
 
 We interpret Figure~\ref{fig:kld} in the context of constraints on storage 
@@ -641,14 +669,16 @@ An example of the individual \pz\ KLD distribution is shown in
 Figure~\ref{fig:individual} with $N_{f}=10$.
 
 \begin{figure}
-  \includegraphics[width=0.9\columnwidth]{figures/individual.png}
-  \caption{The distribution of log-KLD values for $N_{g}=100$ \pz s from the 
+  \begin{center}
+    \includegraphics[width=\columnwidth]{figures/individual.png}
+    \caption{The distribution of log-KLD values for $N_{g}=100$ \pz s from the 
 \ssdata dataset with $N_{f}=10$ over the quantiles (purple with dashed border), 
 samples (green with dash-dotted border), and histogram (orange with dotted 
 border) formats.
-  For the individual \pz s, the samples format has far better KLDs than the 
+    For the individual \pz s, the samples format has far better KLDs than the 
 histogram or quantile formats, which are comparable to one another.
-  \label{fig:individual}}
+    \label{fig:individual}}
+  \end{center}
 \end{figure}
 
 To distill what is observed in plots like Figure~\ref{fig:individual} for both 
@@ -666,20 +696,22 @@ for those using \pz s in their science to calculate the requirements on the
 acceptable degree of information loss.
 
 \begin{figure}
-  \includegraphics[width=0.9\columnwidth]{graham_moments.png}\\
-  \includegraphics[width=0.9\columnwidth]{schmidt_moments.png}
-  \caption{The mean ($\bigstar$), variance ($+$), and kurtosis ($\times$) of 
+  \begin{center}
+    \includegraphics[width=\columnwidth]{graham_moments.png}\\
+    \includegraphics[width=\columnwidth]{schmidt_moments.png}
+    \caption{The mean ($\bigstar$), variance ($+$), and kurtosis ($\times$) of 
 the log-KLD distributions for each dataset as a function of $N_{f}$ for the 
 quantile (purple), samples (green), and histogram (orange) formats.
-  The moments and their error regions are offset about $N_{f}$ to improve 
+    The moments and their error regions are offset about $N_{f}$ to improve 
 readability.
-  Top panel: The samples format consistently minimizes the moments of the 
+    Top panel: The samples format consistently minimizes the moments of the 
 log-KLD distribution of the \mgdata data mock catalog at low $N_{f}$, and the 
 moments are similar across formats at the highest $N_{f}=100$.
-  Bottom panel: The\ssdata data mock catalog exhibits no clear pattern at low 
+    Bottom panel: The\ssdata data mock catalog exhibits no clear pattern at low 
 $N_{f}$ but the moments of all formats decrease at high $N_{f}$ with the 
 histogram format achieving the lowest moments in that regime.
-  \label{fig:moments}}
+    \label{fig:moments}}
+  \end{center}
 \end{figure}
 
 
@@ -738,29 +770,24 @@ catalog of \pz s based on the accuracy needs of the use cases of the catalog.
 \subsection*{Appendix}
 \label{sec:kld}
 
-The Kullback-Leibler divergence quantifies the loss of information, measured in 
-nats (base $e$ bits), due to using an approximation of a distribution.
-The most important feature of the KLD is its asymmetry; it is not a distance, 
-like the root mean square error, that is the same from $P(z)$ to $P'(z)$ as it 
-is from $P'(z)$ to $P(z)$ but a \textit{divergence} in the information lost 
-when using $P'(z)$ to approximate $P(z)$.
-The KLD requires that both functions $P(z)$ and $P'(z)$ be probability 
-distributions (always positive semidefinite and integrating to unity); this may 
-need to be explicitly enforced for some approximation formats.
-The KLD is always positive, and a smaller value indicates better agreement 
-between the approximation and the truth.
-
-To develop some intuition, consider the simple example of a Gaussian 
-$P(z)=\mathcal{N}(\mu_{0}, \sigma_{0}^{2})$ being approximated by a Gaussian 
-$P'(z)=\mathcal{N}(\mu, \sigma^{2})$, whose KLD is
+We develop some intuition for the Kullback-Leibler Divergence by contrasting it 
+with the familiar metric of the root-mean-square error (RMSE)
+\begin{align}
+  \label{eq:rmse}
+  \mathrm{RMSE} &= \sqrt{\int (P(z) - \hat{P}(z))^{2} dz}.
+\end{align}
+Consider the simple example of a Gaussian $P(z)=\mathcal{N}(\mu_{0}, 
+\sigma_{0}^{2})$ being approximated by a Gaussian $P'(z)=\mathcal{N}(\mu, 
+\sigma^{2})$, whose KLD is
 \begin{align}
   \label{eq:gaussian}
-  KLD &= \frac{1}{2}\left(\log\left[\frac{\sigma^{2}}{\sigma_{0}^{2}}\right] + 
+  \mathrm{KLD} &= 
+\frac{1}{2}\left(\log\left[\frac{\sigma^{2}}{\sigma_{0}^{2}}\right] + 
 \frac{\sigma_{0}^{2}}{\sigma^{2}} + \frac{(\mu-\mu_{0})^{2}}{\sigma^{2}} - 
 1\right)
 \end{align}
-To get a sense of the units of information, we can calculate the KLD in some 
-limiting cases.
+To get a sense of the units of information, we can calculate the KLD and RMSE 
+in some limiting cases.
 If $\sigma=\sigma_{0}$ but $\mu=\mu_{0}+1$, we obtain $KLD=\frac{1}{2}$ nat -- 
 if the mean of the approximation is wrong by an additive factor of $1\sigma$, 
 half a nat of information is lost.
@@ -771,28 +798,38 @@ variance of the approximation is off by a multiplicative factor of $2\pi$.
 We can use the KLD to identify notions of imprecision and inaccuracy.
 Intuitively, precision must be related to how close $\sigma$ is to $\sigma_{0}$ 
 and accuracy must be related to how close $\mu$ is to $\mu_{0}$.
+
 If $\mu\approx\mu_{0}$, we can say $KLD\sim\log[r] + \frac{1}{2}r^{-2} - 
 \frac{1}{2}$ where $r^{-1}\equiv\frac{\sigma_{0}}{\sigma}$ is a measure of 
-"precision," whose behavior is illustrated in Figure~\ref{fig:precision}.
+"precision," whose behavior is illustrated in Figure~\ref{fig:precision}, 
+alongside that of the RMSE.  We observe that an overestimated variance 
+increases the KLD as the log of the square root of the ratio of the estimated 
+variance to the true variance.
 
 \begin{figure}
-  \includegraphics[width=0.9\columnwidth]{figures/kld_precision.png}
-  \caption{The KLD (solid black line) is proportional to the log of the inverse 
-precision $r$ for $\sigma>\sigma_{0}$.
-  \label{fig:precision}}
+  \begin{center}
+    \includegraphics[width=\columnwidth]{figures/precision.pdf}
+    \caption{The KLD (solid black line) is proportional to the log of the 
+inverse precision $r$ for $\sigma>\sigma_{0}$, behavior that is qualitatively 
+similar to that of the RMSE (dotted black line).
+    \label{fig:precision}}
+  \end{center}
 \end{figure}
 
-We observe that an overestimated variance increases the KLD as the log of the 
-square root of the ratio of the estimated variance to the true variance.
 When $\sigma\approx\sigma_{0}$, $KLD\sim t^{2}$ in terms of the "tension" 
-$t\equiv\frac{(\mu-\mu_{0})^{2}}{\sigma^{2}}$, whose behavior is illustrated in 
-Figure~\ref{fig:tension}.
+$t\equiv\frac{(\mu-\mu_{0})^{2}}{\sigma^{2}}$, whose concordance is illustrated 
+in Figure~\ref{fig:tension}.  This behavior hints at the KLD's sensitivity to 
+the tails of a distribution, relative to the RMSE, which does not continue 
+increasing with tension.
 
 \begin{figure}
-  \includegraphics[width=0.9\columnwidth]{figures/kld_tension.png}
-  \caption{The KLD (solid black line) is equal to the square of the tension 
-$t$, with a small additive offset when $r\neq1$.
-  \label{fig:tension}}
+  \begin{center}
+    \includegraphics[width=\columnwidth]{figures/tension.pdf}
+    \caption{The KLD (solid line) is equal to the square of the tension $t$, 
+with a small additive offset when $r\neq1$, whereas the RMSE (dotted line) is 
+relatively insensitive to tension past a certain point.
+    \label{fig:tension}}
+  \end{center}
 \end{figure}
 
 \subsection*{Acknowledgments}
