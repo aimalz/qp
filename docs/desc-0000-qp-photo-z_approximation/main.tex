@@ -58,9 +58,11 @@ redshift distribution function.
 
 
 Ongoing and upcoming wide-field imaging surveys such as the Large Synoptic 
-Survey Telescope (LSST) will observe billions of galaxies; studies of cosmology 
-and galaxy evolution with these data will rely on the method of photometric 
-redshift (photo-$z$) estimation.
+Survey Telescope 
+(LSST)\footnote{\url{https://www.lsst.org/}}\citep{ivezic_lsst:_2008} will 
+observe billions of galaxies; studies of cosmology and galaxy evolution with 
+these data will rely on the method of photometric redshift (photo-$z$) 
+estimation.
 Photo-$z$s are subject to a number of systematic errors, some caused by the 
 estimation procedures and others intrinsic to the data itself.
 The photo-$z$ community has come to favor methods that provide a redshift 
@@ -71,9 +73,9 @@ Given the tremendous size of the surveys in question, storage of these
 probability distributions involves making difficult decisions.
 Each survey seeks to create a catalog of \pz s balancing accuracy against 
 storage cost.
-For example, the \pz\ catalog that LSST will release will be limited to 200 
-floating point numbers per galaxy, with plans to store \pz s derived by 
-multiple methods.  \citep{juric_data_2017}
+For example, the \pz\ catalog that LSST will release will be limited to 
+$\sim100$ floating point numbers per galaxy\citet[section 
+4.2.2]{juric_data_2017}, with plans to store \pz s derived by multiple methods.
 The problem of \pz\ approximation for large surveys was first addressed in 
 \citet{carrasco_kind_sparse_2014} in the context of a single galaxy survey, a 
 limited set of \pz\ approximation schemes, and metrics appropriate for 
@@ -151,7 +153,7 @@ $F_{\vec{C}'}(z; \vec{c})$ that comes with its own metaparameters $\vec{C}'$.
 \qp\ supports all interpolation options available to the 
 \texttt{scipy.interpolate.interp1d} function, but we choose a default 
 interpolation scheme for each format to maximize the fidelity of the 
-approximations to the true PDFs.
+approximations to the original, high-resolution PDFs.
 
 \qp\ supports conversion of \pz\ approximations between five formats: step 
 functions, samples, quantiles, evaluations, and mixture model components.
@@ -212,8 +214,8 @@ and weaknesses of this format?
 \label{sec:bins}
 
 By far the most popular format for approximating and storing \pz s is that of a 
-piecewise constant step function, also called a histogram binning.  
-\citep{carrasco_kind_somz:_2014, sadeh_annz2:_2016, cavuoti_metaphor:_2017}
+piecewise constant step function, also called a histogram binning 
+\citep{carrasco_kind_somz:_2014, sadeh_annz2:_2016, cavuoti_metaphor:_2017}.
 It is the only format that has been used for public release of \pz\ catalogs 
 \citep{tanaka_photometric_2017, sheldon_photometric_2012}; it is unclear 
 whether this is a consequence or cause of the fact that it is the most common 
@@ -253,7 +255,7 @@ many parameters taking the same value $c_{i}\approx0$
 \label{sec:samples}
 
 Samples are the native output format of many machine learning algorithms due to 
-the discrete nature of training sets.  \citep{de_vicente_dnf_2016}
+the discrete nature of training sets \citep{de_vicente_dnf_2016}.
 Such approaches typically produce large numbers of samples, far more than can 
 realistically be stored by any survey, so a subsample is commonly stored.
 Samples are easy to use in standard science applications developed for redshift 
@@ -289,8 +291,8 @@ One parametrization that has not previously been investigated in the context of
 photometric redshifts is that of quantiles, which are defined in terms of the 
 cumulative distribution function (CDF).
 The quantile format for expressing a PDF, however, has appeared in the 
-astronomy literature.  \citep{sun_star_2015, pizzocaro_results_2016, 
-laycock_x-ray_2017}
+astronomy literature \citep{sun_star_2015, pizzocaro_results_2016, 
+laycock_x-ray_2017}.
 
 Under the quantile format, a \pz\ catalog shares $N_{f}$ ordered CDFs 
 $\vec{C}=(q_{1}, q_{2}, \dots, q_{N_{f}-1}, q_{N_{f}})$.
@@ -330,15 +332,17 @@ quantiles based on CDF evaluations on a grid.
 \label{sec:metric}
 
 In this work, our aim is to probe how closely \pz s reconstructed from limited 
-set of stored parameters approximate their reference representation.
+set of stored parameters approximate their original, high-resolution 
+representation.
 This is done without reference to a galaxy's true redshift; there is, in fact, 
 no notion of a true redshift in our analysis.
 (For a demonstration of how one might approach the distinct problem of 
 evaluating the accuracy of a \pz\ relative to a true redshift, see Schmidt, et 
 al.\ in preparation.)
 The loss of information, measured in nats (base $e$ bits), incurred when using 
-an approximate PDF $\hat{P}(z)$ instead of the true PDF $P(z)$ is given by the 
-Kullback-Leibler divergence (KLD), which is defined as
+an approximation of the PDF $\hat{P}(z)$ instead of the best possible 
+representation of the  PDF $P(z)$ is given by the Kullback-Leibler divergence 
+(KLD), which is defined as
 \begin{align}
   \label{eq:kld}
   \mathrm{KLD}[P(z) || \hat{P}(z)] &= \int_{-\infty}^{\infty}\ P(z)\ 
@@ -402,7 +406,7 @@ that any metric calculated on a more principled estimator will have similar
 behavior with respect to the parametrization of the \pz\ catalog.
 Our primary metric is therefore the KLD \textit{from} the stacked estimator of 
 a catalog of evaluations of reconstructed \pz s \textit{to} the stacked 
-estimator of a catalog of evaluations of the true \pz s.
+estimator of a catalog of evaluations of the original, high-resolution \pz s.
 
 
 \section{Photo-z Test Data}
@@ -414,7 +418,7 @@ demonstrate a procedure for vetting \pz\ parametrizations on a pair of mock
 datasets, each intended to be realistic projections of the anticipated LSST \pz 
 s.
 All \pz s were fit using the publicly available Bayesian Photometric Redshift 
-(BPZ) code \citep{ben`itez_bayesian_2000}, which employs spectral energy 
+(BPZ) code \citep{benitez_bayesian_2000}, which employs spectral energy 
 distribution (SED) fitting to a template library.
 The choice of \pz\ estimation method, however, is not relevant to this study; 
 so long as the mock \pz s are \textit{realistically complex}, meaning they take 
@@ -439,15 +443,15 @@ galaxy catalog used for LSST photometric redshift experiments by
 \citet{graham_photometric_2017}.
 The data builds on the Millennium simulation \citep{springel_simulations_2005}, 
 and in particular the LC DEEP catalog based on the galaxy formation models of 
-\cite{gonzalez-perez_how_2014}, and was created using the lightcone 
-construction techniques described by \cite{merson_lightcone_2013}.
+\citet{gonzalez-perez_how_2014}, and was created using the lightcone 
+construction techniques described by \citet{merson_lightcone_2013}.
 We limit the sample to galaxies with a catalog $i$-band magnitude of $i<25$ and 
 true redshifts $z<3.5$.
 As in Graham, et al. (in preparation), we simulate observed apparent magnitudes 
 from the true catalog magnitudes by adding a normal random scatter with a 
 standard deviation equal to the predicted magnitude error for each galaxy (from 
-Section 3.2.1. of \citealt{ivezic_lsst:_2008}, using the software of 
-\citealt{connolly_end--end_2014}, assuming a mean airmass of 1.2 and a 10-year 
+Section 3.2.1. of \citet{ivezic_lsst:_2008}, using the software of 
+\citet{connolly_end--end_2014}, assuming a mean airmass of 1.2 and a 10-year 
 accumulation of 56, 80, 184, 184, 160, and 160 visits in filters $ugrizy$, 
 respectively).
 We also ignore any magnitudes fainter than the predicted 10-year limiting 
@@ -492,9 +496,9 @@ Given an SED, redshift, and absolute $r$-band magnitude for each galaxy, we
 compute the expected apparent magnitudes and magnitude errors in the six 
 broadband LSST filters ($ugrizy$), assuming the full 10-year depth of the 
 survey using the simple model of \citet{ivezic_lsst:_2008}.
-The catalog contains $N_{g}\approx100,000$ galaxies to a depth of $i<26.9$, 1.5 
-magnitudes deeper than the expected LSST Gold sample of galaxies that will have 
-$S/N\gtrsim30$ in multiple bands.
+The catalog contains $N_{g}\approx100,000$ galaxies $z<2.105$ to a depth of 
+$i<26.9$, 1.5 magnitudes deeper than the expected LSST Gold sample of galaxies 
+that will have $S/N\gtrsim30$ in multiple bands.
 
 In implementing BPZ, we createed a custom Bayesian prior using a subset of the 
 Buzzard-highres-v1.0 catalog and a spanning template set via a simple k-means 
@@ -550,8 +554,8 @@ galaxies.
 As expected, the stacked histogram is quite coarse because of the step function 
 interpolation.
 The samples and quantiles can be interpolated such that the stacked $n(z)$ 
-estimator of the approximation is almost indistinguishable from the true 
-stacked estimator.
+estimator of the approximation is almost indistinguishable from the stacked 
+estimator of the original, high-resolution \pz s.
 
 
 \begin{figure}
@@ -564,8 +568,8 @@ catalog and with just $N_{f}=10$ parameters used for each \pz.
 number of parameters on a small number of galaxies is the coarseness of the 
 histogram format (orange dotted line) relative to the quantile format (purple 
 dashed line) and samples format (green dash-dotted line), both of which are 
-fairly close to $\hat{n}(z)$ derived from evaluating the true \pz s (thick gray 
-line).
+fairly close to $\hat{n}(z)$ derived from evaluating the original, 
+high-resolution \pz s (thick gray line).
     \label{fig:stacked}}
   \end{center}
 \end{figure}
@@ -607,8 +611,9 @@ The improvement with larger $N_{f}$ is a surprising result because the shot
 noise due to samples should decrease with higher $N_{f}$.
 The quantile format also has a larger variance between instantiations than the 
 samples format, likely due to the imperfections of the procedures for deriving 
-the quantile parameters $\vec{c}^{\ q}$ from the true $p(z)$ and for 
-reconstructing $\hat{p}^{q}(z)$ from the quantile parameters $\vec{c}^{\ q}$.
+the quantile parameters $\vec{c}^{\ q}$ from the original, high-resolution 
+$p(z)$ and for reconstructing $\hat{p}^{q}(z)$ from the quantile parameters 
+$\vec{c}^{\ q}$.
 
 In the \ssdata data mock catalog, the histogram format does improve with 
 increasing $N_{f}$, however, it takes a whopping $N_{f}=100$ stored parameters 
@@ -622,17 +627,19 @@ The samples format's asymptote is surprisingly achieved at a lower KLD for the
 \ssdata data mock catalog than for the \mgdata data mock catalog.
 The variance between instantiations of the quantile format increases at high 
 $N_{f}$, a possible indication of room for improvement with the procedures for 
-deriving the quantile parameters $\vec{c}^{\ q}$ from the true $p(z)$ and for 
-reconstructing $\hat{p}^{q}(z)$ from the quantile parameters $\vec{c}^{\ q}$
+deriving the quantile parameters $\vec{c}^{\ q}$ from the original, 
+high-resolution $p(z)$ and for reconstructing $\hat{p}^{q}(z)$ from the 
+quantile parameters $\vec{c}^{\ q}$
 
 \begin{figure}
   \begin{center}
     \includegraphics[width=\columnwidth]{figures/graham_kld.png}\\
     \includegraphics[width=\columnwidth]{figures/schmidt_kld.png}
-    \caption{KLD between approximate $\hat{n}(z)$ and true $\hat{n}(z)$ as a 
-function of number of stored parameters, for the three different approximation 
-schemes: quantiles (purple dashed line), samples (green dash-dotted line), and 
-histogram (orange dotted line).
+    \caption{KLD between $\hat{n}(z)$ derived from approximate pz\ 
+representations and  $\hat{n}(z)$ derived from the original, high-resolution 
+\pz s as a function of number of stored parameters, for the three different 
+approximation schemes: quantiles (purple dashed line), samples (green 
+dash-dotted line), and histogram (orange dotted line).
     Top panel: The mock catalog of \mgdata data of Section~\ref{sec:graham} 
 favors the quantiles format and strongly disfavors the histogram format, with 
 quantiles being slightly more favorable than samples.
