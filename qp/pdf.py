@@ -581,8 +581,8 @@ class PDF(object):
             if vb: print('evaluated quantile PDF: '+str((x, y)))
             (x, y) = qp.utils.normalize_quantiles(self.quantiles, (x, y), vb=vb)
             if vb: print('complete evaluated quantile PDF: '+str((x, y)))
-            tan_lo = y[1] / (x[1] - x[0])
-            tan_hi = y[-2] / (x[-1] - x[-2])
+            # tan_lo = y[1] / (x[1] - x[0])
+            # tan_hi = y[-2] / (x[-1] - x[-2])
             # cdf_interpolator = spi.interp1d(self.quantiles[1], self.quantiles[0])
             # interpolator = spi.interp1d(x, y, kind=len(x), bounds_error=False, fill_value=default_eps)
             # limits = (min(x), max(x))
@@ -609,15 +609,14 @@ class PDF(object):
                 hi_inds = ((xf > self.quantiles[1][-1]) & (xf <= z[-1])).nonzero()[0]
                 # if vb:
                 #     print('divided into '+str((lo_inds, in_inds, hi_inds)))
-
                 yf[in_inds] = inside(xf[in_inds])
                 # if vb:
                 #     print('evaluated '+str((x, y)))
-
+                tan_lo = yf[in_inds[0]] / (xf[in_inds[0]] - z[0])
                 yf[lo_inds] = tan_lo * (xf[lo_inds] - z[0])# yf[in_inds[0]] / (xf[in_inds[0]] - z[0])
                 # if vb:
                 #     print('evaluated '+str((x, y)))
-
+                tan_hi = yf[in_inds[-1]] / (z[-1] - xf[in_inds[-1]])
                 yf[hi_inds] = tan_hi * (z[-1] - xf[hi_inds])# yf[in_inds[-1]] * (xf[hi_inds] - z[-1]) / (xf[in_inds[-1]] - z[-1])
                 # if vb:
                 #     print('evaluated '+str((x, y)))

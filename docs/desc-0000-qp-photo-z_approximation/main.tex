@@ -414,7 +414,7 @@ demonstrate a procedure for vetting \pz\ parametrizations on a pair of mock
 datasets, each intended to be realistic projections of the anticipated LSST \pz 
 s.
 All \pz s were fit using the publicly available Bayesian Photometric Redshift 
-(BPZ) code \citep{benitez_bayesian_2000}, which employs spectral energy 
+(BPZ) code \citep{ben`itez_bayesian_2000}, which employs spectral energy 
 distribution (SED) fitting to a template library.
 The choice of \pz\ estimation method, however, is not relevant to this study; 
 so long as the mock \pz s are \textit{realistically complex}, meaning they take 
@@ -598,8 +598,8 @@ consistently higher $\hat{n}(z)$ KLD but one that does not improve with
 increasing $N_{f}$.
 This poor performance independent of resource allocation is actually expected 
 because, due to the narrow, unimodal \pz s of Figure~\ref{fig:graham_pzs}, a 
-great majority of the probability density will fall into a single bin 
-$c^{h}_{i=j}$ with all other $c^{h}_{i\neq j}\approx 0$ \textit{regardless} of 
+great majority of the probability density will fall into a single bin $c^{\ 
+h}_{i=j}$ with all other $c^{\ h}_{i\neq j}\approx 0$ \textit{regardless} of 
 $N_{f}$.
 The quantile format consistently produces the lowest $\hat{n}(z)$ KLDs, with a 
 larger improvement over the samples format as $N_{f}$ increases.
@@ -607,8 +607,8 @@ The improvement with larger $N_{f}$ is a surprising result because the shot
 noise due to samples should decrease with higher $N_{f}$.
 The quantile format also has a larger variance between instantiations than the 
 samples format, likely due to the imperfections of the procedures for deriving 
-the quantile parameters $\vec{c}^{q}$ from the true $p(z)$ and for 
-reconstructing $\hat{p}^{q}(z)$ from the quantile parameters $\vec{c}^{q}$.
+the quantile parameters $\vec{c}^{\ q}$ from the true $p(z)$ and for 
+reconstructing $\hat{p}^{q}(z)$ from the quantile parameters $\vec{c}^{\ q}$.
 
 In the \ssdata data mock catalog, the histogram format does improve with 
 increasing $N_{f}$, however, it takes a whopping $N_{f}=100$ stored parameters 
@@ -622,8 +622,8 @@ The samples format's asymptote is surprisingly achieved at a lower KLD for the
 \ssdata data mock catalog than for the \mgdata data mock catalog.
 The variance between instantiations of the quantile format increases at high 
 $N_{f}$, a possible indication of room for improvement with the procedures for 
-deriving the quantile parameters $\vec{c}^{q}$ from the true $p(z)$ and for 
-reconstructing $\hat{p}^{q}(z)$ from the quantile parameters $\vec{c}^{q}$
+deriving the quantile parameters $\vec{c}^{\ q}$ from the true $p(z)$ and for 
+reconstructing $\hat{p}^{q}(z)$ from the quantile parameters $\vec{c}^{\ q}$
 
 \begin{figure}
   \begin{center}
