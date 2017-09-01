@@ -286,6 +286,10 @@ class PDF(object):
                 # if vb: print('about to interpolate the CDF: '+str((icdf, grid)))
                 # if vb: print('made the interpolator')
                 #quantiles self.truth.ppf(quantpoints, ivals=grid[locs])
+
+                # alternate = spi.interp1d(x, y, kind='linear', bounds_error=False, fill_value=default_eps)
+                # backup = qp.utils.make_kludge_interpolator((x, y), outside=default_eps)
+
                 quantiles = np.flip(quantpoints, axis=0)
                 try:
                     while (order>0) and (not np.array_equal(quantiles, np.sort(quantiles))):
@@ -582,50 +586,55 @@ class PDF(object):
             if vb: print('evaluated quantile PDF: '+str((x, y)))
             (x, y) = qp.utils.normalize_quantiles(self.quantiles, (x, y), vb=vb)
             if vb: print('complete evaluated quantile PDF: '+str((x, y)))
-            # tan_lo = y[1] / (x[1] - x[0])
-            # tan_hi = y[-2] / (x[-1] - x[-2])
-            # cdf_interpolator = spi.interp1d(self.quantiles[1], self.quantiles[0])
-            # interpolator = spi.interp1d(x, y, kind=len(x), bounds_error=False, fill_value=default_eps)
-            # limits = (min(x), max(x))
+
+            alternate = spi.interp1d(x, y, kind='linear', bounds_error=False, fill_value=default_eps)
+            backup = qp.utils.make_kludge_interpolator((x, y), outside=default_eps)
+
             z = np.insert(self.quantiles[1], 0, min(x))
             z = np.append(z, max(x))
             q = np.insert(self.quantiles[0], 0, 0.)
             q = np.append(q, 1.)
-            # if vb:
-            #     if not np.all(np.unique(z)==z):
-            #         print('z='+str(z))
-            #     if not np.all(np.unique(q)==q):
-            #         print('q='+str(q))
-                # assert(np.all(q[1:]-q[:-1] == np.array([b.integral(z[i], z[i+1])) for i in range(0, len(z)-1)]))
-            # u, i = np.unique(z, return_index=True)
-            # z = u
-            # q = q[i]
+
             inside = spi.InterpolatedUnivariateSpline(z, q, k=order, ext=1).derivative()
             [x_crit_lo, x_crit_hi] = [self.quantiles[1][0], self.quantiles[1][-1]]
             (y_crit_lo, y_crit_hi) = inside([x_crit_lo, x_crit_hi])
 
             def quantile_interpolator(xf):
-                yf = np.zeros(np.shape(xf))
-                if vb:
-                    print('fit at '+str(xf))
+                yf = np.ones(np.shape(xf)) * default_eps
                 in_inds = ((xf >= self.quantiles[1][0]) & (xf <= self.quantiles[1][-1])).nonzero()[0]
                 lo_inds = ((xf < self.quantiles[1][0]) & (xf >= z[0])).nonzero()[0]
                 hi_inds = ((xf > self.quantiles[1][-1]) & (xf <= z[-1])).nonzero()[0]
                 if vb:
                     print('divided into '+str((lo_inds, in_inds, hi_inds)))
-                yf[in_inds] = inside(xf[in_inds])
+
+                try:
+                    yf[in_inds] = inside(xf[in_inds])
+                    assert(np.all(yf >= default_eps))
+                    if vb:
+                        print 'Created a k=`'+str(order)+'`B-spline interpolator for the '+using+' parametrization.'
+                except AssertionError:
+                    if vb: print('spline interpolation failed with '+str(yf))
+                    try:
+                        yf[in_inds] = alternate(xf[in_inds])
+                        assert(np.all(yf >= default_eps))
+                        if vb:
+                            print 'Created a linear interpolator for the '+using+' parametrization.'
+                    except AssertionError:
+                        yf[in_inds] = backup(xf[in_inds])
+                        if vb:
+                            print 'Doing linear interpolation by hand for the '+using+' parametrization.'
                 if vb:
-                    print('evaluated '+str((xf, yf)))
-                if np.any(yf < default_eps):
-                    return spi.interp1d(x, y, kind='linear', bounds_error=False, fill_value=default_eps)(xf)
+                    print('evaluated inside '+str((xf, yf)))
+
                 tan_lo = y_crit_lo / (x_crit_lo - z[0])
                 yf[lo_inds] = tan_lo * (xf[lo_inds] - z[0])# yf[in_inds[0]] / (xf[in_inds[0]] - z[0])
                 if vb:
-                    print('evaluated '+str((xf, yf)))
+                    print('evaluated below '+str((xf, yf)))
+
                 tan_hi = y_crit_hi / (z[-1] - x_crit_hi)
                 yf[hi_inds] = tan_hi * (z[-1] - xf[hi_inds])# yf[in_inds[-1]] * (xf[hi_inds] - z[-1]) / (xf[in_inds[-1]] - z[-1])
                 if vb:
-                    print('evaluated '+str((xf, yf)))
+                    print('evaluated above '+str((xf, yf)))
                 return(yf)
             # if vb:
             #     print(tck)
@@ -637,9 +646,6 @@ class PDF(object):
             #     yf[subset] = b(xf[subset])
             #     return(yf)
             interpolator = quantile_interpolator
-
-            if vb:
-                print 'Created a k=`'+str(order)+'`B-spline interpolator for the '+using+' parametrization.'
 
         if using == 'histogram':
             # First find the histogram if none exists:

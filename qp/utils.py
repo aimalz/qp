@@ -443,3 +443,29 @@ def quick_rmse(p_eval, q_eval, dx=0.01):
     # Calculate the RMS between p and q
     rms = np.sqrt(dx * np.sum((p_eval - q_eval) ** 2))
     return rms
+
+def make_kludge_interpolator((x, y), outside=epsilon):
+    """
+    Linear interpolation by hand for debugging
+
+    Parameters
+    ----------
+    (x, y): tuple, numpy.ndarray, float
+        where interpolator is fit
+    outside: float
+        value to use outside interpolation range
+
+    Returns
+    -------
+    kludge_interpolator: function
+        evaluates linear interpolant based on input points
+    """
+    dx = x[1:] - x[:-1]
+    dy = y[1:] - y[:-1]
+    def kludge_interpolator(xf):
+        yf = np.ones(np.shape(xf)) * epsilon
+        for i in range(len(x)):
+            inside = ((xf >= x[i]) & (xf <= x[i+1])).nonzero()[0]
+            yf[inside] = y[i] + (y[i+1] - y[i]) * (xf[inside] - x[i]) / dx[i]
+        return yf
+    return kludge_interpolator
