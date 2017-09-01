@@ -161,7 +161,7 @@ class Ensemble(object):
             #     logfile.write('sampling pdf '+str(i)+'\n')
                 return self.pdfs[i].sample(N=samps, infty=infty, using=using, vb=False)
             except Exception:
-                print('sampling failed on '+str(i)+' because '+str(sys.exc_info()[0]))
+                print('ERROR: sampling failed on '+str(i)+' because '+str(sys.exc_info()[0]))
 
         self.samples = self.pool.map(sample_helper, self.pdf_range)
 
@@ -196,7 +196,7 @@ class Ensemble(object):
                 return self.pdfs[i].quantize(quants=quants,
                                             N=N, limits=None, vb=vb)
             except Exception:
-                print('quantization failed on '+str(i)+' because '+str(sys.exc_info()[0]))
+                print('ERROR: quantization failed on '+str(i)+' because '+str(sys.exc_info()[0]))
 
         self.quantiles = self.pool.map(quantize_helper, self.pdf_range)
         self.quantiles = np.swapaxes(np.array(self.quantiles), 0, 1)
@@ -232,7 +232,7 @@ class Ensemble(object):
                 return self.pdfs[i].histogramize(binends=binends, N=N,
                                                 binrange=binrange, vb=False)
             except Exception:
-                print('histogramization failed on '+str(i)+' because '+str(sys.exc_info()[0]))
+                print('ERROR: histogramization failed on '+str(i)+' because '+str(sys.exc_info()[0]))
 
         self.histogram = self.pool.map(histogram_helper, self.pdf_range)
         self.histogram = np.swapaxes(np.array(self.histogram), 0, 1)
@@ -268,7 +268,7 @@ class Ensemble(object):
             #     logfile.write('fitting pdf '+str(i)+'\n')
                 return self.pdfs[i].mix_mod_fit(n_components=comps, using=using, vb=False)
             except Exception:
-                print('mixture model fitting failed on '+str(i)+' because '+str(sys.exc_info()[0]))
+                print('ERROR: mixture model fitting failed on '+str(i)+' because '+str(sys.exc_info()[0]))
 
         self.mix_mod = self.pool.map(mixmod_helper, self.pdf_range)
 
@@ -300,7 +300,7 @@ class Ensemble(object):
             #     logfile.write('evaluating pdf '+str(i)+'\n')
                 return self.pdfs[i].evaluate(loc=loc, using=using, norm=norm, vb=vb)
             except Exception:
-                print('evaluation with '+using+' failed on '+str(i)+' because '+str(sys.exc_info()[0]))
+                print('ERROR: evaluation with '+using+' failed on '+str(i)+' because '+str(sys.exc_info()[0]))
         self.gridded = self.pool.map(evaluate_helper, self.pdf_range)
         self.gridded = np.swapaxes(np.array(self.gridded), 0, 1)
         self.gridded = (using, (self.gridded[0][0], self.gridded[1]))
@@ -329,7 +329,7 @@ class Ensemble(object):
             try:
                 return self.pdfs[i].integrate(limits[i], using=using, dx=dx, vb=False)
             except Exception:
-                print('integration failed on '+str(i)+' because '+str(sys.exc_info()[0]))
+                print('ERROR: integration failed on '+str(i)+' because '+str(sys.exc_info()[0]))
 
         integrals = self.pool.map(integrate_helper, self.pdf_range)
 
@@ -535,6 +535,7 @@ class Ensemble(object):
         -----
         Stacking refers to taking the sum of PDFs evaluated on a shared grid and normalizing it such that it integrates to unity.  This is equivalent to calculating an average probability (based on the PDFs in the ensemble) over the grid.  This probably should be done in a script and not by qp!  The right way to do it would be to call qp.Ensemble.evaluate() and sum those outputs appropriately.
         TO DO: make this do something more efficient for mixmod, grid, histogram, samples
+        TO DO: enable stacking on irregular grid
         """
         loc_range = max(loc) - min(loc)
         delta = loc_range / len(loc)

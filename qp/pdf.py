@@ -299,7 +299,7 @@ class PDF(object):
                         order -= 1
                     assert(not np.any(np.isnan(quantiles)))
                 except AssertionError:
-                    if vb: print('splines failed, defaulting to optimization for '+str((icdf, grid)))
+                    if vb: print('ERROR: splines failed, defaulting to optimization for '+str((icdf, grid)))
                     locs = np.array([bisect.bisect_right(icdf[:-1], quantpoints[n]) for n in range(N)])
                     quantiles = self.truth.ppf(quantpoints, ivals=grid[locs])
                     assert(not np.any(np.isnan(quantiles)))
@@ -613,7 +613,7 @@ class PDF(object):
                     if vb:
                         print 'Created a k=`'+str(order)+'`B-spline interpolator for the '+using+' parametrization.'
                 except AssertionError:
-                    if vb: print('spline interpolation failed with '+str(yf))
+                    if vb: print('ERROR: spline interpolation failed with '+str(yf))
                     try:
                         yf[in_inds] = alternate(xf[in_inds])
                         assert(np.all(yf >= default_eps))
@@ -622,7 +622,7 @@ class PDF(object):
                     except AssertionError:
                         yf[in_inds] = backup(xf[in_inds])
                         if vb:
-                            print 'Doing linear interpolation by hand for the '+using+' parametrization.'
+                            print 'ERROR: Doing linear interpolation by hand for the '+using+' parametrization.'
                 if vb:
                     print('evaluated inside '+str((xf, yf)))
 
