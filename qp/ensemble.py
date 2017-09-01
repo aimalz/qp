@@ -4,6 +4,7 @@ from pathos.multiprocessing import ProcessingPool as Pool
 # import psutil
 import timeit
 import os
+import sys
 # import sqlalchemy
 import scipy.interpolate as spi
 import matplotlib.pyplot as plt
