@@ -99,6 +99,7 @@ class PDF(object):
         # The most recent parametrization used is, at this point, the
         # first one:
         self.last = self.first
+        self.interpolator = [None, None]
 
         return
 
@@ -473,7 +474,7 @@ class PDF(object):
 
         Notes
         -----
-        TO DO: have quantiles use linear interpolator to get inverse CDF, then sample uniform in "bins"
+        TO DO: all formats should use rejection sampling
         TO DO: change infty to upper and lower bounds to use for quantiles
         TO DO: check for existence of parametrization before using it
         """
@@ -488,7 +489,7 @@ class PDF(object):
             samples = self.mix_mod.rvs(size=N)
 
         elif using == 'gridded':
-            interpolator = self.interpolate(using = 'gridded', vb=vb)
+            interpolator = self.interpolate(using = 'gridded', vb=vb)[0]
             # (xlims, ylims) = self.evaluate(self.limits, using='gridded', vb=vb)
             (xmin, xmax) = (min(self.gridded[0]), max(self.gridded[0]))
             (ymin, ymax) = (min(self.gridded[1]), max(self.gridded[1]))
@@ -687,7 +688,9 @@ class PDF(object):
             if vb:
                 print 'Created a `'+self.scheme+'` interpolator for the '+using+' parametrization.'
 
-        return interpolator
+        self.interpolator = [interpolator, using]
+
+        return self.interpolator
 
     def approximate(self, points, using=None, scheme=None, vb=True):
         """
@@ -729,7 +732,11 @@ class PDF(object):
             self.scheme = scheme
 
         # Now make the interpolation, using the current scheme:
-        interpolator = self.interpolate(using=using, vb=vb)
+        if self.interpolator[-1] == using:
+            interpolator = self.interpolator[0]
+        else:
+            [interpolator, using] = self.interpolate(using=using, vb=vb)
+
         # if vb: print('interpolating over '+str(points)+' using '+using)
         # try:
         points.sort()
