@@ -613,16 +613,17 @@ class PDF(object):
                     if vb:
                         print 'Created a k=`'+str(order)+'`B-spline interpolator for the '+using+' parametrization.'
                 except AssertionError:
-                    if vb: print('ERROR: spline interpolation failed with '+str(yf))
+                    print('ERROR: spline interpolation failed with '+str(yf))
                     try:
                         yf[in_inds] = alternate(xf[in_inds])
                         assert(np.all(yf >= default_eps))
                         if vb:
                             print 'Created a linear interpolator for the '+using+' parametrization.'
                     except AssertionError:
+                        print 'ERROR: linear interpolation failed for the '+using+' parametrization.'
                         yf[in_inds] = backup(xf[in_inds])
                         if vb:
-                            print 'ERROR: Doing linear interpolation by hand for the '+using+' parametrization.'
+                            print 'Doing linear interpolation by hand for the '+using+' parametrization.'
                 if vb:
                     print('evaluated inside '+str((xf, yf)))
 
