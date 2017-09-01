@@ -65,7 +65,7 @@ def normalize_integral(in_data, vb=False):
     norm = np.dot(dy, dx)
     y = y / norm
     if vb:
-        print('almost normalized integrals')
+        # print('almost normalized integrals')
         dy = (y[1:] + y[:-1]) / 2.
         if not np.isclose(np.dot(dy, dx), 1.):
             print('broken integral = '+str(np.dot(dy, dx)))
@@ -246,7 +246,7 @@ def evaluate_samples(x):
 
 def calculate_moment(p, N, using=None, limits=None, dx=0.01, vb=False):
     """
-    Calculates moments of a distribution
+    Calculates a moment of a qp.PDF object
 
     Parameters
     ----------
@@ -258,29 +258,56 @@ def calculate_moment(p, N, using=None, limits=None, dx=0.01, vb=False):
         endpoints of integration interval over which to calculate moments
     dx: float
         resolution of integration grid
+    vb: Boolean
+        print progress to stdout?
 
     Returns
     -------
     M: float
-        values of the moment
+        value of the moment
     """
     if limits is None:
         limits = p.limits
     if using is None:
         using = p.first
     # Make a grid from the limits and resolution
-    grid = np.arange(limits[0], limits[1], dx)
-    grid_to_N = grid ** N
+    d = int((limits[-1] - limits[0]) / dx)
+    grid = np.linspace(limits[0], limits[1], d)
+    dx = (limits[-1] - limits[0]) / (d - 1)
     # Evaluate the functions on the grid
     pe = p.evaluate(grid, using=using, vb=vb)[1]
     # pe = normalize_gridded(pe)[1]
     # calculate the moment
-    M = dx * np.dot(grid_to_N, pe)
+    grid_to_N = grid ** N
+    M = quick_moment(pe, grid_to_N, dx)
+    return M
+
+def quick_moment(p_eval, grid_to_N, dx):
+    """
+    Calculates a moment of an evaluated PDF
+
+    Parameters
+    ----------
+    p_eval: numpy.ndarray, float
+        the values of a probability distribution
+    grid: numpy.ndarray, float
+        the grid upon which p_eval was evaluated
+    dx: float
+        the difference between regular grid points
+    N: int
+        order of the moment to be calculated
+
+    Returns
+    -------
+    M: float
+        value of the moment
+    """
+    M = np.dot(grid_to_N, p_eval) * dx
     return M
 
 def calculate_kl_divergence(p, q, limits=lims, dx=0.01, vb=False):
     """
-    Calculates the Kullback-Leibler Divergence between two PDFs.
+    Calculates the Kullback-Leibler Divergence between two qp.PDF objects.
 
     Parameters
     ----------
@@ -306,7 +333,9 @@ def calculate_kl_divergence(p, q, limits=lims, dx=0.01, vb=False):
     TO DO: have this take number of points not dx!
     """
     # Make a grid from the limits and resolution
-    grid = np.arange(limits[0], limits[1], dx)
+    N = int((limits[-1] - limits[0]) / dx)
+    grid = np.linspace(limits[0], limits[1], N)
+    dx = (limits[-1] - limits[0]) / (N - 1)
     # Evaluate the functions on the grid and normalize
     pe = p.evaluate(grid, vb=vb, norm=True)
     pn = pe[1]
@@ -318,19 +347,49 @@ def calculate_kl_divergence(p, q, limits=lims, dx=0.01, vb=False):
     #denominator = max(np.sum(qe), epsilon)
     # qn = qe / np.sum(qe)#denominator
     # Compute the log of the normalized PDFs
-    logquotient = safelog(pn / qn)
+    # logquotient = safelog(pn / qn)
     # logp = safelog(pn)
     # logq = safelog(qn)
     # Calculate the KLD from q to p
-    Dpq = np.dot(pn * logquotient, np.ones(len(grid)) * dx)
+    Dpq = quick_kl_divergence(pn, qn, dx=dx)# np.dot(pn * logquotient, np.ones(len(grid)) * dx)
     if Dpq < 0.:
         print('broken KLD: '+str((Dpq, pn, qn, dx)))
         Dpq = epsilon
     return Dpq
 
+def quick_kl_divergence(p_eval, q_eval, dx=0.01):
+    """
+    Calculates the Kullback-Leibler Divergence between two evaluations of PDFs.
+
+    Parameters
+    ----------
+    p_eval: numpy.ndarray, float
+        evaluations of probability distribution whose distance _from_ `q` will be calculated
+    q_eval: numpy.ndarray, float
+        evaluations of probability distribution whose distance _to_ `p` will be calculated.
+    dx: float
+        resolution of integration grid
+
+    Returns
+    -------
+    Dpq: float
+        the value of the Kullback-Leibler Divergence from `q` to `p`
+
+    Notes
+    -----
+    TO DO: change this to calculate_kld
+    TO DO: have this take number of points not dx!
+    """
+    logquotient = safelog(p_eval / q_eval)
+    # logp = safelog(pn)
+    # logq = safelog(qn)
+    # Calculate the KLD from q to p
+    Dpq = dx * np.dot(p_eval, logquotient)
+    return Dpq
+
 def calculate_rmse(p, q, limits=lims, dx=0.01, vb=False):
     """
-    Calculates the Root Mean Square Error between two PDFs.
+    Calculates the Root Mean Square Error between two qp.PDF objects.
 
     Parameters
     ----------
@@ -351,11 +410,34 @@ def calculate_rmse(p, q, limits=lims, dx=0.01, vb=False):
         the value of the RMS error between `q` and `p`
     """
     # Make a grid from the limits and resolution
-    npoints = int((limits[1] - limits[0]) / dx)
-    grid = np.linspace(limits[0], limits[1], npoints)
+    N = int((limits[-1] - limits[0]) / dx)
+    grid = np.linspace(limits[0], limits[1], N)
+    dx = (limits[-1] - limits[0]) / (N - 1)
     # Evaluate the functions on the grid
     pe = p.evaluate(grid, vb=vb)[1]
     qe = q.evaluate(grid, vb=vb)[1]
     # Calculate the RMS between p and q
-    rms = np.sqrt(np.sum((pe - qe) ** 2) / npoints)
+    rms = quick_rmse(pe, qe, dx)# np.sqrt(dx * np.sum((pe - qe) ** 2))
+    return rms
+
+def quick_rmse(p_eval, q_eval, dx=0.01):
+    """
+    Calculates the Root Mean Square Error between two evaluations of PDFs.
+
+    Parameters
+    ----------
+    p_eval: numpy.ndarray, float
+        evaluation of probability distribution function whose distance between its truth and the approximation of `q` will be calculated.
+    q_eval: numpy.ndarray, float
+        evaluation of probability distribution function whose distance between its approximation and the truth of `p` will be calculated.
+    dx: float
+        resolution of integration grid
+
+    Returns
+    -------
+    rms: float
+        the value of the RMS error between `q` and `p`
+    """
+    # Calculate the RMS between p and q
+    rms = np.sqrt(dx * np.sum((p_eval - q_eval) ** 2))
     return rms

@@ -100,9 +100,9 @@ class Ensemble(object):
         else:
             self.histogram = [(histogram[0], histogram[1][i]) for i in self.pdf_range]
         if gridded is None:
-            self.gridded = [None] * N
+            self.gridded = (None, [None] * N)
         else:
-            self.gridded = [(gridded[0], gridded[1][i]) for i in self.pdf_range]
+            self.gridded = (None, [(gridded[0], gridded[1][i]) for i in self.pdf_range])
         self.mix_mod = None
         self.evaluated = None
 
@@ -122,7 +122,7 @@ class Ensemble(object):
             #     logfile.write('making pdf '+str(i)+'\n')
             return qp.PDF(truth=self.truth[i], quantiles=self.quantiles[i],
                             histogram=self.histogram[i],
-                            gridded=self.gridded[i], samples=self.samples[i], limits=self.limits,
+                            gridded=self.gridded[-1][i], samples=self.samples[i], limits=self.limits,
                             scheme=self.scheme, vb=False)
 
         start_time = timeit.default_timer()
@@ -279,9 +279,8 @@ class Ensemble(object):
 
         Returns
         -------
-        vals: ndarray, ndarray, float
-            the values of the PDFs (or their approximations) at the requested
-            location(s), of shape (npdfs, nlocs)
+        self.gridded: tuple(string, tuple(ndarray, ndarray, float))
+            tuple of string and tuple of grid and values of the PDFs (or their approximations) at the requested location(s), of shape (npdfs, nlocs)
         """
         def evaluate_helper(i):
             # with open(self.logfilename, 'wb') as logfile:
@@ -289,9 +288,9 @@ class Ensemble(object):
             return self.pdfs[i].evaluate(loc=loc, using=using, norm=norm, vb=vb)
         self.gridded = self.pool.map(evaluate_helper, self.pdf_range)
         self.gridded = np.swapaxes(np.array(self.gridded), 0, 1)
-        self.gridded = (self.gridded[0][0], self.gridded[1])
+        self.gridded = (using, (self.gridded[0][0], self.gridded[1]))
 
-        return self.gridded
+        return self.gridded[-1]
 
     def integrate(self, limits, using, dx=0.001):
         """
@@ -340,15 +339,26 @@ class Ensemble(object):
         moments: numpy.ndarray, float
             moment values of each PDF under the using approximation or truth
         """
-        def moment_helper(i):
-            return u.calculate_moment(self.pdfs[i], N, using=using, limits=limits, dx=dx, vb=vb)
+        D = int((limits[-1] - limits[0]) / dx)
+        grid = np.linspace(limits[0], limits[1], D)
+        dx = (limits[-1] - limits[0]) / (D - 1)
+        grid_to_N = grid ** N
+
+        if self.gridded[0] == using and np.array_equal(self.gridded[-1][0], grid):
+            if vb: print('taking a shortcut')
+            def moment_helper(i):
+                return u.quick_moment(self.gridded[-1][-1][i], grid_to_N, dx)
+        else:
+            def moment_helper(i):
+                p_eval = self.pdfs[i].evaluate(grid, using=using, vb=vb)[1]
+                return u.quick_moment(p_eval, grid_to_N, dx)
 
         moments = self.pool.map(moment_helper, self.pdf_range)
 
         moments = np.array(moments)
         return moments
 
-    def kld(self, using=None, limits=None, dx=0.01):
+    def kld(self, using=None, limits=None, dx=0.01, vb=False):
         """
         Calculates the KLD for each PDF in the ensemble
 
@@ -360,6 +370,8 @@ class Ensemble(object):
             endpoints of integration interval in which to calculate KLD
         dx: float
             resolution of integration grid
+        vb: boolean
+            print progress to stdout?
 
         Returns
         -------
@@ -396,10 +408,19 @@ class Ensemble(object):
             print(using + ' not available; try a different parametrization.')
             return
 
-        def kld_helper(i):
-            P = P_func(self.pdfs[i])
-            Q = Q_func(self.pdfs[i])
-            return u.calculate_kl_divergence(P, Q, limits=limits, dx=dx)
+        D = int((limits[-1] - limits[0]) / dx)
+        grid = np.linspace(limits[0], limits[1], D)
+        dx = (limits[-1] - limits[0]) / (D - 1)
+
+        if self.gridded[0] == using and np.array_equal(self.gridded[-1][0], grid):
+            if vb: print('taking a shortcut')
+            def kld_helper(i):
+                return u.quick_kl_divergence(self.gridded[-1][-1][i], grid, dx=dx)
+        else:
+            def kld_helper(i):
+                P_eval = P_func(self.pdfs[i]).evaluate(grid, vb=vb)[-1]
+                Q_eval = Q_func(self.pdfs[i]).evaluate(grid, vb=vb)[-1]
+                return u.quick_kl_divergence(P_eval, Q_eval, dx=dx)
 
         klds = self.pool.map(kld_helper, self.pdf_range)
 
@@ -407,7 +428,7 @@ class Ensemble(object):
 
         return klds
 
-    def rmse(self, using=None, limits=None, dx=0.01):
+    def rmse(self, using=None, limits=None, dx=0.01, vb=False):
         """
         Calculates the RMSE for each PDF in the ensemble
 
@@ -419,6 +440,8 @@ class Ensemble(object):
             endpoints of integration interval in which to calculate RMSE
         dx: float
             resolution of integration grid
+        vb: boolean
+            print progress to stdout?
 
         Returns
         -------
@@ -451,10 +474,19 @@ class Ensemble(object):
             print(using + ' not available; try a different parametrization.')
             return
 
-        def rmse_helper(i):
-            P = P_func(pdfs[i])
-            Q = Q_func(pdfs[i])
-            return utils.calculate_rmse(P, Q, limits=limits, dx=dx)
+        D = int((limits[-1] - limits[0]) / dx)
+        grid = np.linspace(limits[0], limits[1], D)
+        dx = (limits[-1] - limits[0]) / (D - 1)
+
+        if self.gridded[0] == using and np.array_equal(self.gridded[-1][0], grid):
+            if vb: print('taking a shortcut')
+            def rmse_helper(i):
+                return u.quick_rmse(self.gridded[-1][-1][i], grid, dx=dx)
+        else:
+            def rmse_helper(i):
+                P_eval = P_func(self.pdfs[i]).evaluate(grid, vb=vb)[-1]
+                Q_eval = Q_func(self.pdfs[i]).evaluate(grid, vb=vb)[-1]
+                return u.quick_rmse(P_eval, Q_eval, dx=dx)
 
         rmses = self.pool.map(rmse_helper, self.pdf_range)
 
