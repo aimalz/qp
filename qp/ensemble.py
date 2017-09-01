@@ -156,9 +156,12 @@ class Ensemble(object):
         TODO: change syntax samps --> N
         """
         def sample_helper(i):
+            try:
             # with open(self.logfilename, 'wb') as logfile:
             #     logfile.write('sampling pdf '+str(i)+'\n')
-            return self.pdfs[i].sample(N=samps, infty=infty, using=using, vb=False)
+                return self.pdfs[i].sample(N=samps, infty=infty, using=using, vb=False)
+            except Exception:
+                print('sampling failed on '+str(i)+' because '+str(sys.exc_info()[0]))
 
         self.samples = self.pool.map(sample_helper, self.pdf_range)
 
@@ -187,10 +190,13 @@ class Ensemble(object):
             array of tuples of the CDF values and the quantiles for each PDF
         """
         def quantize_helper(i):
+            try:
             # with open(self.logfilename, 'wb') as logfile:
             #     logfile.write('quantizing pdf '+str(i)+'\n')
-            return self.pdfs[i].quantize(quants=quants,
+                return self.pdfs[i].quantize(quants=quants,
                                             N=N, limits=None, vb=vb)
+            except Exception:
+                print('quantization failed on '+str(i)+' because '+str(sys.exc_info()[0]))
 
         self.quantiles = self.pool.map(quantize_helper, self.pdf_range)
         self.quantiles = np.swapaxes(np.array(self.quantiles), 0, 1)
@@ -220,10 +226,13 @@ class Ensemble(object):
             of bins and values in bins
         """
         def histogram_helper(i):
+            try:
             # with open(self.logfilename, 'wb') as logfile:
             #     logfile.write('histogramizing pdf '+str(i)+'\n')
-            return self.pdfs[i].histogramize(binends=binends, N=N,
+                return self.pdfs[i].histogramize(binends=binends, N=N,
                                                 binrange=binrange, vb=False)
+            except Exception:
+                print('histogramization failed on '+str(i)+' because '+str(sys.exc_info()[0]))
 
         self.histogram = self.pool.map(histogram_helper, self.pdf_range)
         self.histogram = np.swapaxes(np.array(self.histogram), 0, 1)
@@ -254,9 +263,12 @@ class Ensemble(object):
         Currently only supports mixture of Gaussians
         """
         def mixmod_helper(i):
+            try:
             # with open(self.logfilename, 'wb') as logfile:
             #     logfile.write('fitting pdf '+str(i)+'\n')
-            return self.pdfs[i].mix_mod_fit(n_components=comps, using=using, vb=False)
+                return self.pdfs[i].mix_mod_fit(n_components=comps, using=using, vb=False)
+            except Exception:
+                print('mixture model fitting failed on '+str(i)+' because '+str(sys.exc_info()[0]))
 
         self.mix_mod = self.pool.map(mixmod_helper, self.pdf_range)
 
@@ -283,9 +295,12 @@ class Ensemble(object):
             tuple of string and tuple of grid and values of the PDFs (or their approximations) at the requested location(s), of shape (npdfs, nlocs)
         """
         def evaluate_helper(i):
+            try:
             # with open(self.logfilename, 'wb') as logfile:
             #     logfile.write('evaluating pdf '+str(i)+'\n')
-            return self.pdfs[i].evaluate(loc=loc, using=using, norm=norm, vb=vb)
+                return self.pdfs[i].evaluate(loc=loc, using=using, norm=norm, vb=vb)
+            except Exception:
+                print('evaluation with '+using+' failed on '+str(i)+' because '+str(sys.exc_info()[0]))
         self.gridded = self.pool.map(evaluate_helper, self.pdf_range)
         self.gridded = np.swapaxes(np.array(self.gridded), 0, 1)
         self.gridded = (using, (self.gridded[0][0], self.gridded[1]))
@@ -311,7 +326,10 @@ class Ensemble(object):
             value of the integral
         """
         def integrate_helper(i):
-            return self.pdfs[i].integrate(limits[i], using=using, dx=dx, vb=False)
+            try:
+                return self.pdfs[i].integrate(limits[i], using=using, dx=dx, vb=False)
+            except Exception:
+                print('integration failed on '+str(i)+' because '+str(sys.exc_info()[0]))
 
         integrals = self.pool.map(integrate_helper, self.pdf_range)
 
