@@ -447,7 +447,7 @@ class PDF(object):
         if vb:
             statement = ''
             for c in comp_range:
-                statement += str(weights[c])+'$\cdot\mathcal{N}($'+str(means[c])+r','+str(stdevs[c])+r')\n'
+                statement += str(weights[c])+r'$\cdot\mathcal{N}($'+str(means[c])+r','+str(stdevs[c])+r')\n'
             print(statement)
         self.mix_mod = qp.composite(components)
         return self.mix_mod
@@ -601,26 +601,31 @@ class PDF(object):
             # z = u
             # q = q[i]
             inside = spi.InterpolatedUnivariateSpline(z, q, k=order, ext=1).derivative()
+            [x_crit_lo, x_crit_hi] = [self.quantiles[1][0], self.quantiles[1][-1]]
+            (y_crit_lo, y_crit_hi) = inside([x_crit_lo, x_crit_hi])
 
             def quantile_interpolator(xf):
                 yf = np.zeros(np.shape(xf))
-
+                if vb:
+                    print('fit at '+str(xf))
                 in_inds = ((xf >= self.quantiles[1][0]) & (xf <= self.quantiles[1][-1])).nonzero()[0]
                 lo_inds = ((xf < self.quantiles[1][0]) & (xf >= z[0])).nonzero()[0]
                 hi_inds = ((xf > self.quantiles[1][-1]) & (xf <= z[-1])).nonzero()[0]
-                # if vb:
-                #     print('divided into '+str((lo_inds, in_inds, hi_inds)))
+                if vb:
+                    print('divided into '+str((lo_inds, in_inds, hi_inds)))
                 yf[in_inds] = inside(xf[in_inds])
-                # if vb:
-                #     print('evaluated '+str((x, y)))
-                tan_lo = yf[in_inds[0]] / (xf[in_inds[0]] - z[0])
+                if vb:
+                    print('evaluated '+str((xf, yf)))
+                if np.any(yf < default_eps):
+                    return spi.interp1d(x, y, kind='linear', bounds_error=False, fill_value=default_eps)(xf)
+                tan_lo = y_crit_lo / (x_crit_lo - z[0])
                 yf[lo_inds] = tan_lo * (xf[lo_inds] - z[0])# yf[in_inds[0]] / (xf[in_inds[0]] - z[0])
-                # if vb:
-                #     print('evaluated '+str((x, y)))
-                tan_hi = yf[in_inds[-1]] / (z[-1] - xf[in_inds[-1]])
+                if vb:
+                    print('evaluated '+str((xf, yf)))
+                tan_hi = y_crit_hi / (z[-1] - x_crit_hi)
                 yf[hi_inds] = tan_hi * (z[-1] - xf[hi_inds])# yf[in_inds[-1]] * (xf[hi_inds] - z[-1]) / (xf[in_inds[-1]] - z[-1])
-                # if vb:
-                #     print('evaluated '+str((x, y)))
+                if vb:
+                    print('evaluated '+str((xf, yf)))
                 return(yf)
             # if vb:
             #     print(tck)
@@ -787,6 +792,7 @@ class PDF(object):
         styles['histogram'] = ':'#(0,(3,6))
         styles['samples'] = '-.'#(0,(1,2))
 
+        x = np.linspace(self.limits[0], self.limits[-1], 100)
         if self.truth is not None:
             min_x = self.truth.ppf(np.array([0.001]))
             max_x = self.truth.ppf(np.array([0.999]))
@@ -809,10 +815,13 @@ class PDF(object):
 
         if self.quantiles is not None:
             (z, p) = self.evaluate(self.quantiles[1], using='quantiles', vb=vb)
+            print('first: '+str((z,p)))
             (x, y) = qp.utils.normalize_quantiles(self.quantiles, (z, p))
+            print('second: '+str((x,y)))
             min_x = min(min(x), extrema[0])
             max_x = max(max(x), extrema[-1])
             x = np.linspace(min_x, max_x, 100)
+            print('third: '+str(x))
             (grid, qinterpolated) = self.approximate(x, vb=vb, using='quantiles')
             plt.scatter(self.quantiles[1], np.zeros(np.shape(self.quantiles[1])), color=colors['quantiles'], marker='|', s=100, label='Quantiles', alpha=0.75)
             # plt.vlines(z, np.zeros(len(self.quantiles[1])), p, color=colors['quantiles'], linestyle=styles['quantiles'], lw=1.0, alpha=1.0, label='Quantiles')

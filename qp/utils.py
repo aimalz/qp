@@ -156,10 +156,12 @@ def normalize_quantiles((q, z), (x, y), vb=True):
     #     if not np.all(nq>0.)...
     xmin = z[0] - 2 * (dq[0] + dq[1] / 2. - y[0] * (x[0] - z[0])) / y[0]
     xmax = z[-1] + 2 * (dq[-1] + dq[-2]/2. - y[-1] * (z[-1] - x[-1])) / y[-1]
+    if vb: print('x before: '+str(x))
     x = np.insert(x, 0, xmin)
     x = np.append(x, xmax)
-    y = np.insert(y, 0, 0.)
-    y = np.append(y, 0.)
+    if vb: print('x after: '+str(x))
+    y = np.insert(y, 0, epsilon)
+    y = np.append(y, epsilon)
     return(x, y)
 
 def evaluate_quantiles((qs, xs), vb=True):
