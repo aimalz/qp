@@ -380,10 +380,10 @@ $\delta_{ff}\ll\delta_{f}$.
 Some science applications rely on the recovery of individual galaxy \pz s that, 
 for example, may be used as the basis for targeting spectroscopic follow up for 
 a variety of science applications.
-For this purpose, we also calculate the KLD of each individual \pz\ in our 
-catalogs and then characterize the distribution of KLD values (which is itself 
-a PDF) by its first, second, and third moments (the mean, variance, and 
-kurtosis, respectively).
+For this purpose, we calculate the KLD of each individual \pz\ in our catalogs 
+and then characterize the distribution of KLD values (which is itself a PDF) by 
+its first, second, and third moments (the mean, variance, and kurtosis, 
+respectively).
 We use these aggregate statistics to observe how the approximate individual \pz 
 s for each dataset vary with the choice of parametrization.
 
@@ -468,7 +468,7 @@ subsample of which are plotted in Figure~\ref{fig:graham_pzs}.
 
 \begin{figure}
   \begin{center}
-    \includegraphics[width=\columnwidth]{figures/graham_pzs.png}
+    \includegraphics[width=\columnwidth]{figures/graham_pzs.pdf}
     \caption{Example \pz s from the mock LSST data of Graham, et al.\ (in 
 preparation).
     The \mgdata mock photometry yields largely narrow, unimodal \pz s.
@@ -510,7 +510,7 @@ which are plotted in Figure~\ref{fig:schmidt_pzs}.
 
 \begin{figure}
   \begin{center}
-    \includegraphics[width=\columnwidth]{figures/schmidt_pzs.png}
+    \includegraphics[width=\columnwidth]{figures/schmidt_pzs.pdf}
     \caption{Example \pz s from the mock LSST data of deRose, et al.\ (in 
 preparation).
     This sample contains a higher proportion of broad and/or multimodal \pz s, 
@@ -532,6 +532,7 @@ evaluated their accuracy using the metrics described above.
 
 \section{Results \& Discussion}
 \label{sec:results}
+
 
 
 We calculate the metrics of Section~\ref{sec:metric} on 10 random 
@@ -560,7 +561,7 @@ estimator of the original, high-resolution \pz s.
 
 \begin{figure}
   \begin{center}
-    \includegraphics[width=\columnwidth]{figures/stacked.png}
+    \includegraphics[width=\columnwidth]{figures/stacked.pdf}
     \caption{An example of the stacked estimator of the redshift distribution, 
 for a subsample of $N_{g}=100$ galaxies drawn from the \mgdata data mock 
 catalog and with just $N_{f}=10$ parameters used for each \pz.
@@ -667,6 +668,7 @@ For example, if the KLD can be significantly reduced with a slightly larger
 $N_{f}$, it may be possible to request additional storage capacity for the 
 survey's \pz s.
 
+
 \subsection{Individual \pz s}
 \label{sec:individual_results}
 
@@ -720,6 +722,7 @@ histogram format achieving the lowest moments in that regime.
     \label{fig:moments}}
   \end{center}
 \end{figure}
+
 
 
 
