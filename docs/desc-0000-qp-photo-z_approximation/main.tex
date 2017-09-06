@@ -1,8 +1,8 @@
 \RequirePackage{docswitch}
 \setjournal{\flag}
 
-\documentclass[\docopts]{\docclass}
 
+\documentclass[]{emulateapj}
 
 \usepackage{lsstdesc_macros}
 
@@ -438,8 +438,8 @@ that we designate as the reference representation for our accuracy tests.
 \subsection{\Mgdata data mock catalog}
 \label{sec:graham}
 
-Our first dataset is an $N_{g}\approx30,000$ object subset of the simulated 
-galaxy catalog used for LSST photometric redshift experiments by 
+Our first dataset is an $N_{g}=100,000$ object subset of the simulated galaxy 
+catalog used for LSST photometric redshift experiments by 
 \citet{graham_photometric_2017}.
 The data builds on the Millennium simulation \citep{springel_simulations_2005}, 
 and in particular the LC DEEP catalog based on the galaxy formation models of 
@@ -563,8 +563,9 @@ estimator of the original, high-resolution \pz s.
   \begin{center}
     \includegraphics[width=\columnwidth]{figures/stacked.pdf}
     \caption{An example of the stacked estimator of the redshift distribution, 
-for a subsample of $N_{g}=100$ galaxies drawn from the \mgdata data mock 
-catalog and with just $N_{f}=10$ parameters used for each \pz.
+for a subsample of $N_{g}=100$ galaxies drawn from the \ssdata data mock 
+catalog and with just $N_{f}=10$ parameters used for each \pz; the small-scale 
+features are due to the small number of galaxies in the sample.
     The most striking characteristic of $\hat{n}(z)$ with a relatively small 
 number of parameters on a small number of galaxies is the coarseness of the 
 histogram format (orange dotted line) relative to the quantile format (purple 
@@ -632,10 +633,10 @@ deriving the quantile parameters $\vec{c}^{\ q}$ from the original,
 high-resolution $p(z)$ and for reconstructing $\hat{p}^{q}(z)$ from the 
 quantile parameters $\vec{c}^{\ q}$
 
-\begin{figure}
+\begin{figure*}
   \begin{center}
-    \includegraphics[width=\columnwidth]{figures/graham_kld.png}\\
-    \includegraphics[width=\columnwidth]{figures/schmidt_kld.png}
+    \includegraphics[width=\columnwidth]{figures/graham_kld.png}    
+\includegraphics[width=\columnwidth]{figures/schmidt_kld.png}
     \caption{KLD between $\hat{n}(z)$ derived from approximate pz\ 
 representations and  $\hat{n}(z)$ derived from the original, high-resolution 
 \pz s as a function of number of stored parameters, for the three different 
@@ -649,7 +650,7 @@ of \ssdata data of Section~\ref{sec:schmidt}, while the quantiles and samples
 formats perform comparably well.
     \label{fig:kld}}
   \end{center}
-\end{figure}
+\end{figure*}
 
 We interpret Figure~\ref{fig:kld} in the context of constraints on storage 
 allocation imposed by the survey and constraints on the acceptable degree of 
@@ -679,13 +680,13 @@ Figure~\ref{fig:individual} with $N_{f}=10$.
 
 \begin{figure}
   \begin{center}
-    \includegraphics[width=\columnwidth]{figures/individual.png}
+    \includegraphics[width=\columnwidth]{figures/individual_kld.pdf}
     \caption{The distribution of log-KLD values for $N_{g}=100$ \pz s from the 
-\ssdata dataset with $N_{f}=10$ over the quantiles (purple with dashed border), 
+\mgdata dataset with $N_{f}=10$ over the quantiles (purple with dashed border), 
 samples (green with dash-dotted border), and histogram (orange with dotted 
 border) formats.
-    For the individual \pz s, the samples format has far better KLDs than the 
-histogram or quantile formats, which are comparable to one another.
+    For the individual \pz s, the piecewise constant format has a higher median 
+KLD than the samples or quantile formats, which are comparable to one another.
     \label{fig:individual}}
   \end{center}
 \end{figure}
@@ -704,10 +705,10 @@ To meaningfully interpret the KLDs of individual \pz s, it will be necessary
 for those using \pz s in their science to calculate the requirements on the 
 acceptable degree of information loss.
 
-\begin{figure}
+\begin{figure*}
   \begin{center}
-    \includegraphics[width=\columnwidth]{graham_moments.png}\\
-    \includegraphics[width=\columnwidth]{schmidt_moments.png}
+    \includegraphics[width=\columnwidth]{graham_moments.png}    
+\includegraphics[width=\columnwidth]{schmidt_moments.png}
     \caption{The mean ($\bigstar$), variance ($+$), and kurtosis ($\times$) of 
 the log-KLD distributions for each dataset as a function of $N_{f}$ for the 
 quantile (purple), samples (green), and histogram (orange) formats.
@@ -721,7 +722,7 @@ $N_{f}$ but the moments of all formats decrease at high $N_{f}$ with the
 histogram format achieving the lowest moments in that regime.
     \label{fig:moments}}
   \end{center}
-\end{figure}
+\end{figure*}
 
 
 
