@@ -410,6 +410,10 @@ def calculate_rmse(p, q, limits=lims, dx=0.01, vb=False):
     -------
     rms: float
         the value of the RMS error between `q` and `p`
+
+    Notes
+    -----
+    TO DO: change dx to N
     """
     # Make a grid from the limits and resolution
     N = int((limits[-1] - limits[0]) / dx)
@@ -419,10 +423,10 @@ def calculate_rmse(p, q, limits=lims, dx=0.01, vb=False):
     pe = p.evaluate(grid, vb=vb)[1]
     qe = q.evaluate(grid, vb=vb)[1]
     # Calculate the RMS between p and q
-    rms = quick_rmse(pe, qe, dx)# np.sqrt(dx * np.sum((pe - qe) ** 2))
+    rms = quick_rmse(pe, qe, N)# np.sqrt(dx * np.sum((pe - qe) ** 2))
     return rms
 
-def quick_rmse(p_eval, q_eval, dx=0.01):
+def quick_rmse(p_eval, q_eval, N):
     """
     Calculates the Root Mean Square Error between two evaluations of PDFs.
 
@@ -432,8 +436,8 @@ def quick_rmse(p_eval, q_eval, dx=0.01):
         evaluation of probability distribution function whose distance between its truth and the approximation of `q` will be calculated.
     q_eval: numpy.ndarray, float
         evaluation of probability distribution function whose distance between its approximation and the truth of `p` will be calculated.
-    dx: float
-        resolution of integration grid
+    N: int
+        number of points at which PDFs were evaluated
 
     Returns
     -------
@@ -441,7 +445,7 @@ def quick_rmse(p_eval, q_eval, dx=0.01):
         the value of the RMS error between `q` and `p`
     """
     # Calculate the RMS between p and q
-    rms = np.sqrt(dx * np.sum((p_eval - q_eval) ** 2))
+    rms = np.sqrt(np.sum((p_eval - q_eval) ** 2) / N)
     return rms
 
 def make_kludge_interpolator((x, y), outside=epsilon):
