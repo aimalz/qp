@@ -613,29 +613,38 @@ class PDF(object):
                     if vb:
                         print 'Created a k=`'+str(order)+'`B-spline interpolator for the '+using+' parametrization.'
                 except AssertionError:
-                    print('ERROR: spline interpolation failed with '+str(yf))
+                    print('ERROR: spline interpolation failed with '+str((xf[in_inds], yf[in_inds])))
                     try:
                         yf[in_inds] = alternate(xf[in_inds])
                         assert(np.all(yf >= default_eps))
                         if vb:
                             print 'Created a linear interpolator for the '+using+' parametrization.'
                     except AssertionError:
-                        print 'ERROR: linear interpolation failed for the '+using+' parametrization.'
+                        print 'ERROR: linear interpolation failed for the '+using+' parametrization with '+str((xf[in_inds], yf[in_inds]))
                         yf[in_inds] = backup(xf[in_inds])
                         if vb:
                             print 'Doing linear interpolation by hand for the '+using+' parametrization.'
+                        assert(np.all(yf >= default_eps))
                 if vb:
-                    print('evaluated inside '+str((xf, yf)))
+                    print('evaluated inside '+str((xf[in_inds], yf[in_inds])))
 
-                tan_lo = y_crit_lo / (x_crit_lo - z[0])
-                yf[lo_inds] = tan_lo * (xf[lo_inds] - z[0])# yf[in_inds[0]] / (xf[in_inds[0]] - z[0])
-                if vb:
-                    print('evaluated below '+str((xf, yf)))
+                try:
+                    tan_lo = y_crit_lo / (x_crit_lo - z[0])
+                    yf[lo_inds] = tan_lo * (xf[lo_inds] - z[0])# yf[in_inds[0]] / (xf[in_inds[0]] - z[0])
+                    assert(np.all(yf >= default_eps))
+                    if vb:
+                        print('evaluated below '+str((xf[lo_inds], yf[lo_inds])))
+                except AssertionError:
+                    print('ERROR: linear extrapolation below failed with '+str((xf[lo_inds], yf[lo_inds]))+' via '+str(tan_lo, x_crit_lo, z[0]))
 
-                tan_hi = y_crit_hi / (z[-1] - x_crit_hi)
-                yf[hi_inds] = tan_hi * (z[-1] - xf[hi_inds])# yf[in_inds[-1]] * (xf[hi_inds] - z[-1]) / (xf[in_inds[-1]] - z[-1])
-                if vb:
-                    print('evaluated above '+str((xf, yf)))
+                try:
+                    tan_hi = y_crit_hi / (z[-1] - x_crit_hi)
+                    yf[hi_inds] = tan_hi * (z[-1] - xf[hi_inds])# yf[in_inds[-1]] * (xf[hi_inds] - z[-1]) / (xf[in_inds[-1]] - z[-1])
+                    if vb:
+                        print('evaluated above '+str((xf[hi_inds], yf[hi_inds])))
+                except AssertionError:
+                    print('ERROR: linear extrapolation above failed with '+str((xf[hi_inds], yf[hi_inds]))+' via '+str(tan_hi, z[-1], x_crit_hi))
+
                 return(yf)
             # if vb:
             #     print(tck)
@@ -801,20 +810,20 @@ class PDF(object):
 
         x = np.linspace(self.limits[0], self.limits[-1], 100)
         if self.truth is not None:
-            min_x = self.truth.ppf(np.array([0.001]))
-            max_x = self.truth.ppf(np.array([0.999]))
-            x = np.linspace(min_x, max_x, 100)
+            [min_x, max_x] = [self.truth.ppf(np.array([0.001])), self.truth.ppf(np.array([0.999]))]
             extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
+            [min_x, max_x] = extrema
+            x = np.linspace(min_x, max_x, 100)
             y = self.truth.pdf(x)
             plt.plot(x, y, color=colors['truth'], linestyle=styles['truth'], lw=5.0, alpha=0.25, label='True PDF')
             if vb:
                 print 'Plotted truth.'
 
         if self.mix_mod is not None:
-            min_x = self.mix_mod.ppf(np.array([0.001]))
-            max_x = self.mix_mod.ppf(np.array([0.999]))
-            x = np.linspace(min_x, max_x, 100)
+            [min_x, max_x] = [self.mix_mod.ppf(np.array([0.001])), self.mix_mod.ppf(np.array([0.999]))]
             extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
+            [min_x, max_x] = extrema
+            x = np.linspace(min_x, max_x, 100)
             y = self.mix_mod.pdf(x)
             plt.plot(x, y, color=colors['mix_mod'], linestyle=styles['mix_mod'], lw=2.0, alpha=1.0, label='Mixture Model PDF')
             if vb:
@@ -825,21 +834,22 @@ class PDF(object):
             print('first: '+str((z,p)))
             (x, y) = qp.utils.normalize_quantiles(self.quantiles, (z, p))
             print('second: '+str((x,y)))
-            min_x = min(min(x), extrema[0])
-            max_x = max(max(x), extrema[-1])
+            [min_x, max_x] = [min(x), max(x)]
+            extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
+            [min_x, max_x] = extrema
             x = np.linspace(min_x, max_x, 100)
             print('third: '+str(x))
             (grid, qinterpolated) = self.approximate(x, vb=vb, using='quantiles')
             plt.scatter(self.quantiles[1], np.zeros(np.shape(self.quantiles[1])), color=colors['quantiles'], marker='|', s=100, label='Quantiles', alpha=0.75)
             # plt.vlines(z, np.zeros(len(self.quantiles[1])), p, color=colors['quantiles'], linestyle=styles['quantiles'], lw=1.0, alpha=1.0, label='Quantiles')
             plt.plot(grid, qinterpolated, color=colors['quantiles'], lw=2.0, alpha=1.0, linestyle=styles['quantiles'], label='Quantile Interpolated PDF')
-            extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
             if vb:
                 print 'Plotted quantiles.'
 
         if self.histogram is not None:
-            min_x = self.histogram[0][0]
-            max_x = self.histogram[0][-1]
+            [min_x, max_x] = [min(self.histogram[0]), max(self.histogram[0])]
+            extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
+            [min_x, max_x] = extrema
             x = np.linspace(min_x, max_x, 100)
             # plt.vlines(self.histogram[0], self.histogram[0][:-1],
             #            self.histogram[0][1:], color=colors['histogram'], linestyle=styles['histogram'], lw=1.0, alpha=1., label='histogram bin ends')
@@ -854,18 +864,19 @@ class PDF(object):
                 print 'Plotted histogram.'
 
         if self.gridded is not None:
-            min_x = min(self.gridded[0])
-            max_x = max(self.gridded[0])
+            [min_x, max_x] = [min(self.gridded[0]), max(self.gridded[0])]
+            extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
+            [min_x, max_x] = extrema
             (x, y) = self.gridded
             plt.plot(x, y, color=colors['gridded'], lw=1.0, alpha=0.5,
                      linestyle=styles['gridded'], label='Gridded PDF')
-            extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
             if vb:
                 print 'Plotted gridded.'
 
         if self.samples is not None:
-            min_x = min(self.samples)
-            max_x = max(self.samples)
+            [min_x, max_x] = [min(self.samples), max(self.samples)]
+            extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
+            [min_x, max_x] = extrema
             x = np.linspace(min_x, max_x, 100)
             plt.scatter(self.samples, np.zeros(np.shape(self.samples)), color=colors['samples'], marker='|', s=100, label='Samples', alpha=0.75)
             (grid, sinterpolated) = self.approximate(x, vb=vb,
@@ -873,7 +884,6 @@ class PDF(object):
             plt.plot(grid, sinterpolated, color=colors['samples'], lw=2.0,
                         alpha=1.0, linestyle=styles['samples'],
                         label='Samples Interpolated PDF')
-            extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
             if vb:
                 print('Plotted samples')
 
