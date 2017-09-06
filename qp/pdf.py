@@ -582,6 +582,7 @@ class PDF(object):
             else:
                 order = self.scheme
 
+            if vb: print('input quantiles are '+str(self.quantiles[1]))
             (x, y) = qp.utils.evaluate_quantiles(self.quantiles, vb=vb)
             if vb: print('evaluated quantile PDF: '+str((x, y)))
             # [x_crit_lo, x_crit_hi] = [x[0], x[-1]]
@@ -605,12 +606,12 @@ class PDF(object):
             [y_crit_lo, y_crit_hi] = [-1., -1.]
 
             try:
-                while (order>0) and (y_crit_lo <= 0.) and (y_crit_hi <= 0):
+                while (order>0) and ((y_crit_lo <= 0.) or (y_crit_hi <= 0.)):
                     if vb: print('order is '+str(order))
                     inside = spi.InterpolatedUnivariateSpline(z, q, k=order, ext=1).derivative()
                     [y_crit_lo, y_crit_hi] = inside([x_crit_lo, x_crit_hi])
                     order -= 1
-                assert(np.all(inside(z) >= 0.))
+                assert((y_crit_lo > 0.) and (y_crit_hi > 0.))
             except AssertionError:
                 print('ERROR: spline tangents '+str((y_crit_lo, y_crit_hi))+'<0; defaulting to linear interpolation')
                 inside_int = spi.interp1d(z, q, kind='linear', bounds_error=False, fill_value=default_eps)
