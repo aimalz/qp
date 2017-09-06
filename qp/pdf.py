@@ -613,8 +613,13 @@ class PDF(object):
                     order -= 1
                 assert((y_crit_lo > 0.) and (y_crit_hi > 0.))
             except AssertionError:
-                print('ERROR: spline tangents '+str((y_crit_lo, y_crit_hi))+'<0; defaulting to linear interpolation')
-                inside_int = spi.interp1d(z, q, kind='linear', bounds_error=False, fill_value=default_eps)
+                print('ERROR: spline tangents '+str((y_crit_lo, y_crit_hi))+'<0')
+                if type(self.scheme) == str:
+                    scheme = self.scheme
+                else:
+                    scheme = 'linear'
+                if vb: print('defaulting to '+scheme+' interpolation')
+                inside_int = spi.interp1d(z, q, kind=scheme, bounds_error=False, fill_value=default_eps)
                 derivative = (q[1:] - q[:-1]) / (z[1:] - z[:-1])
                 derivative = np.insert(derivative, 0, default_eps)
                 derivative = np.append(derivative, default_eps)
