@@ -584,9 +584,10 @@ class PDF(object):
 
             (x, y) = qp.utils.evaluate_quantiles(self.quantiles, vb=vb)
             if vb: print('evaluated quantile PDF: '+str((x, y)))
+            # [x_crit_lo, x_crit_hi] = [x[0], x[-1]]
+            # [y_crit_lo, y_crit_hi] = [y[0], y[-1]]
             (x, y) = qp.utils.normalize_quantiles(self.quantiles, (x, y), vb=vb)
             if vb: print('complete evaluated quantile PDF: '+str((x, y)))
-
             alternate = spi.interp1d(x, y, kind='linear', bounds_error=False, fill_value=default_eps)
             backup = qp.utils.make_kludge_interpolator((x, y), outside=default_eps)
 
@@ -595,9 +596,34 @@ class PDF(object):
             q = np.insert(self.quantiles[0], 0, 0.)
             q = np.append(q, 1.)
 
-            inside = spi.InterpolatedUnivariateSpline(z, q, k=order, ext=1).derivative()
+            # knots, coeffs, degree = spi.splrep(z, q, k=order, s=0)
+            #
+            # def inside(xi):
+            #     yi = spi.splev(xi, (knots, coeffs, degree), der=1)
+            #     coeffs[yi<0]
             [x_crit_lo, x_crit_hi] = [self.quantiles[1][0], self.quantiles[1][-1]]
-            (y_crit_lo, y_crit_hi) = inside([x_crit_lo, x_crit_hi])
+            [y_crit_lo, y_crit_hi] = [-1., -1.]
+
+            try:
+                while (order>0) and (y_crit_lo <= 0.) and (y_crit_hi <= 0):
+                    if vb: print('order is '+str(order))
+                    inside = spi.InterpolatedUnivariateSpline(z, q, k=order, ext=1).derivative()
+                    [y_crit_lo, y_crit_hi] = inside([x_crit_lo, x_crit_hi])
+                    order -= 1
+                assert(np.all(inside(z) >= 0.))
+            except AssertionError:
+                print('ERROR: spline tangents '+str((y_crit_lo, y_crit_hi))+'<0; defaulting to linear interpolation')
+                inside_int = spi.interp1d(z, q, kind='linear', bounds_error=False, fill_value=default_eps)
+                derivative = (q[1:] - q[:-1]) / (z[1:] - z[:-1])
+                derivative = np.insert(derivative, 0, default_eps)
+                derivative = np.append(derivative, default_eps)
+                def inside(xf):
+                    nx = len(xf)
+                    yf = np.ones(nx) * default_eps
+                    for n in range(nx):
+                        i = bisect.bisect_left(z, xf[n])
+                        yf[n] = derivative[i]
+                    return(yf)
 
             def quantile_interpolator(xf):
                 yf = np.ones(np.shape(xf)) * default_eps
@@ -635,15 +661,16 @@ class PDF(object):
                     if vb:
                         print('evaluated below '+str((xf[lo_inds], yf[lo_inds])))
                 except AssertionError:
-                    print('ERROR: linear extrapolation below failed with '+str((xf[lo_inds], yf[lo_inds]))+' via '+str(tan_lo, x_crit_lo, z[0]))
+                    print('ERROR: linear extrapolation below failed with '+str((xf[lo_inds], yf[lo_inds]))+' via '+str((tan_lo, x_crit_lo, z[0])))
 
                 try:
                     tan_hi = y_crit_hi / (z[-1] - x_crit_hi)
                     yf[hi_inds] = tan_hi * (z[-1] - xf[hi_inds])# yf[in_inds[-1]] * (xf[hi_inds] - z[-1]) / (xf[in_inds[-1]] - z[-1])
+                    assert(np.all(yf >= default_eps))
                     if vb:
                         print('evaluated above '+str((xf[hi_inds], yf[hi_inds])))
                 except AssertionError:
-                    print('ERROR: linear extrapolation above failed with '+str((xf[hi_inds], yf[hi_inds]))+' via '+str(tan_hi, z[-1], x_crit_hi))
+                    print('ERROR: linear extrapolation above failed with '+str((xf[hi_inds], yf[hi_inds]))+' via '+str((tan_hi, z[-1], x_crit_hi)))
 
                 return(yf)
             # if vb:
@@ -704,7 +731,7 @@ class PDF(object):
                 return
             (x, y) = self.gridded
 
-            interpolator = spi.interp1d(x, y, kind=self.scheme, fill_value="extrapolate")
+            interpolator = spi.interp1d(x, y, kind=self.scheme, bounds_error=False, fill_value=default_eps)
 
             if vb:
                 print 'Created a `'+self.scheme+'` interpolator for the '+using+' parametrization.'
