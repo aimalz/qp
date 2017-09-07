@@ -299,7 +299,7 @@ class PDF(object):
                         order -= 1
                     assert(not np.any(np.isnan(quantiles)))
                 except AssertionError:
-                    if vb: print('ERROR: splines failed, defaulting to optimization for '+str((icdf, grid)))
+                    print('ERROR: splines failed, defaulting to optimization for '+str((icdf, grid)))
                     locs = np.array([bisect.bisect_right(icdf[:-1], quantpoints[n]) for n in range(N)])
                     quantiles = self.truth.ppf(quantpoints, ivals=grid[locs])
                     assert(not np.any(np.isnan(quantiles)))
@@ -630,6 +630,8 @@ class PDF(object):
                         i = bisect.bisect_left(z, xf[n])
                         yf[n] = derivative[i]
                     return(yf)
+                [y_crit_lo, y_crit_hi] = inside([x_crit_lo, x_crit_hi])
+                assert((y_crit_lo > 0.) and (y_crit_hi > 0.))
 
             def quantile_interpolator(xf):
                 yf = np.ones(np.shape(xf)) * default_eps

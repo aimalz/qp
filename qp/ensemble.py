@@ -191,13 +191,13 @@ class Ensemble(object):
             array of tuples of the CDF values and the quantiles for each PDF
         """
         def quantize_helper(i):
-            try:
+            # try:
             # with open(self.logfilename, 'wb') as logfile:
             #     logfile.write('quantizing pdf '+str(i)+'\n')
-                return self.pdfs[i].quantize(quants=quants,
+            return self.pdfs[i].quantize(quants=quants,
                                             N=N, limits=None, vb=vb)
-            except Exception:
-                print('ERROR: quantization failed on '+str(i)+' because '+str(sys.exc_info()[0]))
+            # except Exception:
+                # print('ERROR: quantization failed on '+str(i)+' because '+str(sys.exc_info()[0]))
 
         self.quantiles = self.pool.map(quantize_helper, self.pdf_range)
         self.quantiles = np.swapaxes(np.array(self.quantiles), 0, 1)
@@ -438,8 +438,8 @@ class Ensemble(object):
                 return u.quick_kl_divergence(self.gridded[-1][-1][i], grid, dx=dx)
         else:
             def kld_helper(i):
-                P_eval = P_func(self.pdfs[i]).evaluate(grid, vb=vb)[-1]
-                Q_eval = Q_func(self.pdfs[i]).evaluate(grid, vb=vb)[-1]
+                P_eval = P_func(self.pdfs[i]).evaluate(grid, vb=vb, norm=True)[-1]
+                Q_eval = Q_func(self.pdfs[i]).evaluate(grid, vb=vb, norm=True)[-1]
                 return u.quick_kl_divergence(P_eval, Q_eval, dx=dx)
 
         klds = self.pool.map(kld_helper, self.pdf_range)
@@ -504,8 +504,8 @@ class Ensemble(object):
                 return u.quick_rmse(self.gridded[-1][-1][i], grid, dx=dx)
         else:
             def rmse_helper(i):
-                P_eval = P_func(self.pdfs[i]).evaluate(grid, vb=vb)[-1]
-                Q_eval = Q_func(self.pdfs[i]).evaluate(grid, vb=vb)[-1]
+                P_eval = P_func(self.pdfs[i]).evaluate(grid, norm=True, vb=vb)[-1]
+                Q_eval = Q_func(self.pdfs[i]).evaluate(grid, norm=True, vb=vb)[-1]
                 return u.quick_rmse(P_eval, Q_eval, dx=dx)
 
         rmses = self.pool.map(rmse_helper, self.pdf_range)
