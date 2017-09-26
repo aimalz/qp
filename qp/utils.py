@@ -379,14 +379,13 @@ def quick_kl_divergence(p_eval, q_eval, dx=0.01):
 
     Notes
     -----
-    TO DO: change this to calculate_kld
-    TO DO: have this take number of points not dx!
+    TO DO: change this to quick_kld
     """
-    logquotient = safelog(p_eval / q_eval)
+    logquotient = safelog(p_eval) - safelog(q_eval)
     # logp = safelog(pn)
     # logq = safelog(qn)
     # Calculate the KLD from q to p
-    Dpq = dx * np.dot(p_eval, logquotient)
+    Dpq = dx * np.sum(p_eval * logquotient)
     return Dpq
 
 def calculate_rmse(p, q, limits=lims, dx=0.01, vb=False):

@@ -430,16 +430,17 @@ class Ensemble(object):
 
         D = int((limits[-1] - limits[0]) / dx)
         grid = np.linspace(limits[0], limits[1], D)
-        dx = (limits[-1] - limits[0]) / (D - 1)
+        # dx = (limits[-1] - limits[0]) / (D - 1)
 
         if self.gridded[0] == using and np.array_equal(self.gridded[-1][0], grid):
             if vb: print('taking a shortcut')
             def kld_helper(i):
-                return u.quick_kl_divergence(self.gridded[-1][-1][i], grid, dx=dx)
+                P_eval = P_func(self.pdfs[i]).evaluate(grid, using='truth', vb=vb, norm=True)[-1]
+                return u.quick_kl_divergence(P_eval, self.gridded[-1][-1][i], dx=dx)
         else:
             def kld_helper(i):
-                P_eval = P_func(self.pdfs[i]).evaluate(grid, vb=vb, norm=True)[-1]
-                Q_eval = Q_func(self.pdfs[i]).evaluate(grid, vb=vb, norm=True)[-1]
+                P_eval = P_func(self.pdfs[i]).evaluate(grid, using='truth', vb=vb, norm=True)[-1]
+                Q_eval = Q_func(self.pdfs[i]).evaluate(grid, vb=vb, using=using, norm=True)[-1]
                 return u.quick_kl_divergence(P_eval, Q_eval, dx=dx)
 
         klds = self.pool.map(kld_helper, self.pdf_range)
