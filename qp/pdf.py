@@ -100,6 +100,7 @@ class PDF(object):
         # first one:
         self.last = self.first
         self.interpolator = [None, None]
+        self.klds = {}
 
         return
 
@@ -931,12 +932,14 @@ class PDF(object):
 
         return
 
-    def kld(self, limits=None, dx=0.01):
+    def kld(self, using=None, limits=None, dx=0.01):
         """
         Calculates Kullback-Leibler divergence of quantile approximation from truth.
 
         Parameters
         ----------
+        using: string
+            parametrization to use
         limits: tuple of floats, optional
             endpoints of integration interval in which to calculate KLD
         dx: float
@@ -953,16 +956,21 @@ class PDF(object):
         Example::
             d = p.kld(limits=(-1., 1.), dx=1./100))
         """
-        print('This function is deprecated; use `qp.utils.calculate_kl_divergence`.')
-        return
-        # if self.truth is None:
-        #     print('Truth not available for comparison.')
-        #     return
-        # else:
-        #     if limits is None:
-        #         limits = self.limits
-        #     KL = qp.utils.calculate_kl_divergence(self, self, limits=limits, dx=dx)
-        #     return(KL)
+        # print('This function is deprecated; use `qp.utils.calculate_kl_divergence`.')
+        # return
+        if self.truth is None:
+            print('Truth not available for comparison.')
+            return
+        else:
+            if using is None:
+                using = self.last
+            if limits is None:
+                limits = self.limits
+            D = int((limits[-1] - limits[0]) / dx)
+            grid = np.linspace(limits[0], limits[1], D)
+            KL = qp.utils.quick_kl_divergence(self.evaluate(grid, using='truth'), self.evaluate(grid, using=using), dx=dx)
+            self.klds[using] = KL
+            return(KL)
 
     def rms(self, limits=(0., 1.), dx=0.01):
         """

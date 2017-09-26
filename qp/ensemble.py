@@ -434,14 +434,18 @@ class Ensemble(object):
 
         if self.gridded[0] == using and np.array_equal(self.gridded[-1][0], grid):
             if vb: print('taking a shortcut')
-            def kld_helper(i):
-                P_eval = P_func(self.pdfs[i]).evaluate(grid, using='truth', vb=vb, norm=True)[-1]
-                return u.quick_kl_divergence(P_eval, self.gridded[-1][-1][i], dx=dx)
+                def kld_helper(i):
+                    P_eval = P_func(self.pdfs[i]).evaluate(grid, using='truth', vb=vb, norm=True)[-1]
+                    KL = u.quick_kl_divergence(P_eval, self.gridded[-1][-1][i], dx=dx)
+                    self.pdfs[i].klds[using] = KL
+                    return KL
         else:
             def kld_helper(i):
                 P_eval = P_func(self.pdfs[i]).evaluate(grid, using='truth', vb=vb, norm=True)[-1]
                 Q_eval = Q_func(self.pdfs[i]).evaluate(grid, vb=vb, using=using, norm=True)[-1]
-                return u.quick_kl_divergence(P_eval, Q_eval, dx=dx)
+                KL = u.quick_kl_divergence(P_eval, Q_eval, dx=dx)
+                self.pdfs[i].klds[using] = KL
+                return KL
 
         klds = self.pool.map(kld_helper, self.pdf_range)
 
