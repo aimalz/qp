@@ -112,7 +112,7 @@ class Ensemble(object):
         self.make_pdfs()
 
         self.stacked = {}
-
+        self.klds = {}
 
     def make_pdfs(self):
         """
@@ -432,12 +432,14 @@ class Ensemble(object):
         grid = np.linspace(limits[0], limits[1], D)
         # dx = (limits[-1] - limits[0]) / (D - 1)
 
+        self.klds[using] = np.empty(self.n_pdfs)
         if self.gridded[0] == using and np.array_equal(self.gridded[-1][0], grid):
             if vb: print('taking a shortcut')
                 def kld_helper(i):
                     P_eval = P_func(self.pdfs[i]).evaluate(grid, using='truth', vb=vb, norm=True)[-1]
                     KL = u.quick_kl_divergence(P_eval, self.gridded[-1][-1][i], dx=dx)
                     self.pdfs[i].klds[using] = KL
+                    self.klds[using][i] = KL
                     return KL
         else:
             def kld_helper(i):
@@ -445,13 +447,13 @@ class Ensemble(object):
                 Q_eval = Q_func(self.pdfs[i]).evaluate(grid, vb=vb, using=using, norm=True)[-1]
                 KL = u.quick_kl_divergence(P_eval, Q_eval, dx=dx)
                 self.pdfs[i].klds[using] = KL
+                self.klds[using][i] = KL
                 return KL
 
         klds = self.pool.map(kld_helper, self.pdf_range)
-
         klds = np.array(klds)
 
-        return klds
+        return self.klds
 
     def rmse(self, using=None, limits=None, dx=0.01, vb=False):
         """
