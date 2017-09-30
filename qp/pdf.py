@@ -299,8 +299,9 @@ class PDF(object):
                         quantiles = b(quantpoints)
                         order -= 1
                     assert(not np.any(np.isnan(quantiles)))
+                    assert(type(quantiles) is not dfitpack.error)
                 except AssertionError:
-                    print('ERROR: splines failed, defaulting to optimization for '+str((icdf, grid)))
+                    print('ERROR: splines failed because '+str(AssertionError)+', defaulting to optimization for '+str((icdf, grid)))
                     locs = np.array([bisect.bisect_right(icdf[:-1], quantpoints[n]) for n in range(N)])
                     quantiles = self.truth.ppf(quantpoints, ivals=grid[locs])
                     assert(not np.any(np.isnan(quantiles)))
@@ -313,6 +314,7 @@ class PDF(object):
 
         # integrals = self.truth.cdf(quantiles)
         # assert np.isclose(integrals, quantpoints)
+        assert(type(quantiles) is numpy.ndarray)
         self.quantiles = (quantpoints, quantiles)
         if vb:
             print("Resulting "+str(len(quantiles))+" quantiles: "+str(self.quantiles))

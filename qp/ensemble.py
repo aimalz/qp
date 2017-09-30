@@ -296,12 +296,12 @@ class Ensemble(object):
             tuple of string and tuple of grid and values of the PDFs (or their approximations) at the requested location(s), of shape (npdfs, nlocs)
         """
         def evaluate_helper(i):
-            # try:
+            try:
             # with open(self.logfilename, 'wb') as logfile:
             #     logfile.write('evaluating pdf '+str(i)+'\n')
-            return self.pdfs[i].evaluate(loc=loc, using=using, norm=norm, vb=vb)
-            # except Exception:
-            #     print('ERROR: evaluation with '+using+' failed on '+str(i)+' because '+str(sys.exc_info()[0]))
+                return self.pdfs[i].evaluate(loc=loc, using=using, norm=norm, vb=vb)
+            except Exception:
+                 print('REAL ERROR: evaluation with '+using+' failed on '+str(i)+' because '+str(sys.exc_info()[0]))
             # return result
         self.gridded = self.pool.map(evaluate_helper, self.pdf_range)
         self.gridded = np.swapaxes(np.array(self.gridded), 0, 1)
