@@ -1,8 +1,8 @@
 \RequirePackage{docswitch}
 \setjournal{\flag}
 
+\documentclass[\docopts]{\docclass}
 
-\documentclass[]{emulateapj}
 
 \usepackage{lsstdesc_macros}
 
@@ -60,8 +60,9 @@ redshift distribution function.
 Ongoing and upcoming wide-field imaging surveys such as the Large Synoptic 
 Survey Telescope 
 (LSST)\footnote{\url{https://www.lsst.org/}}\citep{ivezic_lsst:_2008} will 
-observe billions of galaxies; studies of cosmology and galaxy evolution with 
-these data will rely on the method of photometric redshift (photo-$z$) 
+observe billions of galaxies photometrically, without follow-up spectroscopy.
+Studies of precision cosmology and galaxy evolution with these data will thus 
+rely almost exclusively on the method of photometric redshift (photo-$z$) 
 estimation.
 Photo-$z$s are subject to a number of systematic errors, some caused by the 
 estimation procedures and others intrinsic to the data itself.
@@ -71,8 +72,8 @@ potential for such systematic errors for each galaxy in the survey.
 
 Given the tremendous size of the surveys in question, storage of these 
 probability distributions involves making difficult decisions.
-Each survey seeks to create a catalog of \pz s balancing accuracy against 
-storage cost.
+Each survey seeks to balance accuracy against storage cost in creating a 
+catalog of \pz s made available to the scientific community.
 For example, the \pz\ catalog that LSST will release will be limited to 
 $\sim100$ floating point numbers per galaxy\citet[section 
 4.2.2]{juric_data_2017}, with plans to store \pz s derived by multiple methods.
@@ -99,16 +100,8 @@ We present the results of this procedure in Section~\ref{sec:results} and make
 recommendations for the use of \qp\ by the photo-$z$ community in 
 Section~\ref{sec:conclusions}.
 
-
-
-
-
-
-
-
 \section{Methods}
 \label{sec:methods}
-
 
 
 We have developed the \qp\ Python package to facilitate the parametrization and 
@@ -131,8 +124,8 @@ The currently implemented metrics are described in Section~\ref{sec:metric}.
 Large-scale tests can be conducted using the \texttt{qp.Ensemble} class that 
 provides a wrapper for parallelized operations over collections of 
 \texttt{qp.PDF} objects; parallelization is facilitated by the \texttt{pathos} 
-\footnote{\url{http://trac.mystic.cacr.caltech.edu/project/pathos/wiki.html}} 
-\citep{mckerns_building_2012, mckerns_pathos:_2010} package.
+\footnote{\noindent\url{http://trac.mystic.cacr.caltech.edu/project/pathos/wiki.
+html}} \citep{mckerns_building_2012, mckerns_pathos:_2010} package.
 
 \subsection{Approximation Methods}
 \label{sec:approx}
@@ -198,7 +191,6 @@ parameters ($N_{f}=7$ in this case).
     \label{fig:qp}}
   \end{center}
 \end{figure}
-
 For each format, we address the following questions:
 \begin{itemize}
   \item When/where has this format appeared in the literature as a published 
@@ -339,16 +331,29 @@ no notion of a true redshift in our analysis.
 (For a demonstration of how one might approach the distinct problem of 
 evaluating the accuracy of a \pz\ relative to a true redshift, see Schmidt, et 
 al.\ in preparation.)
-The loss of information, measured in nats (base $e$ bits), incurred when using 
-an approximation of the PDF $\hat{P}(z)$ instead of the best possible 
-representation of the  PDF $P(z)$ is given by the Kullback-Leibler divergence 
-(KLD), which is defined as
+
+We consider as a metric the loss of information, measured in nats (base $e$ 
+bits), incurred when using an approximation of the PDF $\hat{P}(z)$ instead of 
+the best possible representation of the  PDF $P(z)$, given by the 
+Kullback-Leibler divergence (KLD), which is defined as
 \begin{align}
   \label{eq:kld}
   \mathrm{KLD}[P(z) || \hat{P}(z)] &= \int_{-\infty}^{\infty}\ P(z)\ 
 \log\left[\frac{P(z)}{\hat{P}(z)}\right]\ dz,
 \end{align}
-where $\log$ is the natural logarithm throughout this paper.
+where $\log$ is the natural logarithm throughout this paper unless indicated 
+otherwise.
+Because there is in general no closed-form expression for the KLD, we calculate 
+the discrete KLD
+\begin{align}
+  \label{eq:kld_approx}
+  \mathrm{KLD}[P(z) || \hat{P}(z)] &\approx 
+\delta_{ff}\sum_{z=z_{1}}^{z_{N_{ff}}}\ P(z)\ 
+\log\left[\frac{P(z)}{\hat{P}(z)}\right]
+\end{align}
+using evaluations of the PDF under each format on a very fine, regular grid 
+$(z_{1}, z_{2}, \dots, z_{N_{ff}-1}, z_{N_{ff}})$ with resolution 
+$\delta_{ff}\ll\delta_{f}$.
 
 The most important feature of the KLD is its asymmetry; it is not a distance, 
 like the root mean square error, that is the same from $P(z)$ to $P'(z)$ as it 
@@ -362,18 +367,6 @@ between the approximation and the truth.
 We review the properties of the KLD and provide some intuition for it in the 
 Appendix.
 
-Because there is in general no closed-form expression for the KLD, we calculate 
-the discrete KLD
-\begin{align}
-  \label{eq:kld_approx}
-  \mathrm{KLD}[P(z) || \hat{P}(z)] &\approx 
-\delta_{ff}\sum_{z=z_{1}}^{z_{N_{ff}}}\ P(z)\ 
-\log\left[\frac{P(z)}{\hat{P}(z)}\right]
-\end{align}
-using evaluations of the PDF under each format on a very fine, regular grid 
-$(z_{1}, z_{2}, \dots, z_{N_{ff}-1}, z_{N_{ff}})$ with resolution 
-$\delta_{ff}\ll\delta_{f}$.
-
 \subsubsection{Individual \pz s}
 \label{sec:individual_metric}
 
@@ -384,6 +377,10 @@ For this purpose, we calculate the KLD of each individual \pz\ in our catalogs
 and then characterize the distribution of KLD values (which is itself a PDF) by 
 its first, second, and third moments (the mean, variance, and kurtosis, 
 respectively).
+We also calculate the percent error on the moments of each \pz\ under all 
+parametrizations and use the median and interquartile range of the moment 
+percent error distribution as another metric of the accuracy of individual \pz\ 
+parametrizations.
 We use these aggregate statistics to observe how the approximate individual \pz 
 s for each dataset vary with the choice of parametrization.
 
@@ -399,14 +396,21 @@ of $N_{g}$ galaxies is to sum the \pz s according to
   \label{eq:nz}
   \hat{n}(z) &\equiv \frac{1}{N_{g}}\ \sum_{k=1}^{N_{g}}\ \hat{p}_{k}(z).
 \end{align}
-Here, the estimator is normalized so that it, too, is a PDF.
+We refer to $\hat{n}(z)$ as the stacked estimator of the redshift distribution.
 While we do not recommend this approach to estimating the redshift distribution 
 (see Malz and Hogg, et al.\ (in preparation)), we use it here on the assumption 
 that any metric calculated on a more principled estimator will have similar 
 behavior with respect to the parametrization of the \pz\ catalog.
-Our primary metric is therefore the KLD \textit{from} the stacked estimator of 
-a catalog of evaluations of reconstructed \pz s \textit{to} the stacked 
-estimator of a catalog of evaluations of the original, high-resolution \pz s.
+
+As the stacked estimator is normalized so that it, too, is a PDF (though in the 
+literature it is often subject to the fallacy conflating a sum and an integral, 
+first mentioned in Sec. \ref{sec:bins}), the KLD \textit{from} the stacked 
+estimator of a catalog of evaluations of reconstructed \pz s \textit{to} the 
+stacked estimator of a catalog of evaluations of the original, high-resolution 
+\pz s serves as a metric for a specific science use case of \pz s.
+Because the accuracy of lower-order moments of the redshift distribution 
+function dominates the weak lensing error budget, we also compare the percent 
+error on the first three moments of $\hat{n}(z)$.
 
 
 \section{Photo-z Test Data}
@@ -480,7 +484,8 @@ As the figure shows, the \pz s from this dataset tend to be unimodal and
 sharply peaked, as if coming from brighter photometric data due to the 
 conservative cuts in photometric magnitudes of this dataset.
 We produce reference \pz s for the analysis by fitting a three-component 
-Gaussian mixture model to each \pz\ in the catalog.
+Gaussian mixture model to each \pz\ in the catalog, where the number of 
+components was chosen to equal the median modality of the gridded \pz s.
 We then calculate the three approximations to each \pz\ and evaluate their 
 accuracy using the metrics described above.
 
@@ -525,7 +530,8 @@ of multimodal \pz s.
 The exceptional depth of the dataset also leads us to expect the presence of 
 broad \pz s.
 We produced reference \pz s for the analysis by fitting a five-component 
-Gaussian mixture model to each gridded \pz\ in the catalog.
+Gaussian mixture model to each gridded \pz\ in the catalog, where the number of 
+components was chosen to equal the median modality of the gridded \pz s.
 We then calculated the three different approximations to each \pz, and 
 evaluated their accuracy using the metrics described above.
 
@@ -533,16 +539,80 @@ evaluated their accuracy using the metrics described above.
 \section{Results \& Discussion}
 \label{sec:results}
 
-
-
 We calculate the metrics of Section~\ref{sec:metric} on 10 random 
 instantiations of catalogs of $N_{g}=100$ galaxies drawn randomly from each of 
 the datasets discussed in Section~\ref{sec:data} and with each of $N_{f}=3,\ 
 10,\ 30,\ 100$ stored parameters.
 We then illustrate how our results could be used to choose an appropriate 
 parametrization for each dataset given constraints on the distribution of KLDs 
-of individual \pz s, the KLD for $\hat{n}(z)$, or $N_{f}$
+or moment percent errors of individual \pz s, the KLD or moment percent error 
+of $\hat{n}(z)$, or the available storage capacity.
 
+
+\subsection{Individual \pz s}
+\label{sec:individual_results}
+
+We compare our three parametrizations on the basis of the distributions of the 
+KLD calculated for every \pz\ in the dataset's ensemble.
+An example of the individual \pz\ KLD distribution is shown in 
+Figure~\ref{fig:individual} with $N_{f}=10$.
+
+\begin{figure}
+  \begin{center}
+    \includegraphics[width=\columnwidth]{figures/individual_kld.pdf}
+    \caption{The distribution of log-KLD values for $N_{g}=100$ \pz s from the 
+\mgdata dataset with $N_{f}=10$ over the quantiles (purple with dashed border), 
+samples (green with dash-dotted border), and histogram (orange with dotted 
+border) formats.
+    For the individual \pz s, the piecewise constant format has a lower median 
+KLD than the samples or quantile formats, which are comparable to one another.
+    \label{fig:individual}}
+  \end{center}
+\end{figure}
+
+To distill what is observed in plots like Figure~\ref{fig:individual} for both 
+datasets and all parametrizations, we compare the moments of the distributions 
+of metric values for the distribution of the KLDs of individual \pz s under 
+each parametrization, summarized in Figure~\ref{fig:moments}.
+While it is obvious that one would like the mean (first moment) of the KLD 
+distribution to be low, interpretation of higher-order moments is less clear.
+In a science application that is robust to \pz\ outliers, a parametrization 
+with a high variance (second moment) may be acceptable, whereas in another 
+science application that simply requires well-characterized errors could 
+tolerate a higher mean in exchange for a lower variance.
+To meaningfully interpret the KLDs of individual \pz s, it will be necessary 
+for those using \pz s in their science to calculate the requirements on the 
+acceptable degree of information loss.
+
+\begin{figure*}
+  \begin{center}
+    \includegraphics[width=\columnwidth]{graham_pz_kld.pdf}    
+\includegraphics[width=\columnwidth]{schmidt_pz_kld.pdf}
+    \caption{The mean ($\bigstar$), variance ($+$), and kurtosis ($\times$) of 
+the log-KLD distributions for each dataset as a function of $N_{f}$ for the 
+quantile (purple), samples (green), and histogram (orange) formats.
+    The moments and their error regions are offset about $N_{f}$ to improve 
+readability.
+    Left panel: The histogram format consistently minimizes the moments of the 
+log-KLD distribution of the \mgdata data mock catalog at low $N_{f}$, and the 
+moments are similar across formats at the highest $N_{f}=100$ with little 
+evolution with number of stored parameters.
+    Right panel: The\ssdata data mock catalog also shows the histogram format 
+performing well at low numbers of stored parameters with little evolution with 
+increasing $N_{f}$.
+    \label{fig:moments}}
+  \end{center}
+\end{figure*}
+
+
+\begin{figure*}
+  \begin{center}
+    \includegraphics[width=\columnwidth]{graham_pz_err.pdf}    
+\includegraphics[width=\columnwidth]{schmidt_pz_err.pdf}
+    \caption{
+    \label{fig:pz_moment_errs}}
+  \end{center}
+\end{figure*}
 
 \subsection{Stacked $\hat{n}(z)$ estimator}
 \label{sec:stacked_results}
@@ -635,8 +705,8 @@ quantile parameters $\vec{c}^{\ q}$
 
 \begin{figure*}
   \begin{center}
-    \includegraphics[width=\columnwidth]{figures/graham_kld.png}    
-\includegraphics[width=\columnwidth]{figures/schmidt_kld.png}
+    \includegraphics[width=\columnwidth]{figures/graham_nz_kld.pdf}    
+\includegraphics[width=\columnwidth]{figures/schmidt_nz_kld.pdf}
     \caption{KLD between $\hat{n}(z)$ derived from approximate pz\ 
 representations and  $\hat{n}(z)$ derived from the original, high-resolution 
 \pz s as a function of number of stored parameters, for the three different 
@@ -670,57 +740,12 @@ $N_{f}$, it may be possible to request additional storage capacity for the
 survey's \pz s.
 
 
-\subsection{Individual \pz s}
-\label{sec:individual_results}
-
-We also compare our three parametrizations on the basis of the distributions of 
-the KLD calculated for every \pz\ in the dataset's ensemble.
-An example of the individual \pz\ KLD distribution is shown in 
-Figure~\ref{fig:individual} with $N_{f}=10$.
-
-\begin{figure}
-  \begin{center}
-    \includegraphics[width=\columnwidth]{figures/individual_kld.pdf}
-    \caption{The distribution of log-KLD values for $N_{g}=100$ \pz s from the 
-\mgdata dataset with $N_{f}=10$ over the quantiles (purple with dashed border), 
-samples (green with dash-dotted border), and histogram (orange with dotted 
-border) formats.
-    For the individual \pz s, the piecewise constant format has a higher median 
-KLD than the samples or quantile formats, which are comparable to one another.
-    \label{fig:individual}}
-  \end{center}
-\end{figure}
-
-To distill what is observed in plots like Figure~\ref{fig:individual} for both 
-datasets and all parametrizations, we compare the moments of the distributions 
-of metric values for the distribution of the KLDs of individual \pz s under 
-each parametrization, summarized in Figure~\ref{fig:moments}.
-While it is obvious that one would like the mean (first moment) of the KLD 
-distribution to be low, interpretation of higher-order moments is less clear.
-In a science application that is robust to \pz\ outliers, a parametrization 
-with a high variance (second moment) may be acceptable, whereas in another 
-science application that simply requires well-characterized errors could 
-tolerate a higher mean in exchange for a lower variance.
-To meaningfully interpret the KLDs of individual \pz s, it will be necessary 
-for those using \pz s in their science to calculate the requirements on the 
-acceptable degree of information loss.
-
 \begin{figure*}
   \begin{center}
-    \includegraphics[width=\columnwidth]{graham_moments.png}    
-\includegraphics[width=\columnwidth]{schmidt_moments.png}
-    \caption{The mean ($\bigstar$), variance ($+$), and kurtosis ($\times$) of 
-the log-KLD distributions for each dataset as a function of $N_{f}$ for the 
-quantile (purple), samples (green), and histogram (orange) formats.
-    The moments and their error regions are offset about $N_{f}$ to improve 
-readability.
-    Left panel: The samples format consistently minimizes the moments of the 
-log-KLD distribution of the \mgdata data mock catalog at low $N_{f}$, and the 
-moments are similar across formats at the highest $N_{f}=100$.
-    Right panel: The\ssdata data mock catalog exhibits no clear pattern at low 
-$N_{f}$ but the moments of all formats decrease at high $N_{f}$ with the 
-histogram format achieving the lowest moments in that regime.
-    \label{fig:moments}}
+    \includegraphics[width=\columnwidth]{graham_nz_err.pdf}    
+\includegraphics[width=\columnwidth]{schmidt_nz_err.pdf}
+    \caption{
+    \label{fig:nz_moment_errs}}
   \end{center}
 \end{figure*}
 
@@ -728,10 +753,8 @@ histogram format achieving the lowest moments in that regime.
 
 
 
-
 \section{Conclusions \& Future Directions}
 \label{sec:conclusions}
-
 
 This work develops a principled approach to choosing a parametrization for 
 storing a catalog of \pz s from a survey of known data quality to balance the 
@@ -856,6 +879,8 @@ N56981CC.
 
 
 \input{acknowledgments}
+We would like to thank the LSST-DESC Publications Board and review committee 
+for helpful feedback on preparation of this paper.
 
 \input{contributions}
 
