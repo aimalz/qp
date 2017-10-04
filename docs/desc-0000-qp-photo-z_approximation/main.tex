@@ -338,7 +338,7 @@ the best possible representation of the  PDF $P(z)$, given by the
 Kullback-Leibler divergence (KLD), which is defined as
 \begin{align}
   \label{eq:kld}
-  \mathrm{KLD}[P(z) || \hat{P}(z)] &= \int_{-\infty}^{\infty}\ P(z)\ 
+  \mathrm{KLD}[\hat{P}(z) | P(z)] &= \int_{-\infty}^{\infty}\ P(z)\ 
 \log\left[\frac{P(z)}{\hat{P}(z)}\right]\ dz,
 \end{align}
 where $\log$ is the natural logarithm throughout this paper unless indicated 
@@ -347,7 +347,7 @@ Because there is in general no closed-form expression for the KLD, we calculate
 the discrete KLD
 \begin{align}
   \label{eq:kld_approx}
-  \mathrm{KLD}[P(z) || \hat{P}(z)] &\approx 
+  \mathrm{KLD}[\hat{P}(z) | P(z)] &\approx 
 \delta_{ff}\sum_{z=z_{1}}^{z_{N_{ff}}}\ P(z)\ 
 \log\left[\frac{P(z)}{\hat{P}(z)}\right]
 \end{align}
@@ -367,20 +367,39 @@ between the approximation and the truth.
 We review the properties of the KLD and provide some intuition for it in the 
 Appendix.
 
+Additionally, we employ the percent error
+\begin{align}
+  \label{eq:percent_error}
+  \mathrm{P.E.}[M_{m}[\hat{P}(z)] | M_{m}[P(z)]] &= \frac{M_{m}[P(z)] - 
+M_{m}[\hat{P}(z)]}{M_{m}[P(z)]}\times100\%
+\end{align}
+of the moments
+\begin{align}
+  \label{eq:moment}
+  M_{m}[P(z)] &= \int_{-\infty}^{\infty} z^{m}\ P(z)\ dz\ \approx\  
+\delta_{ff}\sum_{z=z_{1}}^{z_{N_{ff}}}\ z^{m}\ P(z)
+\end{align}
+ of a PDF.
+We note that $M_{0}[(P(z)]=1$ for all properly normalized probability 
+distributions, $M_{1}[(P(z)]=\bar{z}$ is the mean, $M_{2}[(P(z)]$ is the 
+variance, and $M_{3}[(P(z)]$ is the kurtosis.
+Though the first few moments are not in general sufficient to characterize a 
+highly structured probability distribution, they are included in this analysis 
+because they can prove useful in setting ballpark estimates of the influence of 
+different systematics in various science cases.
+
 \subsubsection{Individual \pz s}
 \label{sec:individual_metric}
 
 Some science applications rely on the recovery of individual galaxy \pz s that, 
-for example, may be used as the basis for targeting spectroscopic follow up for 
-a variety of science applications.
+for example, may be used as the basis for targeting spectroscopic follow up.
 For this purpose, we calculate the KLD of each individual \pz\ in our catalogs 
 and then characterize the distribution of KLD values (which is itself a PDF) by 
-its first, second, and third moments (the mean, variance, and kurtosis, 
-respectively).
-We also calculate the percent error on the moments of each \pz\ under all 
-parametrizations and use the median and interquartile range of the moment 
-percent error distribution as another metric of the accuracy of individual \pz\ 
-parametrizations.
+its $m=1,\ 2,\ 3$ moments.
+We also calculate the percent error on the $m=1,\ 2,\ 3$ moments of each \pz\ 
+under all parametrizations and use the median and interquartile range of the 
+moment percent error distribution $p(M_{m}[\hat{p}_{i}(z)])$ as another metric 
+of the fidelity of individual \pz\ parametrizations.
 We use these aggregate statistics to observe how the approximate individual \pz 
 s for each dataset vary with the choice of parametrization.
 
@@ -398,9 +417,10 @@ of $N_{g}$ galaxies is to sum the \pz s according to
 \end{align}
 We refer to $\hat{n}(z)$ as the stacked estimator of the redshift distribution.
 While we do not recommend this approach to estimating the redshift distribution 
-(see Malz and Hogg, et al.\ (in preparation)), we use it here on the assumption 
-that any metric calculated on a more principled estimator will have similar 
-behavior with respect to the parametrization of the \pz\ catalog.
+(see Malz and Hogg, et al.\ (in preparation) for an alternative method), we use 
+it here on the assumption that any metric calculated on a more principled 
+estimator will have similar behavior with respect to the parametrization of the 
+\pz\ catalog.
 
 As the stacked estimator is normalized so that it, too, is a PDF (though in the 
 literature it is often subject to the fallacy conflating a sum and an integral, 
@@ -410,7 +430,7 @@ stacked estimator of a catalog of evaluations of the original, high-resolution
 \pz s serves as a metric for a specific science use case of \pz s.
 Because the accuracy of lower-order moments of the redshift distribution 
 function dominates the weak lensing error budget, we also compare the percent 
-error on the first three moments of $\hat{n}(z)$.
+error on the $m=1,\ 2,\ 3$ moments of $\hat{n}(z)$.
 
 
 \section{Photo-z Test Data}
@@ -419,8 +439,8 @@ error on the first three moments of $\hat{n}(z)$.
 With the expectation that the optimal parametrization for approximating \pz s 
 may differ according to the properties of the original photometric data, we 
 demonstrate a procedure for vetting \pz\ parametrizations on a pair of mock 
-datasets, each intended to be realistic projections of the anticipated LSST \pz 
-s.
+datasets, each intended to be realistic projections of subsets of the 
+anticipated LSST \pz s.
 All \pz s were fit using the publicly available Bayesian Photometric Redshift 
 (BPZ) code \citep{benitez_bayesian_2000}, which employs spectral energy 
 distribution (SED) fitting to a template library.
@@ -433,11 +453,28 @@ We seek only to optimize the fidelity of the stored \pz\ relative to the \pz\
 output by a representative \pz\ fitting code.
 \citep[See][Schmidt, et al.\ in preparation for other work comparing the 
 accuracy of \pz s produced by different methods.]{tanaka_photometric_2017}
+As BPZ is a widely used and well established method, we assume that the \pz s 
+produced by it are of representative complexity.
+The default format of BPZ is a $N_{ff}>200$ gridded parametrization with 
+resolution exceeding the available storage for any planned survey.
 Because we believe that each galaxy has an underlying redshift interim 
 posterior probability distribution that is a continuous function, to which the 
 output of BPZ is itself a high-resolution approximation in the form of 
-evaluations on a grid, we fit the gridded \pz\ with a Gaussian mixture model 
+evaluations on a grid, we fit each gridded \pz\ with a Gaussian mixture model 
 that we designate as the reference representation for our accuracy tests.
+
+\begin{figure*}
+  \begin{center}
+    \includegraphics[width=\columnwidth]{figures/graham_pzs.pdf}
+    \includegraphics[width=\columnwidth]{figures/schmidt_pzs.pdf}
+    \caption{
+    Example \pz s from the two mock LSST datasets.
+    Left: The \mgdata mock photometry yields largely narrow, unimodal \pz s.
+    Right: The \ssdata mock photometry contains a higher proportion of broad 
+and/or multimodal \pz s.
+    \label{fig:example_pzs}}
+  \end{center}
+\end{figure*}
 
 \subsection{\Mgdata data mock catalog}
 \label{sec:graham}
@@ -468,28 +505,20 @@ settings for BPZ, except that we impose a maximum photometric redshift of 3.5
 and allow BPZ to use the $i$-band as a magnitude prior during the photo-$z$ fit.
 The \pz s from BPZ are in the form of $N_{ff} = 351$ evaluations of the 
 probability density on a regular grid of redshifts $0.01 < z < 3.51$, a 
-subsample of which are plotted in Figure~\ref{fig:graham_pzs}.
-
-\begin{figure}
-  \begin{center}
-    \includegraphics[width=\columnwidth]{figures/graham_pzs.pdf}
-    \caption{Example \pz s from the mock LSST data of Graham, et al.\ (in 
-preparation).
-    The \mgdata mock photometry yields largely narrow, unimodal \pz s.
-    \label{fig:graham_pzs}}
-  \end{center}
-\end{figure}
+subsample of which are plotted in the left panel of 
+Figure~\ref{fig:example_pzs}.
 
 As the figure shows, the \pz s from this dataset tend to be unimodal and 
 sharply peaked, as if coming from brighter photometric data due to the 
 conservative cuts in photometric magnitudes of this dataset.
 We produce reference \pz s for the analysis by fitting a three-component 
 Gaussian mixture model to each \pz\ in the catalog, where the number of 
-components was chosen to equal the median modality of the gridded \pz s.
+components was chosen to be the $99^{\mathrm{th}}$ percentile of the modality 
+distribution of the gridded \pz s.
 We then calculate the three approximations to each \pz\ and evaluate their 
 accuracy using the metrics described above.
 
-\subsection{\Ssdata mock catalog}
+\subsection{\Ssdata data mock catalog}
 \label{sec:schmidt}
 
 Our second dataset is an independent simulation of the expected LSST galaxy 
@@ -511,18 +540,7 @@ clustering algorithm based on $100$ of the SDSS SEDs used in creating the
 Buzzard catalog.
 BPZ produces \pz s in the format of probability density evaluations on a 
 regular grid of $N_{ff}=211$ redshifts $0.005\leq z\leq2.105$, a subsample of 
-which are plotted in Figure~\ref{fig:schmidt_pzs}.
-
-\begin{figure}
-  \begin{center}
-    \includegraphics[width=\columnwidth]{figures/schmidt_pzs.pdf}
-    \caption{Example \pz s from the mock LSST data of deRose, et al.\ (in 
-preparation).
-    This sample contains a higher proportion of broad and/or multimodal \pz s, 
-as if from the \ssdata data.
-    \label{fig:schmidt_pzs}}
-  \end{center}
-\end{figure}
+which are plotted in the right panel of Figure~\ref{fig:example_pzs}.
 
 Even with six filters spanning the optical, there are known degeneracies 
 (e.~g.~the Lyman/Balmer break degeneracy) that lead us to expect the presence 
@@ -531,7 +549,8 @@ The exceptional depth of the dataset also leads us to expect the presence of
 broad \pz s.
 We produced reference \pz s for the analysis by fitting a five-component 
 Gaussian mixture model to each gridded \pz\ in the catalog, where the number of 
-components was chosen to equal the median modality of the gridded \pz s.
+components was chosen to equal the $99^{\mathrm{th}}$ percentile of the 
+modality distribution of the gridded \pz s.
 We then calculated the three different approximations to each \pz, and 
 evaluated their accuracy using the metrics described above.
 
@@ -553,10 +572,9 @@ of $\hat{n}(z)$, or the available storage capacity.
 \label{sec:individual_results}
 
 We compare our three parametrizations on the basis of the distributions of the 
-KLD calculated for every \pz\ in the dataset's ensemble.
-An example of the individual \pz\ KLD distribution is shown in 
-Figure~\ref{fig:individual} with $N_{f}=10$.
-
+KLD calculated for every \pz\ in the dataset.
+An example of an individual \pz\ KLD distribution for the \mgdata dataset with 
+$N_{f}=10$ is shown in Figure~\ref{fig:individual}.
 \begin{figure}
   \begin{center}
     \includegraphics[width=\columnwidth]{figures/individual_kld.pdf}
@@ -564,16 +582,20 @@ Figure~\ref{fig:individual} with $N_{f}=10$.
 \mgdata dataset with $N_{f}=10$ over the quantiles (purple with dashed border), 
 samples (green with dash-dotted border), and histogram (orange with dotted 
 border) formats.
-    For the individual \pz s, the piecewise constant format has a lower median 
-KLD than the samples or quantile formats, which are comparable to one another.
+    In this instantiation, the samples format has a lower median KLD than the 
+quantiles format, which has a lower median KLD than the piecewise constant 
+format.  Note that the distributions are over log-KLD, so the ordering of the 
+formats by the breadth of the log-KLD distribution is the same as the order by 
+the median.
     \label{fig:individual}}
   \end{center}
 \end{figure}
 
-To distill what is observed in plots like Figure~\ref{fig:individual} for both 
-datasets and all parametrizations, we compare the moments of the distributions 
-of metric values for the distribution of the KLDs of individual \pz s under 
-each parametrization, summarized in Figure~\ref{fig:moments}.
+To distill what is observed in the ten instantiations of plots like 
+Figure~\ref{fig:individual} for both datasets and all parametrizations, we 
+compare the moments of the distributions of metric values for the distribution 
+of the KLDs of individual \pz s under each parametrization, summarized in 
+Figure~\ref{fig:moments}.
 While it is obvious that one would like the mean (first moment) of the KLD 
 distribution to be low, interpretation of higher-order moments is less clear.
 In a science application that is robust to \pz\ outliers, a parametrization 
@@ -583,36 +605,105 @@ tolerate a higher mean in exchange for a lower variance.
 To meaningfully interpret the KLDs of individual \pz s, it will be necessary 
 for those using \pz s in their science to calculate the requirements on the 
 acceptable degree of information loss.
-
 \begin{figure*}
   \begin{center}
-    \includegraphics[width=\columnwidth]{graham_pz_kld.pdf}    
-\includegraphics[width=\columnwidth]{schmidt_pz_kld.pdf}
-    \caption{The mean ($\bigstar$), variance ($+$), and kurtosis ($\times$) of 
-the log-KLD distributions for each dataset as a function of $N_{f}$ for the 
-quantile (purple), samples (green), and histogram (orange) formats.
-    The moments and their error regions are offset about $N_{f}$ to improve 
-readability.
-    Left panel: The histogram format consistently minimizes the moments of the 
-log-KLD distribution of the \mgdata data mock catalog at low $N_{f}$, and the 
-moments are similar across formats at the highest $N_{f}=100$ with little 
-evolution with number of stored parameters.
-    Right panel: The\ssdata data mock catalog also shows the histogram format 
-performing well at low numbers of stored parameters with little evolution with 
-increasing $N_{f}$.
+    \includegraphics[width=\columnwidth]{graham_pz_kld.pdf}
+    \includegraphics[width=\columnwidth]{schmidt_pz_kld.pdf}
+    \caption{
+    The mean ($\bigstar$), variance ($+$), and kurtosis ($\times$) of the 
+log-KLD distributions for each dataset as a function of $N_{f}$ for the 
+quantile (purple), samples (green), and histogram (orange) formats with 
+$1-\sigma$ Gaussian error bars based on ten instantiations, where the moments 
+and their error regions are offset around $N_{f}$ to improve readability.
+    Left panel: The \mgdata mock catalog.
+    Right panel: The \ssdata mock catalog.
     \label{fig:moments}}
   \end{center}
 \end{figure*}
 
+Figure~\ref{fig:moments} is rich in information.
+For both datasets, the behavior of the first three log-moments of the log-KLD 
+distribution is highly correlated for a given format and number of parameters.
+The \mgdata dataset has higher log-KLD log-moments than the \ssdata dataset at 
+all $N_{f}$, meaning information loss is enhanced for more strongly featured 
+data; this is not a surprising observation because the narrow, unimodal \pz s 
+of the \mgdata dataset have long tails of very low probability that are 
+emphasized by the KLD.
+The \ssdata dataset shows almost no change in the log-KLD log-moments between 
+$N_{f}=3$ and $N_{f}=10$ parameters, but both datasets otherwise exhibit a 
+steady decrease in all moments for the quantile and samples formats as $N_{f}$ 
+increases.
+The log-KLD log-moments are higher for quantiles than for samples for both 
+datasets, except at $N_{f}=100$ for the \mgdata dataset.
+The histogram format's log-KLD log-moments are higher than for other formats at 
+low $N_{f}$ and steadily decrease in a manner similar to the other formats, 
+except at the highest $N_{f}$ values where the histogram format's log-KLD 
+log-moments decrease much more quickly.
+The error bars on the log-KLD log-moments increase at high $N_{f}$ for all 
+formats on both datasets beyond what one would expect simply based on the log 
+scaling.
 
+We also examine the percent error on the first three moments of the \pz s under 
+each approximation, using the base-10 log for interpretability.
+Because the distribution of moment percent errors is highly non-Gaussian due to 
+a small number ($<1\%$) of truly extreme outliers for both datasets, across all 
+$N_{f}$ and all formats, we substitute the interquartile range for traditional 
+$1-\sigma$ Gaussian error bars.
 \begin{figure*}
   \begin{center}
-    \includegraphics[width=\columnwidth]{graham_pz_err.pdf}    
-\includegraphics[width=\columnwidth]{schmidt_pz_err.pdf}
+    \includegraphics[width=\columnwidth]{graham_pz_err.pdf}
+    \includegraphics[width=\columnwidth]{schmidt_pz_err.pdf}
     \caption{
+   The $\log_{10}$-percent error on the mean ($\bigstar$), variance ($+$), and 
+kurtosis ($\times$) of the \pz s for each dataset as a function of $N_{f}$ for 
+the quantile (purple), samples (green), and histogram (orange) formats with 
+interquartile range error bars based on ten instantiations, where the 
+$\log_{10}$-percent errors and their interquartile ranges are offset around 
+$N_{f}$ to improve readability.
+   Left panel: The \mgdata dataset.
+   Right panel: The \ssdata dataset.
     \label{fig:pz_moment_errs}}
   \end{center}
 \end{figure*}
+
+Though the $\log_{10}$-percent error of the moments of individual \pz s also 
+exhibits significant correlation between the moments for a given 
+parametrization, the behavior is otherwise markedly different from that of the 
+log-moments of the \pz\ ensemble's log-KLD distribution.
+The percent errors on the moments of the approximate \pz s are overall lower in 
+the \mgdata dataset than the \ssdata dataset over the same range of number of 
+stored parameters; this is expected because there is simply less information to 
+capture in the \mgdata dataset.
+
+For the \mgdata dataset, the quantile format enables sub-percent errors in \pz\ 
+moments at the lowest $N_{f}$, a level that cannot be achieved by the histogram 
+format until $N_{f}=100$ parameters are stored and by samples at fewer than 
+$N_{f}=100$ stored parameters.
+Furthermore, for the \mgdata dataset, the quantile format minimizes the percent 
+error at all $N_{f}$, whereas the samples format is better than the histogram 
+format at low $N_{f}$ but the histogram format is better than the samples 
+format at high $N_{f}$.
+Again, this behavior is expected of the narrow, unimodal \pz s of the \mgdata 
+dataset because large histogram bins are ineffective at capturing small-scale 
+structure and including more samples does not significantly improve 
+preservation of such features.
+
+Though the \ssdata dataset has an ordering of the percent error on the moments 
+at $N_{f}=3$ that is similar to that of the \mgdata dataset, all formats, not 
+just the histogram format, have shockingly high errors, meaning it is highly 
+inappropriate to use so few parameters for such a faint dataset even if it may 
+be acceptable for a brighter one.
+In the \ssdata dataset, the inclusion of $N_{f}=30$ parameters decreases the 
+percent error of the moments of the histogram format more significantly than 
+the quantile or samples formats, to the point that the histogram and quantiles 
+formats are comparable.
+At higher $N_{f}$ in the \ssdata dataset, the quantile and histogram formats 
+continue to improve faster than the samples format, with the percent errors on 
+the \pz\ moments being consistently lower for the quantile format than for the 
+histogram format.
+With the broad, multimodal \pz s of the \ssdata dataset, sub-percent accuracy 
+in the moments can only be achieved with $N_{f}\geq30$ with the quantile format 
+and $N_{f}=100$ with the histogram format.
 
 \subsection{Stacked $\hat{n}(z)$ estimator}
 \label{sec:stacked_results}
@@ -673,10 +764,10 @@ For the \mgdata data mock catalog, the histogram format not only has a
 consistently higher $\hat{n}(z)$ KLD but one that does not improve with 
 increasing $N_{f}$.
 This poor performance independent of resource allocation is actually expected 
-because, due to the narrow, unimodal \pz s of Figure~\ref{fig:graham_pzs}, a 
-great majority of the probability density will fall into a single bin $c^{\ 
-h}_{i=j}$ with all other $c^{\ h}_{i\neq j}\approx 0$ \textit{regardless} of 
-$N_{f}$.
+because, due to the narrow, unimodal \pz s of the left panel of 
+Figure~\ref{fig:example_pzs}, a great majority of the probability density will 
+fall into a single bin $c^{\ h}_{i=j}$ with all other $c^{\ h}_{i\neq j}\approx 
+0$ \textit{regardless} of $N_{f}$.
 The quantile format consistently produces the lowest $\hat{n}(z)$ KLDs, with a 
 larger improvement over the samples format as $N_{f}$ increases.
 The improvement with larger $N_{f}$ is a surprising result because the shot 
