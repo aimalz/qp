@@ -220,8 +220,8 @@ redshifts $\vec{C} = (z_{1}, z_{2}, \dots, z_{N_{f}}, z_{N_{f}+1})$ serving as
 bin endpoints shared by all galaxies in the catalog, each adjacent pair of 
 which is associated with a parameter $c_{i}=\int_{C_{i}}^{C_{i+1}}\ p(z)dz$.
 The \qp\ histogram format assumes $p(z)=0$ when $z<C_{1}$ or $z>C_{N_{f}+1}$, 
-leading to the normalization condition $\sum_{i} c_{i}(C_{i+1}-C_{i})) = 1$.
-\footnote{Note that this is not generally equivalent to the erroneous 
+leading to the normalization condition $\sum_{i} c_{i}(C_{i+1}-C_{i})) = 
+1$.\footnote{Note that this is not generally equivalent to the erroneous 
 normalization condition $\sum_{i} c_{i} = 1$ commonly enforced in public 
 catalogs.}
 The histogram format function $\mathcal{F}^{h}$ is the sum of a set of $N_{f}$ 
@@ -429,10 +429,9 @@ We refer to $\hat{n}(z)$ as the stacked estimator of the redshift distribution
 and denote the stacked estimator derived from the original input \pz s as 
 $\hat{n}'(z)'$.
 While we do not recommend this approach to estimating the redshift distribution 
-(see Malz and Hogg, et al.\ (in preparation) for an alternative method), we use 
-it here on the assumption that any metric calculated for a more principled 
-estimator will have similar behavior with respect to the parametrization of the 
-\pz\ catalog.
+(see Malz et al., in preparation for an alternative method), we use it here on 
+the assumption that any metric calculated for a more principled estimator will 
+have similar behavior with respect to the parametrization of the \pz\ catalog.
 This assumption may be tested in future work.
 
 As the stacked estimator is normalized so that it, too, is a PDF (though in the 
