@@ -314,7 +314,7 @@ class PDF(object):
 
         # integrals = self.truth.cdf(quantiles)
         # assert np.isclose(integrals, quantpoints)
-        assert(type(quantiles) is numpy.ndarray)
+        assert(type(quantiles) is np.ndarray)
         self.quantiles = (quantpoints, quantiles)
         if vb:
             print("Resulting "+str(len(quantiles))+" quantiles: "+str(self.quantiles))
