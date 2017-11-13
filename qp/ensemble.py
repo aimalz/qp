@@ -1,8 +1,10 @@
 import numpy as np
+import pathos
 from pathos.multiprocessing import ProcessingPool as Pool
-import psutil
+# import psutil
 import timeit
 import os
+import sys
 # import sqlalchemy
 import scipy.interpolate as spi
 import matplotlib.pyplot as plt
@@ -66,7 +68,7 @@ class Ensemble(object):
         if procs is not None:
             self.n_procs = procs
         else:
-            self.n_procs = psutil.cpu_count()
+            self.n_procs = pathos.helpers.cpu_count()
         self.pool = Pool(self.n_procs)
         print('made the pool of '+str(self.n_procs)+' in '+str(timeit.default_timer() - start_time))
 
@@ -99,9 +101,9 @@ class Ensemble(object):
         else:
             self.histogram = [(histogram[0], histogram[1][i]) for i in self.pdf_range]
         if gridded is None:
-            self.gridded = [None] * N
+            self.gridded = (None, [None] * N)
         else:
-            self.gridded = [(gridded[0], gridded[1][i]) for i in self.pdf_range]
+            self.gridded = (None, [(gridded[0], gridded[1][i]) for i in self.pdf_range])
         self.mix_mod = None
         self.evaluated = None
 
@@ -110,7 +112,7 @@ class Ensemble(object):
         self.make_pdfs()
 
         self.stacked = {}
-
+        self.klds = {}
 
     def make_pdfs(self):
         """
@@ -121,7 +123,7 @@ class Ensemble(object):
             #     logfile.write('making pdf '+str(i)+'\n')
             return qp.PDF(truth=self.truth[i], quantiles=self.quantiles[i],
                             histogram=self.histogram[i],
-                            gridded=self.gridded[i], samples=self.samples[i], limits=self.limits,
+                            gridded=self.gridded[-1][i], samples=self.samples[i], limits=self.limits,
                             scheme=self.scheme, vb=False)
 
         start_time = timeit.default_timer()
@@ -155,9 +157,12 @@ class Ensemble(object):
         TODO: change syntax samps --> N
         """
         def sample_helper(i):
+            try:
             # with open(self.logfilename, 'wb') as logfile:
             #     logfile.write('sampling pdf '+str(i)+'\n')
-            return self.pdfs[i].sample(N=samps, infty=infty, using=using, vb=False)
+                return self.pdfs[i].sample(N=samps, infty=infty, using=using, vb=False)
+            except Exception:
+                print('ERROR: sampling failed on '+str(i)+' because '+str(sys.exc_info()[0]))
 
         self.samples = self.pool.map(sample_helper, self.pdf_range)
 
@@ -186,10 +191,13 @@ class Ensemble(object):
             array of tuples of the CDF values and the quantiles for each PDF
         """
         def quantize_helper(i):
+            # try:
             # with open(self.logfilename, 'wb') as logfile:
             #     logfile.write('quantizing pdf '+str(i)+'\n')
             return self.pdfs[i].quantize(quants=quants,
-                                            N=N, limits=None, vb=False)
+                                            N=N, limits=None, vb=vb)
+            # except Exception:
+                # print('ERROR: quantization failed on '+str(i)+' because '+str(sys.exc_info()[0]))
 
         self.quantiles = self.pool.map(quantize_helper, self.pdf_range)
         self.quantiles = np.swapaxes(np.array(self.quantiles), 0, 1)
@@ -219,10 +227,13 @@ class Ensemble(object):
             of bins and values in bins
         """
         def histogram_helper(i):
+            try:
             # with open(self.logfilename, 'wb') as logfile:
             #     logfile.write('histogramizing pdf '+str(i)+'\n')
-            return self.pdfs[i].histogramize(binends=binends, N=N,
+                return self.pdfs[i].histogramize(binends=binends, N=N,
                                                 binrange=binrange, vb=False)
+            except Exception:
+                print('ERROR: histogramization failed on '+str(i)+' because '+str(sys.exc_info()[0]))
 
         self.histogram = self.pool.map(histogram_helper, self.pdf_range)
         self.histogram = np.swapaxes(np.array(self.histogram), 0, 1)
@@ -253,9 +264,12 @@ class Ensemble(object):
         Currently only supports mixture of Gaussians
         """
         def mixmod_helper(i):
+            try:
             # with open(self.logfilename, 'wb') as logfile:
             #     logfile.write('fitting pdf '+str(i)+'\n')
-            return self.pdfs[i].mix_mod_fit(n_components=comps, using=using, vb=False)
+                return self.pdfs[i].mix_mod_fit(n_components=comps, using=using, vb=False)
+            except Exception:
+                print('ERROR: mixture model fitting failed on '+str(i)+' because '+str(sys.exc_info()[0]))
 
         self.mix_mod = self.pool.map(mixmod_helper, self.pdf_range)
 
@@ -278,19 +292,22 @@ class Ensemble(object):
 
         Returns
         -------
-        vals: ndarray, ndarray, float
-            the values of the PDFs (or their approximations) at the requested
-            location(s), of shape (npdfs, nlocs)
+        self.gridded: tuple(string, tuple(ndarray, ndarray, float))
+            tuple of string and tuple of grid and values of the PDFs (or their approximations) at the requested location(s), of shape (npdfs, nlocs)
         """
         def evaluate_helper(i):
+            try:
             # with open(self.logfilename, 'wb') as logfile:
             #     logfile.write('evaluating pdf '+str(i)+'\n')
-            return self.pdfs[i].evaluate(loc=loc, using=using, norm=norm, vb=False)
+                return self.pdfs[i].evaluate(loc=loc, using=using, norm=norm, vb=vb)
+            except Exception:
+                 print('REAL ERROR: evaluation with '+using+' failed on '+str(i)+' because '+str(sys.exc_info()[0]))
+            # return result
         self.gridded = self.pool.map(evaluate_helper, self.pdf_range)
         self.gridded = np.swapaxes(np.array(self.gridded), 0, 1)
-        self.gridded = (self.gridded[0][0], self.gridded[1])
+        self.gridded = (using, (self.gridded[0][0], self.gridded[1]))
 
-        return self.gridded
+        return self.gridded[-1]
 
     def integrate(self, limits, using, dx=0.001):
         """
@@ -311,13 +328,57 @@ class Ensemble(object):
             value of the integral
         """
         def integrate_helper(i):
-            return self.pdfs[i].integrate(limits[i], using=using, dx=dx, vb=False)
+            try:
+                return self.pdfs[i].integrate(limits[i], using=using, dx=dx, vb=False)
+            except Exception:
+                print('ERROR: integration failed on '+str(i)+' because '+str(sys.exc_info()[0]))
 
         integrals = self.pool.map(integrate_helper, self.pdf_range)
 
         return integrals
 
-    def kld(self, using=None, limits=None, dx=0.01):
+    def moment(self, N, using=None, limits=None, dx=0.01, vb=False):
+        """
+        Calculates a given moment for each PDF in the ensemble
+
+        Parameters
+        ----------
+        N: int
+            number of moment
+        using: string
+            which parametrization to use
+        limits: tuple of floats, optional
+            endpoints of integration interval in which to calculate moment
+        dx: float
+            resolution of integration grid
+        vb: boolean
+            print progress to stdout?
+
+        Returns
+        -------
+        moments: numpy.ndarray, float
+            moment values of each PDF under the using approximation or truth
+        """
+        D = int((limits[-1] - limits[0]) / dx)
+        grid = np.linspace(limits[0], limits[1], D)
+        dx = (limits[-1] - limits[0]) / (D - 1)
+        grid_to_N = grid ** N
+
+        if self.gridded[0] == using and np.array_equal(self.gridded[-1][0], grid):
+            if vb: print('taking a shortcut')
+            def moment_helper(i):
+                return u.quick_moment(self.gridded[-1][-1][i], grid_to_N, dx)
+        else:
+            def moment_helper(i):
+                p_eval = self.pdfs[i].evaluate(grid, using=using, vb=vb)[1]
+                return u.quick_moment(p_eval, grid_to_N, dx)
+
+        moments = self.pool.map(moment_helper, self.pdf_range)
+
+        moments = np.array(moments)
+        return moments
+
+    def kld(self, using=None, limits=None, dx=0.01, vb=False):
         """
         Calculates the KLD for each PDF in the ensemble
 
@@ -329,6 +390,8 @@ class Ensemble(object):
             endpoints of integration interval in which to calculate KLD
         dx: float
             resolution of integration grid
+        vb: boolean
+            print progress to stdout?
 
         Returns
         -------
@@ -365,18 +428,34 @@ class Ensemble(object):
             print(using + ' not available; try a different parametrization.')
             return
 
-        def kld_helper(i):
-            P = P_func(self.pdfs[i])
-            Q = Q_func(self.pdfs[i])
-            return u.calculate_kl_divergence(P, Q, limits=limits, dx=dx)
+        D = int((limits[-1] - limits[0]) / dx)
+        grid = np.linspace(limits[0], limits[1], D)
+        # dx = (limits[-1] - limits[0]) / (D - 1)
+
+        self.klds[using] = np.empty(self.n_pdfs)
+        if self.gridded[0] == using and np.array_equal(self.gridded[-1][0], grid):
+            if vb: print('taking a shortcut')
+            def kld_helper(i):
+                P_eval = P_func(self.pdfs[i]).evaluate(grid, using='truth', vb=vb, norm=True)[-1]
+                KL = u.quick_kl_divergence(P_eval, self.gridded[-1][-1][i], dx=dx)
+                self.pdfs[i].klds[using] = KL
+                self.klds[using][i] = KL
+                return KL
+        else:
+            def kld_helper(i):
+                P_eval = P_func(self.pdfs[i]).evaluate(grid, using='truth', vb=vb, norm=True)[-1]
+                Q_eval = Q_func(self.pdfs[i]).evaluate(grid, vb=vb, using=using, norm=True)[-1]
+                KL = u.quick_kl_divergence(P_eval, Q_eval, dx=dx)
+                self.pdfs[i].klds[using] = KL
+                self.klds[using][i] = KL
+                return KL
 
         klds = self.pool.map(kld_helper, self.pdf_range)
-
         klds = np.array(klds)
 
-        return klds
+        return self.klds
 
-    def rmse(self, using=None, limits=None, dx=0.01):
+    def rmse(self, using=None, limits=None, dx=0.01, vb=False):
         """
         Calculates the RMSE for each PDF in the ensemble
 
@@ -388,6 +467,8 @@ class Ensemble(object):
             endpoints of integration interval in which to calculate RMSE
         dx: float
             resolution of integration grid
+        vb: boolean
+            print progress to stdout?
 
         Returns
         -------
@@ -420,10 +501,19 @@ class Ensemble(object):
             print(using + ' not available; try a different parametrization.')
             return
 
-        def rmse_helper(i):
-            P = P_func(pdfs[i])
-            Q = Q_func(pdfs[i])
-            return utils.calculate_rmse(P, Q, limits=limits, dx=dx)
+        D = int((limits[-1] - limits[0]) / dx)
+        grid = np.linspace(limits[0], limits[1], D)
+        dx = (limits[-1] - limits[0]) / (D - 1)
+
+        if self.gridded[0] == using and np.array_equal(self.gridded[-1][0], grid):
+            if vb: print('taking a shortcut')
+            def rmse_helper(i):
+                return u.quick_rmse(self.gridded[-1][-1][i], grid, dx=dx)
+        else:
+            def rmse_helper(i):
+                P_eval = P_func(self.pdfs[i]).evaluate(grid, norm=True, vb=vb)[-1]
+                Q_eval = Q_func(self.pdfs[i]).evaluate(grid, norm=True, vb=vb)[-1]
+                return u.quick_rmse(P_eval, Q_eval, dx=dx)
 
         rmses = self.pool.map(rmse_helper, self.pdf_range)
 
@@ -453,10 +543,12 @@ class Ensemble(object):
         Notes
         -----
         Stacking refers to taking the sum of PDFs evaluated on a shared grid and normalizing it such that it integrates to unity.  This is equivalent to calculating an average probability (based on the PDFs in the ensemble) over the grid.  This probably should be done in a script and not by qp!  The right way to do it would be to call qp.Ensemble.evaluate() and sum those outputs appropriately.
+        TO DO: make this do something more efficient for mixmod, grid, histogram, samples
+        TO DO: enable stacking on irregular grid
         """
         loc_range = max(loc) - min(loc)
         delta = loc_range / len(loc)
-        evaluated = self.evaluate(loc, using=using, norm=True, vb=False)
+        evaluated = self.evaluate(loc, using=using, norm=True, vb=vb)
         stack = np.mean(evaluated[1], axis=0)
         stack /= np.sum(stack) * delta
         assert(np.isclose(np.sum(stack) * delta, 1.))

@@ -82,16 +82,14 @@ class composite(object):
         xs: numpy.ndarray, float
             samples from the PDF
         """
-        groups = [0]*self.n_components
-        for item in range(size):
-            groups[qp.utils.choice(self.component_range, self.coefficients)] += 1
-        samples = [] * size
-        for c in self.component_range:
-            for n in range(groups[c]):
-                samples.append(self.functions[c].rvs())
-        return np.array(samples)
+        groups = np.random.choice(self.component_range, size, p=self.coefficients)
+        u, counts = np.unique(groups, return_counts=True)
+        samples = np.empty(0)
+        for i in range(len(u)):
+            samples = np.append(samples, self.functions[u[i]].rvs(counts[i]))
+        return np.array(samples).flatten()
 
-    def ppf(self, cdfs, ivals=None, vb=True):
+    def ppf(self, cdfs, ivals=None):
         """
         Evaluates the composite PPF at locations
 
@@ -101,8 +99,6 @@ class composite(object):
             value(s) at which to find quantiles
         ivals: float or numpy.ndarray, float
             initial guesses for quantiles
-        vb: boolean
-            print progress to stdout?
 
         Returns
         -------
