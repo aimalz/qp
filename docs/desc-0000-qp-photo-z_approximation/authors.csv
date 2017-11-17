@@ -33,5 +33,6 @@ Malz,Alex,A.I.~Malz,Contact,"Center for Cosmology and Particle Physics, New York
 Marshall,Phil,P.J.~Marshall,Contributor,"SLAC National Accelerator Laboratory, Menlo Park, CA 94025, USA","Advised on statistics, and project design and management.",dr.phil.marshall@gmail.com
 Schmidt,Samuel,S.J.~Schmidt,Contributor,"Dept. of Physics, University of California, One Shields Ave., Davis, CA, 95616","Produced the PDFs for the fainter mock catalog.",sschmidt@physics.usdavis.edu
 Graham,Melissa,M.L.~Graham,Contributor,"Department of Astronomy, University of Washington, Box 351580 U.W., Seattle, WA 98195-1580","Produced the photometry and PDFs for the brighter mock catalog.",mlg3k@uw.edu
-DeRose,Joe,J.~DeRose,Contributor,"Stanford University","Produced the photometry for the fainter mock catalog.",jderose@stanford.edu
-Wechsler,Risa,R.~Wechsler,Contributor,"Stanford University","Produced the photometry for the fainter mock catalog.",rwechsler@stanford.edu
+DeRose,Joe,J.~DeRose,Contributor,"Kavli Institute for Particle Astrophysics \& Cosmology, P. O. Box 2450, Stanford University, Stanford, CA 94305, USA","Produced the photometry for the fainter mock catalog.",jderose@stanford.edu
+DeRose,Joe,J.~DeRose,Contributor,"Department of Physics, Stanford University, 382 Via Pueblo Mall, Stanford, CA 94305, USA","Produced the photometry for the fainter mock catalog.",jderose@stanford.edu
+Wechsler,Risa,R.~Wechsler,Contributor,"Stanford University","Supervised production of the fainter mock catalog.",rwechsler@stanford.edu
