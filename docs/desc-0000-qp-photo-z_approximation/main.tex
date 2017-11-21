@@ -1,12 +1,32 @@
+\RequirePackage[switch, columnwise, running, displaymath, mathlines]{lineno}
 \RequirePackage{docswitch}
 \setjournal{\flag}
 
 \documentclass[\docopts]{\docclass}
 
 
+\newcommand*\patchAmsMathEnvironmentForLineno[1]{%
+  \expandafter\let\csname old#1\expandafter\endcsname\csname #1\endcsname
+  \expandafter\let\csname oldend#1\expandafter\endcsname\csname end#1\endcsname
+  \renewenvironment{#1}%
+     {\linenomath\csname old#1\endcsname}%
+     {\csname oldend#1\endcsname\endlinenomath}}%
+\newcommand*\patchBothAmsMathEnvironmentsForLineno[1]{%
+  \patchAmsMathEnvironmentForLineno{#1}%
+  \patchAmsMathEnvironmentForLineno{#1*}}%
+\AtBeginDocument{%
+\patchBothAmsMathEnvironmentsForLineno{equation}%
+\patchBothAmsMathEnvironmentsForLineno{align}%
+\patchBothAmsMathEnvironmentsForLineno{flalign}%
+\patchBothAmsMathEnvironmentsForLineno{alignat}%
+\patchBothAmsMathEnvironmentsForLineno{gather}%
+\patchBothAmsMathEnvironmentsForLineno{multline}%
+}
+
 \usepackage{lsstdesc_macros}
 
 \usepackage{xspace}
+\usepackage{enumitem}
 \usepackage{graphicx}
 \graphicspath{{./}{./figures/}{.logos}}
 \bibliographystyle{apj}
@@ -23,6 +43,7 @@
 
 
 \begin{document}
+\linenumbers
 
 \title{ Approximating photo-z PDFs for large surveys }
 
@@ -208,12 +229,16 @@ semidefinite representations and inclusion of the sparse basis representation
 in \qp.
 
 For each format, we address the following questions:
-\begin{itemize}
+\begin{itemize}[noitemsep, topsep=5pt, partopsep=0pt, parsep=0pt, itemsep=5pt]
+  % \setlength{\itemsep}{5pt}
+  % \setlength{\parskip}{0pt}
+  % \setlength{\parsep}{0pt}
   \item When/where has the format appeared as a published catalog format, 
 native \pz\ code output format, and science application input format?
   \item What exactly is stored under the format, per galaxy (the parameters) 
 and per catalog (the metaparameters)?
   \item What are the a priori strengths and weaknesses of the format?
+  % \vspace*{-\baselineskip}
 \end{itemize}
 
 \subsubsection{Regular Binning}
