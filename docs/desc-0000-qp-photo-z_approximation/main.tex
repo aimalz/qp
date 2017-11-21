@@ -229,9 +229,9 @@ the only format that has been used for public release of \pz\ catalogs
 The metaparameters of the binned parametrization are the ordered list of 
 redshifts $\vec{C} = (z_{1}, z_{2}, \dots, z_{N_{f}}, z_{N_{f}+1})$ serving as 
 bin endpoints shared by all galaxies in the catalog, each adjacent pair of 
-which is associated with a parameter $c_{i} = \int_{C_{i}}^{C_{i+1}} p(z) dz$.
-The \qp\ histogram format assumes $p(z)=0$ when $z<C_{1}$ or $z>C_{N_{f}+1}$ 
-and enforces the normalization condition\footnote{
+which is associated with a parameter $c_{i} = p(C_{i} \leq z < C_{i+1})$.
+The \qp\ histogram format assumes $p(z)=0$ when $z<C_{1}$ or $z\geq 
+C_{N_{f}+1}$ and enforces the normalization condition\footnote{
 Note that this is not generally equivalent to the erroneous normalization 
 condition $\sum_{i} c_{i} = 1$ commonly enforced in public catalogs such as the 
 Sloan Digital Sky Survey's Data Release 8 \citep{sheldon_photometric_2012}.
