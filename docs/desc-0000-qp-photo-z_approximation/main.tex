@@ -108,7 +108,7 @@ $\sim100$ floating point numbers per galaxy for all redshift information
 multiple methods.
 Furthermore, the problem of storing PDFs is not unique to galaxy surveys.
 Gaia\footnote{\url{https://www.gaia-eso.eu/}}, for example, has committed to 
-providing a catalog of PDFs of stellar properties inclding velocities, so an 
+providing a catalog of PDFs of stellar properties including velocities, so an 
 approach to optimizing the choice of PDF storage parametrization could benefit 
 astronomy more broadly.
 
@@ -229,7 +229,7 @@ semidefinite representations and inclusion of the sparse basis representation
 in \qp.
 
 For each format, we address the following questions:
-\begin{itemize}[noitemsep, topsep=5pt, partopsep=0pt, parsep=0pt, itemsep=5pt]
+\begin{itemize}[partopsep=0pt, parsep=0pt, itemsep=5pt]
   % \setlength{\itemsep}{5pt}
   % \setlength{\parskip}{0pt}
   % \setlength{\parsep}{0pt}
@@ -254,29 +254,25 @@ the only format that has been used for public release of \pz\ catalogs
 The metaparameters of the binned parametrization are the ordered list of 
 redshifts $\vec{C} = (z_{1}, z_{2}, \dots, z_{N_{f}}, z_{N_{f}+1})$ serving as 
 bin endpoints shared by all galaxies in the catalog, each adjacent pair of 
-which is associated with a parameter $c_{i} = p(C_{i} \leq z < C_{i+1})$.
+which is associated with a parameter $c_{i} = \int_{C_{i}}^{C_{i+1}} p(z) dz / 
+(C_{i+1} - C_{i})$.
 The \qp\ histogram format assumes $p(z)=0$ when $z<C_{1}$ or $z\geq 
 C_{N_{f}+1}$ and enforces the normalization condition\footnote{
 Note that this is not generally equivalent to the erroneous normalization 
-condition $\sum_{i} c_{i} = 1$ commonly enforced in public catalogs such as the 
-Sloan Digital Sky Survey's Data Release 8 \citep{sheldon_photometric_2012}.
+condition $\sum_{i} c_{i} = 1$ commonly enforced in public catalogs, such as 
+the Sloan Digital Sky Survey's Data Release 8 \citep{sheldon_photometric_2012}.
 Unless redshift is treated as a discrete variable, the oversimplified 
 normalization condition only holds if $C_{N_{f}+1} - C_{1} = N_{f} (C_{i+1} - 
 C_{i})$ for all $i$ (under a regular binning).
 }
-\begin{align}
-  \label{eq:normed}
-  \sum_{i} c_{i} (C_{i+1} - C_{i}) &= 1.
-\end{align}
+$\sum_{i} c_{i} (C_{i+1} - C_{i}) = 1$.
 The histogram format function $\mathcal{F}^{h}$ is thus the sum of a set of 
 $N_{f}$ step functions, making the reconstructed estimator of the \pz
 \begin{align}
   \label{eq:binned}
-  \hat{p}^{h}(z) &= \sum_{i=1}^{N_{f}}\ c_{i} 
-\left\{\begin{tabular}{cc}$1$&$C_{i}<z<C_{i+1}$\\
-0&$z < C_{i}$\ or\ $z > C_{i+1}$\end{tabular}\right\},
+  \hat{p}^{h}(z) &= \sum_{i=1}^{N_{f}}\ c_{i}\ H(z - C_{i})\ H(C_{i+1} - z)
 \end{align}
-where the step functions may be considered their own interpolators.
+in terms of the Heaviside step function $H$ as the interpolating function $F$.
 Though \qp\ supports arbitrary bin ends, here we only consider a regular 
 binning, with $C_{i+1} = C_{i} + \delta$ for a constant $\delta = (C_{N_{f}+1} 
 - C_{1}) / N_{f}$, as no irregular binning has yet been used for a public 
@@ -284,9 +280,10 @@ catalog of \pz s.
 
 In terms of performance as a \pz\ storage format, we should anticipate the 
 regular histogram format to be wasteful in terms of information content; a \pz\ 
-with a very broad (compact) probability distribution may have many parameters 
-taking the same value $c_{i} \approx (C_{N_{f}+1} - C_{1}) / \delta$ 
-($c_{i}\approx0$) that are redundant in storage.
+with a very broad or compact probability distribution may have many parameters 
+taking the same value $c_{i} \approx (C_{N_{f}+1} - C_{1}) / \delta$ or $c_{i} 
+\approx 0$, for broad and compact PDFs respectively, that are redundant in 
+storage.
 Additionally, we should expect the fidelity of $\hat{p}^{h}(z)$ to depend 
 strongly on the bin widths relative to the sizes of and distances between 
 features in the \pz s.
@@ -342,15 +339,19 @@ The quantiles are defined in terms of the cumulative distribution function
 Under the quantile format, a \pz\ catalog shares $N_{f}$ ordered CDFs $\vec{C} 
 = (q_{1}, q_{2}, \dots, q_{N_{f}-1}, q_{N_{f}})$ where $0 < q_{i} < 1$ for all 
 $i$.
-In this study, we test regular quantiles $C_{i} \equiv i / (N_{f} + 1)$.
 Each galaxy's catalog entry is the vector of redshifts $\vec{c} = (z_{1}, 
 z_{2}, \dots, z_{N_{f}-1}, z_{N_{f}})$ satisfying $\mathrm{CDF}(c_{i}) = 
 C_{i}$, so the quantile format function $\mathcal{F}^{q}$ is the derivative of 
 an interpolation $F$ of the CDF.
-Our interpolator $F$ in the tests presented here is a nonnegative 
-\texttt{scipy.interpolate} spline at $z_{1} \leq z \leq z_{N_{f}}$ and linear 
-extrapolation subject to the normalization conditions of $\vec{C}$ elsewhere.
-The quantile representation is thus
+As with the samples representation, an interpolation function $F$ must be 
+chosen for reconstructing the \pz\ from the stored parameters.
+\qp\ includes support for numerous \texttt{scipy.interpolate} options as well 
+as straightforward linear interpolation.
+
+Our interpolator $F$ in the tests presented here is the derivative of a spline 
+function at $z_{1} \leq z \leq z_{N_{f}}$ and linear extrapolation subject to 
+the normalization conditions of $\vec{C}$ elsewhere.
+The quantile representation implemented in this paper is thus
 \begin{align}
   \label{eq:quantiles}
   \hat{p}^{q}(z) &=
@@ -365,15 +366,15 @@ C_{N_{f}})} z\right)$ & $z > c_{N_{f}+1}$
   \end{tabular}
   \right\}.
 \end{align}
+In this study, we also restrict ourselves to regular quantiles $C_{i} \equiv i 
+/ (N_{f} + 1)$, though \qp\ supports arbitrary quantile spacing.
 
 
-The quantile parametrization (the namesake of the \texttt{qp} code) is expected 
-to be an efficient approximation for \pz s because it allocates storage evenly 
-in the space of probability density.
-In contrast, the histogram format stores data evenly spaced in redshift, and 
-the samples format stores data randomly in probability density.
-As with the samples representation, an interpolation function must be chosen 
-for reconstructing the \pz\ from the stored parameters.
+The quantile parametrization (the namesake of the \qp\ code) is expected to be 
+an efficient approximation for \pz s because it allocates storage evenly in the 
+space of probability density.
+In contrast, the histogram format stores information evenly spaced in redshift, 
+and the samples format stores information randomly in probability density.
 Depending on the native \pz\ output format, converting to the quantile format 
 may require $N_{f}$ numerical optimizations.
 We accelerate these optimizations by initializing at rough, approximate 
@@ -1160,8 +1161,8 @@ N56981CC.
 \input{acknowledgments}
 
 We would like to thank Chad Schafer, Chris Morrison, Boris Leistedt, Stefano 
-Cavuoti, and Maciej Bilicki for helpful feedback in the preparation of this 
-paper.
+Cavuoti, Maciej Bilicki, and Johann Cohen-Tanugi for helpful feedback in the 
+preparation of this paper.
 AIM thanks Coryn Bailer-Jones, Eric Ford, and Morgan Fouesneau for helping to 
 provide context for this work outside cosmology.
 
