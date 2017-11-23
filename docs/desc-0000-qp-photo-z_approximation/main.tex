@@ -350,15 +350,16 @@ as straightforward linear interpolation.
 
 Our interpolator $F$ in the tests presented here is the derivative of a spline 
 function at $z_{1} \leq z \leq z_{N_{f}}$ and linear extrapolation subject to 
-the normalization conditions of $\vec{C}$ elsewhere.
+consistency with the CDF.
 The quantile representation implemented in this paper is thus
 \begin{align}
   \label{eq:quantiles}
   \hat{p}^{q}(z) &=
   \left\{
   \begin{tabular}{cc}
-  $\frac{d}{dz} \left[F(z; \vec{c}, \mathcal{F}^{q}_{\vec{C}})\right]$ & $c_{1} 
-\leq z \leq c_{N_{f}}$ \\
+  $\frac{d}{dz} \left[F(z; \vec{c}
+  %, \mathcal{F}^{q}_{\vec{C}}
+  )\right]$ & $c_{1} \leq z \leq c_{N_{f}}$ \\
   $\hat{p}^{q}(c_{1})\left(\frac{\hat{p}^{q}(c_{1})}{2C_{1}} z - 1\right)$ & $z 
 < c_{1}$ \\
   $\hat{p}^{q}(c_{N_{f}})\left(1 - \frac{\hat{p}^{q}(c_{N_{f}})}{2(1 - 
@@ -419,14 +420,14 @@ the discrete KLD
 \end{align}
 using evaluations of the PDF under each format on a very fine, regular grid 
 $(z_{1}, z_{2}, \dots, z_{N_{ff}-1}, z_{N_{ff}})$ with resolution $\delta_{ff} 
-\ll \delta_{f}$.
+= (z_{N_{ff}} -z_{1}) / N_{ff}$ for $N_{ff} \gg N_{f}$.
 
 The most important feature of the KLD is its asymmetry: it is not a distance, 
-like the root mean square error, that is the same from $P(z)$ to $P'(z)$ as it 
-is from $P'(z)$ to $P(z)$.
-It is a \textit{divergence} of the information lost when using $P'(z)$ to 
+like the root mean square error, that is the same from $P(z)$ to $\hat{P}(z)$ 
+as it is from $\hat{P}(z)$ to $P(z)$.
+It is a \textit{divergence} of the information lost when using $\hat{P}(z)$ to 
 approximate $P(z)$.
-The KLD requires that both functions $P(z)$ and $P'(z)$ be probability 
+The KLD requires that both functions $P(z)$ and $\hat{P}(z)$ be probability 
 distributions (always positive semidefinite and integrating to unity); this may 
 need to be explicitly enforced for some approximation formats.
 The KLD is always positive, and a smaller value indicates better agreement 
@@ -598,7 +599,7 @@ subsample of which are shown in the left panel of Figure~\ref{fig:example_pzs}.
 As the figure shows, the \pz s from this dataset tend to be unimodal and 
 sharply peaked, as if coming from brighter photometric data due to the 
 conservative cuts in photometric magnitudes of this dataset.
-The brighter catalog reference \pz s are three-component Gaussian mixtures fir 
+The brighter catalog reference \pz s are three-component Gaussian mixtures fit 
 to this data.
 
 \subsection{\Ssdata data mock catalog}
@@ -1073,9 +1074,9 @@ with the familiar metric of the root-mean-square error (RMSE)
   \label{eq:rmse}
   \mathrm{RMSE} &= \sqrt{\int (P(z) - \hat{P}(z))^{2} dz}.
 \end{align}
-Consider the simple example of a Gaussian $P(z)=\mathcal{N}(\mu_{0}, 
-\sigma_{0}^{2})$ being approximated by a Gaussian $P'(z)=\mathcal{N}(\mu, 
-\sigma^{2})$, whose KLD is
+Consider the simple example of a Gaussian $P(z) = \mathcal{N}(\mu_{0}, 
+\sigma_{0}^{2})$ being approximated by a Gaussian $\hat{P}(z) = 
+\mathcal{N}(\mu, \sigma^{2})$, whose KLD is
 \begin{align}
   \label{eq:gaussian}
   \mathrm{KLD} &= 
