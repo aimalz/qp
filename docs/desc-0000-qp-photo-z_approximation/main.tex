@@ -295,10 +295,10 @@ Samples are often the native output format of machine learning algorithms due
 to the discrete nature of training sets \citep{de_vicente_dnf_2016}.
 Such approaches by default typically produce large numbers of samples, far more 
 than can realistically be stored by any survey, so are commonly compressed by 
-subsampling\citep{hoyle_dark_2017}.
+subsampling \citep{hoyle_dark_2017}.
 Samples are easy to use in standard science applications developed for redshift 
-point estimates, so they have an established presence in the 
-literature\citep{bonnett_redshift_2016}.
+point estimates, so they have an established presence in the literature\citep 
+{bonnett_redshift_2016}.
 The samples format of PDF storage appears elsewhere in astronomy, including the 
 Gaia-ESO Survey's commitment to provide multi-dimensional PDFs of stellar 
 parameters in the samples format \citep{bailer-jones_gaia_2013}.
@@ -350,7 +350,7 @@ as straightforward linear interpolation.
 
 Our interpolator $F$ in the tests presented here is the derivative of a spline 
 function at $z_{1} \leq z \leq z_{N_{f}}$ and linear extrapolation subject to 
-consistency with the CDF.
+consistency with the definition of the CDF.
 The quantile representation implemented in this paper is thus
 \begin{align}
   \label{eq:quantiles}
@@ -501,11 +501,16 @@ based on the relative prevalence of galaxies with similar photometry in a
 reference population \citep{sheldon_photometric_2012, 
 troster_cross-correlation_2017}
 }
-While we do not recommend this approach to estimating the redshift distribution 
-(see \citet{choi_cfhtlens_2016} for justification and Malz et al., in 
-preparation for an alternative method), we use it here to demonstrate 
-generically how one would optimize the choice of \pz\ parametrization around a 
-familiar science application.
+Note that to avoid introducing any preferred treatment between formats, 
+Equation~\ref{eq:nz} uses the representation $\hat{p}(z)$ reconstructed from 
+the stored parameters even when a given format may have a more efficient or 
+principled way to obtain such an ensemble estimator directly from the stored 
+parameters, e.g. adding the histogram components or combining all samples.
+While we do not recommend the approach of Equation~\ref{eq:nz} to estimate the 
+redshift distribution (see \citet{choi_cfhtlens_2016} for justification and 
+Malz et al., in preparation for alternative methods), we use it here to 
+generically demonstrate how one would optimize the choice of \pz\ 
+parametrization in the context of a familiar science application.
 
 As the stacked estimator is normalized so that it, too, is a PDF, the KLD 
 \textit{from} the stacked estimator of a catalog of evaluations of 
