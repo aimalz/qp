@@ -28,6 +28,7 @@
 \usepackage{xspace}
 \usepackage{enumitem}
 \usepackage{graphicx}
+\usepackage{wasysym}
 \graphicspath{{./}{./figures/}{.logos}}
 \bibliographystyle{apj}
 
@@ -59,12 +60,17 @@ measurements and the limitation of finite storage resources.
 This paper presents \qp, a Python package for manipulating parametrizations of 
 1-dimensional PDFs, as suitable for \pz\ compression.
 We use \qp\ to investigate the performance of three simple PDF storage formats 
-on two realistic mock datasets, representative of upcoming surveys with 
-different data qualities.
-Based on metrics of individual \pz s and an estimator of the overall redshift 
-distribution function, as an example of a science use case, as a function of 
-the number of stored parameters per \pz, we make recommendations for best 
-practices in choosing \pz\ approximation schemes.
+(quantiles, samples, and step functions) as a function of the number of stored 
+parameters on two realistic mock datasets, representative of upcoming surveys 
+with different data qualities.
+We propose some best practices for choosing a \pz\ approximation scheme and 
+demonstrate the approach on a science case using performance metrics on both 
+ensembles of individual \pz s and an estimator of the overall redshift 
+distribution function.
+We show that the properties of the set of PDFs we wish to approximate and the 
+fidelity metric(s) chosen both affect the optimal parametrization.
+Additionally, we find that quantiles and samples outperform step functions and 
+encourage further consideration of these formats for PDF approximation.
 
 \end{abstract}
 
@@ -200,7 +206,14 @@ In this work we consider special cases of three of these formats as candidates
 for large survey \pz\ catalog storage: regular binning 
 (Section~\ref{sec:bins}), random samples (Section~\ref{sec:samples}), and 
 regular quantiles (Section~\ref{sec:quantiles}).
-These formats are illustrated on a multimodal PDF in Figure~\ref{fig:qp}.
+Step functions and samples have been used in published analyses, and we 
+introduce the quantile format because of its favorable statistical properties.
+We do not consider the function evaluation format because it is statistically 
+very similar to step functions, and we exclude at this time the mixture model 
+format because it is only appropriate when the underlying PDFs are actually 
+mixture models, which we do not guarantee in this study.
+The three formats we investigate are illustrated on a multimodal PDF in 
+Figure~\ref{fig:qp}.
 \begin{figure}
   \begin{center}
     \includegraphics[width=\columnwidth]{figures/demo_pz.pdf}
@@ -258,7 +271,7 @@ which is associated with a parameter $c_{i} = \int_{C_{i}}^{C_{i+1}} p(z) dz /
 (C_{i+1} - C_{i})$.
 The \qp\ histogram format assumes $p(z)=0$ when $z<C_{1}$ or $z\geq 
 C_{N_{f}+1}$ and enforces the normalization condition\footnote{
-Note that this is not generally equivalent to the erroneous normalization 
+Note that this is not generally equivalent to the heuristic normalization 
 condition $\sum_{i} c_{i} = 1$ commonly enforced in public catalogs, such as 
 the Sloan Digital Sky Survey's Data Release 8 \citep{sheldon_photometric_2012}.
 Unless redshift is treated as a discrete variable, the oversimplified 
@@ -457,6 +470,11 @@ highly structured probability distribution, they are included in this analysis
 because they can prove useful in setting ballpark estimates of the influence of 
 different systematics in various science cases.
 
+The metrics considered in this paper are among a subset of those included in 
+the \qp\ package and are specific to this investigation; different metrics may 
+be more appropriate for other science applications and indeed could lead to 
+different format preferences.
+
 \subsubsection{Individual \pz\ metrics}
 \label{sec:individual_metric}
 
@@ -618,8 +636,7 @@ Given an SED, redshift, and absolute $r$-band magnitude for each galaxy, the
 $ugrizy$ magnitudes are derived from the aforementioned 10-year LSST errors.
 The catalog contains $N_{g} \approx 10^{5}$ galaxies $z<2.105$ to a depth of 
 $i<26.9$, 1.5 magnitudes deeper than the expected LSST gold sample of galaxies 
-\citep{lsst_science_collaboration_lsst_2009}, that will have $S/N \gtrsim 30$ 
-in multiple bands.
+\citep{ScienceBook}, that will have $S/N \gtrsim 30$ in multiple bands.
 
 We use a custom BPZ prior using a subset of the Buzzard-highres-v1.0 catalog 
 and a spanning template set via a simple k-means clustering algorithm based on 
@@ -687,12 +704,12 @@ acceptable degree of information loss.
     \includegraphics[width=\columnwidth]{graham_pz_kld.pdf}
     \includegraphics[width=\columnwidth]{schmidt_pz_kld.pdf}
     \caption{
-    The means of the mean ($\bigstar$), variance ($+$), and kurtosis ($\times$) 
-of the log-KLD distributions for each dataset as a function of the number 
-$N_{f}$ of stored parameters for the quantile (dashed purple line), samples 
-(dash-dotted green line), and histogram (dotted orange line) formats with 
-$1\sigma$ Gaussian error bars based on 10 instantiations of 100 galaxies, which 
-are offset about $N_{f}$ to improve readability.
+    The means of the mean ($\pentagon$), variance ($\bigstar$), and kurtosis 
+($\APLstar$) of the log-KLD distributions for each dataset as a function of the 
+number $N_{f}$ of stored parameters for the quantile (dashed purple line), 
+samples (dash-dotted green line), and histogram (dotted orange line) formats 
+with $1\sigma$ Gaussian error bars based on 10 instantiations of 100 galaxies, 
+which are offset about $N_{f}$ to improve readability.
     Left panel: The distribution of individual \pz\ KLD values of the \mgdata 
 mock catalog is most well-behaved when they are stored as samples, except at 
 large $N_{f}$.
@@ -731,8 +748,9 @@ the lowest $N_{f}$ and steadily decrease in a manner similar to the other
 formats, except at the highest $N_{f}$ values where the histogram format's 
 log-KLD log-moments decrease much more quickly.
 
-We also examine the percent error on the first three moments of the \pz s under 
-each approximation, using the base-10 log for interpretability.
+In Figure~\ref{fig:pz_moment_errs}, we also examine the percent error on the 
+first three moments of the \pz s under each approximation, using the base-10 
+log for interpretability.
 Because the distribution of moment percent errors is highly non-Gaussian due to 
 a small number ($<1\%$) of truly extreme outliers for both datasets, across all 
 $N_{f}$ and all formats, we substitute the interquartile range for traditional 
@@ -742,13 +760,13 @@ $1\sigma$ Gaussian error bars.
     \includegraphics[width=\columnwidth]{graham_pz_err.pdf}
     \includegraphics[width=\columnwidth]{schmidt_pz_err.pdf}
     \caption{
-   The median $\log_{10}$-percent errors on the mean ($\bigstar$), variance 
-($+$), and kurtosis ($\times$) of the \pz s for each dataset as a function of 
-the number $N_{f}$ of stored parameters per \pz\ for the quantile (dashed 
-purple line), samples (dash-dotted green line), and histogram (dotted orange 
-line) formats with interquartile range error bars based on 10 instantiations of 
-100 galaxies, where the $\log_{10}$-percent errors and their interquartile 
-ranges are offset around $N_{f}$ to improve readability.
+   The median $\log_{10}$-percent errors on the mean ($\pentagon$), variance 
+($\bigstar$), and kurtosis ($\APLstar$) of the \pz s for each dataset as a 
+function of the number $N_{f}$ of stored parameters per \pz\ for the quantile 
+(dashed purple line), samples (dash-dotted green line), and histogram (dotted 
+orange line) formats with interquartile range error bars based on 10 
+instantiations of 100 galaxies, where the $\log_{10}$-percent errors and their 
+interquartile ranges are offset around $N_{f}$ to improve readability.
    Left panel: The \mgdata \pz\ ensemble's moment percent errors are minimized 
 by the quantile format at all $N_{f}$.
    Right panel: The \ssdata \pz\ ensemble's moment percent errors are high for 
@@ -932,13 +950,13 @@ range for traditional $1\sigma$ Gaussian error bars.
     \includegraphics[width=\columnwidth]{graham_nz_err.pdf}    
 \includegraphics[width=\columnwidth]{schmidt_nz_err.pdf}
     \caption{
-    The percent error on the mean ($\bigstar$), variance ($+$), and kurtosis 
-($\times$) of the stacked estimator $hat{n}(z)$ of the redshift distribution 
-for each dataset as a function of the number $N_{f}$ of stored parameters for 
-the quantile (dashed purple line), samples (dash-dotted greenline), and 
-histogram (dotted orangeline) formats with interquartile range error bars based 
-on 10 instantiations of 100 galaxies, where the percent errors and their 
-interquartile ranges are offset about $N_{f}$ to improve readability.
+    The percent error on the mean ($\pentagon$), variance ($\bigstar$), and 
+kurtosis ($\APLstar$) of the stacked estimator $hat{n}(z)$ of the redshift 
+distribution for each dataset as a function of the number $N_{f}$ of stored 
+parameters for the quantile (dashed purple line), samples (dash-dotted 
+greenline), and histogram (dotted orangeline) formats with interquartile range 
+error bars based on 10 instantiations of 100 galaxies, where the percent errors 
+and their interquartile ranges are offset about $N_{f}$ to improve readability.
     Left panel: The \mgdata dataset shows evolution with $N_{f}$ of the 
 $\hat{n}(z)$ moment percent errors for the histogram format but none for the 
 samples and quantile formats.
@@ -1140,8 +1158,8 @@ concordance is illustrated in Figure~\ref{fig:tension}.
 There is some limiting tension $t_{\mathrm{lim}}\approx2$ below which the RMSE 
 is more sensitive than the KLD and above which the KLD is more sensitive than 
 the RMSE.
-This behavior hints at the KLD's reputation for sensitivity to the tails of a 
-distribution.
+This behavior hints at the KLD's reputation for sensitivity to the tails of the 
+reference distribution.
 The notion of tension may be more important for cosmological applications of 
 \pz s, indicating the KLD may be a more appropriate metric for coarser 
 approximations and the RMSE may be a more appropriate metric for less coarse 
@@ -1167,8 +1185,8 @@ N56981CC.
 \input{acknowledgments}
 
 We would like to thank Chad Schafer, Chris Morrison, Boris Leistedt, Stefano 
-Cavuoti, Maciej Bilicki, and Johann Cohen-Tanugi for helpful feedback in the 
-preparation of this paper.
+Cavuoti, Maciej Bilicki, Johann Cohen-Tanugi, Eric Gawiser, and Daniel Gruen 
+for helpful feedback in the preparation of this paper.
 AIM thanks Coryn Bailer-Jones, Eric Ford, and Morgan Fouesneau for helping to 
 provide context for this work outside cosmology.
 
