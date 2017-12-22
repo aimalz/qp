@@ -1,5 +1,7 @@
-\RequirePackage[switch, columnwise, running, displaymath, mathlines]{lineno}
+\RequirePackage[switch, columnwise, running, mathlines, displaymath, 
+mathlines]{lineno}
 \RequirePackage{docswitch}
+\def\flag{apj}
 \setjournal{\flag}
 
 \documentclass[\docopts]{\docclass}
@@ -215,7 +217,7 @@ The three formats we investigate are illustrated on a multimodal PDF in
 Figure~\ref{fig:qp}.
 \begin{figure}
   \begin{center}
-    \includegraphics[width=\columnwidth]{figures/demo_pz.pdf}
+    \includegraphics[width=\columnwidth]{demo_pz.pdf}
     \caption{\qp\ approximation of a continuous 1-dimensional PDF (thick, solid 
 gray line) using: the step function (orange dotted line), samples (green 
 dash-dotted line), and quantile formats (purple dashed line) with the same 
@@ -580,8 +582,8 @@ percentile of the modality distribution of the \pz\ catalog in question.
 
 \begin{figure*}
   \begin{center}
-    \includegraphics[width=\columnwidth]{figures/graham_pzs.pdf}
-    \includegraphics[width=\columnwidth]{figures/schmidt_pzs.pdf}
+    \includegraphics[width=\columnwidth]{graham_pzs.pdf}
+    \includegraphics[width=\columnwidth]{schmidt_pzs.pdf}
     \caption{
     Example \pz s from the two mock LSST datasets.
     Left: The \mgdata mock photometry yields largely narrow, unimodal \pz s.
@@ -673,7 +675,7 @@ An example of an individual \pz\ KLD distribution for the \mgdata dataset with
 $N_{f}=10$ is shown in Figure~\ref{fig:individual}.
 \begin{figure}
   \begin{center}
-    \includegraphics[width=\columnwidth]{figures/individual_kld.pdf}
+    \includegraphics[width=\columnwidth]{individual_kld.pdf}
     \caption{The distribution of log-KLD values for $N_{g}=100$ \pz s from the 
 \mgdata dataset with $N_{f}=10$ over the quantiles (purple with dashed border), 
 samples (green with dash-dotted border), and histogram (orange with dotted 
@@ -827,7 +829,7 @@ is lowest for the quantile format and highest for the histogram format.
 
 \begin{figure}
   \begin{center}
-    \includegraphics[width=\columnwidth]{figures/stacked.pdf}
+    \includegraphics[width=\columnwidth]{stacked.pdf}
     \caption{An example of the stacked estimator of the redshift distribution, 
 for a subsample of $N_{g}=100$ galaxies drawn from the \ssdata data mock 
 catalog and with $N_{f}=10$ parameters used for each \pz; the small-scale 
@@ -851,8 +853,8 @@ collected and plotted in Figure~\ref{fig:kld}, with error regions based on the
 variance between the 10 instantiations.
 \begin{figure*}
   \begin{center}
-    \includegraphics[width=\columnwidth]{figures/graham_nz_kld.pdf}    
-\includegraphics[width=\columnwidth]{figures/schmidt_nz_kld.pdf}
+    \includegraphics[width=\columnwidth]{graham_nz_kld.pdf}    
+\includegraphics[width=\columnwidth]{schmidt_nz_kld.pdf}
     \caption{The KLD between $\hat{n}(z)$ derived from approximate \pz\ 
 representations and $\hat{n}(z)$ derived from the original, high-resolution \pz 
 s, as a function of number $N_{f}$ of stored parameters, for the quantiles 
@@ -1122,7 +1124,7 @@ and accuracy must be related to how close $\mu$ is to $\mu_{0}$.
 
 \begin{figure}
   \begin{center}
-    \includegraphics[width=\columnwidth]{figures/precision.pdf}
+    \includegraphics[width=\columnwidth]{precision.pdf}
     \caption{The KLD and RMSE as a function of the root variance ratio $r$ for 
 a simple Gaussian example.
     The KLD (solid line) rises sharply at $\sigma<\sigma_{0}$ and is 
@@ -1141,7 +1143,7 @@ ratio of the estimated variance to the true variance.
 
 \begin{figure}
   \begin{center}
-    \includegraphics[width=\columnwidth]{figures/tension.pdf}
+    \includegraphics[width=\columnwidth]{tension.pdf}
     \caption{The KLD and RMSE as a function of the tension $t$ for a simple 
 Gaussian example.
     The KLD (solid lines) is equal to the square of the tension $t$, with a 
