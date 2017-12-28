@@ -65,7 +65,7 @@ class PDF(object):
         self.quantiles = quantiles
         self.histogram = qp.utils.normalize_histogram(histogram, vb=vb)
         self.samples = samples
-        self.gridded = qp.utils.normalize_integral(qp.utils.normalize_gridded(gridded, vb=vb))
+        self.gridded = qp.utils.normalize_integral(qp.utils.normalize_gridded(gridded))
         self.mix_mod = None
         self.limits = limits
 
@@ -147,7 +147,7 @@ class PDF(object):
             evaluated = self.approximate(loc, using=using, vb=vb)
             val = evaluated[1]
 
-        gridded = qp.utils.normalize_gridded((loc, val), vb=vb)
+        gridded = qp.utils.normalize_gridded((loc, val))
         if norm:
             gridded = qp.utils.normalize_integral(gridded, vb=vb)
 
@@ -295,16 +295,17 @@ class PDF(object):
                 try:
                     while (order>0) and (not np.array_equal(quantiles, np.sort(quantiles))):
                         if vb: print('order is '+str(order))
-                        b = spi.InterpolatedUnivariateSpline(icdf, grid, k=order, ext=1)
+                        b = spi.InterpolatedUnivariateSpline(icdf, grid, k=order, ext=1, check_finite=True)
                         quantiles = b(quantpoints)
                         order -= 1
                     assert(not np.any(np.isnan(quantiles)))
-                    assert(type(quantiles) is not dfitpack.error)
                 except AssertionError:
                     print('ERROR: splines failed because '+str(AssertionError)+', defaulting to optimization for '+str((icdf, grid)))
                     locs = np.array([bisect.bisect_right(icdf[:-1], quantpoints[n]) for n in range(N)])
                     quantiles = self.truth.ppf(quantpoints, ivals=grid[locs])
                     assert(not np.any(np.isnan(quantiles)))
+                except Exception, e:
+                    print('ERROR in `scipy.interpolate.InterpolatedUnivariateSpline`')
                 if vb: print('output quantiles = '+str(quantiles))
             else:
                 quantiles = self.truth.ppf(quantpoints)
@@ -513,8 +514,8 @@ class PDF(object):
                 if self.quantiles is None:
                     self.quantiles = self.quantize(vb=vb)
 
-                (x, y) = qp.utils.evaluate_quantiles(self.quantiles, vb=vb)
-                (endpoints, weights) = qp.utils.normalize_quantiles(self.quantiles, (x, y), vb=vb)
+                # (x, y) = qp.utils.evaluate_quantiles(self.quantiles, vb=vb)
+                (endpoints, weights) = qp.utils.normalize_quantiles(self.quantiles, vb=vb)
                 # endpoints = np.insert(self.quantiles[1], [0, -1], self.limits)
                 # weights = qp.utils.evaluate_quantiles(self.quantiles)[1]# self.evaluate((endpoints[1:]+endpoints[:-1])/2.)
                 # interpolator = self.interpolate(using='quantiles', vb=False)
@@ -586,14 +587,12 @@ class PDF(object):
                 order = self.scheme
 
             if vb: print('input quantiles are '+str(self.quantiles[1]))
-            (x, y) = qp.utils.evaluate_quantiles(self.quantiles, vb=vb)
-            if vb: print('evaluated quantile PDF: '+str((x, y)))
+            # (x, y) = qp.utils.evaluate_quantiles(self.quantiles, vb=vb)
+            # if vb: print('evaluated quantile PDF: '+str((x, y)))
             # [x_crit_lo, x_crit_hi] = [x[0], x[-1]]
             # [y_crit_lo, y_crit_hi] = [y[0], y[-1]]
-            (x, y) = qp.utils.normalize_quantiles(self.quantiles, (x, y), vb=vb)
+            (x, y) = qp.utils.normalize_quantiles(self.quantiles, vb=vb)
             if vb: print('complete evaluated quantile PDF: '+str((x, y)))
-            alternate = spi.interp1d(x, y, kind='linear', bounds_error=False, fill_value=default_eps)
-            backup = qp.utils.make_kludge_interpolator((x, y), outside=default_eps)
 
             z = np.insert(self.quantiles[1], 0, min(x))
             z = np.append(z, max(x))
@@ -652,12 +651,14 @@ class PDF(object):
                 except AssertionError:
                     print('ERROR: spline interpolation failed with '+str((xf[in_inds], yf[in_inds])))
                     try:
+                        alternate = spi.interp1d(x, y, kind='linear', bounds_error=False, fill_value=default_eps)
                         yf[in_inds] = alternate(xf[in_inds])
                         assert(np.all(yf >= default_eps))
                         if vb:
                             print 'Created a linear interpolator for the '+using+' parametrization.'
                     except AssertionError:
                         print 'ERROR: linear interpolation failed for the '+using+' parametrization with '+str((xf[in_inds], yf[in_inds]))
+                        backup = qp.utils.make_kludge_interpolator((x, y), threshold=default_eps)
                         yf[in_inds] = backup(xf[in_inds])
                         if vb:
                             print 'Doing linear interpolation by hand for the '+using+' parametrization.'
@@ -802,7 +803,7 @@ class PDF(object):
         interpolated = interpolator(points)
         # except:
         #     print('error in '+using+' interpolation of '+str(points))
-        interpolated = qp.utils.normalize_gridded((points, interpolated), vb=vb)
+        interpolated = qp.utils.normalize_gridded((points, interpolated))
         # interpolated[interpolated<0.] = 0.
 
         return interpolated#(points, interpolated)
@@ -868,10 +869,10 @@ class PDF(object):
                 print 'Plotted mixture model.'
 
         if self.quantiles is not None:
-            (z, p) = self.evaluate(self.quantiles[1], using='quantiles', vb=vb)
-            print('first: '+str((z,p)))
-            (x, y) = qp.utils.normalize_quantiles(self.quantiles, (z, p))
-            print('second: '+str((x,y)))
+            # (z, p) = self.evaluate(self.quantiles[1], using='quantiles', vb=vb)
+            # print('first: '+str((z,p)))
+            (x, y) = qp.utils.normalize_quantiles(self.quantiles)
+            print('second: '+str((x, y)))
             [min_x, max_x] = [min(x), max(x)]
             extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
             [min_x, max_x] = extrema
@@ -958,23 +959,25 @@ class PDF(object):
         Example::
             d = p.kld(limits=(-1., 1.), dx=1./100))
         """
+        print('This function is deprecated; use `qp.utils.calculate_kld`.')
+        return
         # print('This function is deprecated; use `qp.utils.calculate_kl_divergence`.')
         # return
-        if self.truth is None:
-            print('Truth not available for comparison.')
-            return
-        else:
-            if using is None:
-                using = self.last
-            if limits is None:
-                limits = self.limits
-            D = int((limits[-1] - limits[0]) / dx)
-            grid = np.linspace(limits[0], limits[1], D)
-            KL = qp.utils.quick_kl_divergence(self.evaluate(grid, using='truth'), self.evaluate(grid, using=using), dx=dx)
-            self.klds[using] = KL
-            return(KL)
+        # if self.truth is None:
+        #     print('Truth not available for comparison.')
+        #     return
+        # else:
+        #     if using is None:
+        #         using = self.last
+        #     if limits is None:
+        #         limits = self.limits
+        #     D = int((limits[-1] - limits[0]) / dx)
+        #     grid = np.linspace(limits[0], limits[1], D)
+        #     KL = qp.utils.quick_kl_divergence(self.evaluate(grid, using='truth'), self.evaluate(grid, using=using), dx=dx)
+        #     self.klds[using] = KL
+        #     return(KL)
 
-    def rms(self, limits=(0., 1.), dx=0.01):
+    def rmse(self, limits=(0., 1.), dx=0.01):
         """
         Calculates root mean square difference between quantile approximation
         and truth.
