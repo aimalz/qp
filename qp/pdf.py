@@ -72,7 +72,7 @@ class PDF(object):
         self.limits = limits
         self.scheme = scheme
         self.interpolator = [None, None]
-        if vb: print('interpolator set to '+str(self.interpolator))
+        # if vb: print('interpolator set to '+str(self.interpolator))
 
         # if vb and self.quantiles is None and self.histogram is None and self.gridded is None and self.samples is None:# and self.truth is None:
         #     print 'Warning: initializing a PDF object without inputs'
