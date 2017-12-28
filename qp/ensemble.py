@@ -110,7 +110,7 @@ class Ensemble(object):
 
         self.make_pdfs()
 
-        self.stacked = {}
+        # self.stacked = {}
         self.klds = {}
 
     def make_pdfs(self):
@@ -523,39 +523,39 @@ class Ensemble(object):
 
         return rmses
 
-    def stack(self, loc, using, vb=True):
-        """
-        Produces an average of the PDFs in the ensemble
-
-        Parameters
-        ----------
-        loc: ndarray, float or float
-            location(s) at which to evaluate the PDFs
-        using: string
-            which parametrization to use for the approximation
-        vb: boolean
-            report on progress
-
-        Returns
-        -------
-        self.stacked: tuple, ndarray, float
-            pair of arrays for locations where approximations were evaluated
-            and the values of the stacked PDFs at those points
-
-        Notes
-        -----
-        Stacking refers to taking the sum of PDFs evaluated on a shared grid and normalizing it such that it integrates to unity.  This is equivalent to calculating an average probability (based on the PDFs in the ensemble) over the grid.  This probably should be done in a script and not by qp!  The right way to do it would be to call qp.Ensemble.evaluate() and sum those outputs appropriately.
-        TO DO: make this do something more efficient for mixmod, grid, histogram, samples
-        TO DO: enable stacking on irregular grid
-        """
-        loc_range = max(loc) - min(loc)
-        delta = loc_range / len(loc)
-        evaluated = self.evaluate(loc, using=using, norm=True, vb=vb)
-        stack = np.mean(evaluated[1], axis=0)
-        stack /= np.sum(stack) * delta
-        assert(np.isclose(np.sum(stack) * delta, 1.))
-        self.stacked[using] = (evaluated[0], stack)
-        return self.stacked
+    # def stack(self, loc, using, vb=True):
+    #     """
+    #     Produces an average of the PDFs in the ensemble
+    #
+    #     Parameters
+    #     ----------
+    #     loc: ndarray, float or float
+    #         location(s) at which to evaluate the PDFs
+    #     using: string
+    #         which parametrization to use for the approximation
+    #     vb: boolean
+    #         report on progress
+    #
+    #     Returns
+    #     -------
+    #     self.stacked: tuple, ndarray, float
+    #         pair of arrays for locations where approximations were evaluated
+    #         and the values of the stacked PDFs at those points
+    #
+    #     Notes
+    #     -----
+    #     Stacking refers to taking the sum of PDFs evaluated on a shared grid and normalizing it such that it integrates to unity.  This is equivalent to calculating an average probability (based on the PDFs in the ensemble) over the grid.  This probably should be done in a script and not by qp!  The right way to do it would be to call qp.Ensemble.evaluate() and sum those outputs appropriately.
+    #     TO DO: make this do something more efficient for mixmod, grid, histogram, samples
+    #     TO DO: enable stacking on irregular grid
+    #     """
+    #     loc_range = max(loc) - min(loc)
+    #     delta = loc_range / len(loc)
+    #     evaluated = self.evaluate(loc, using=using, norm=True, vb=vb)
+    #     stack = np.mean(evaluated[1], axis=0)
+    #     stack /= np.sum(stack) * delta
+    #     assert(np.isclose(np.sum(stack) * delta, 1.))
+    #     self.stacked[using] = (evaluated[0], stack)
+    #     return self.stacked
 
 # Note: A copious quantity of commented code has been removed in this commit!
 # For future reference, it can still be found here:
