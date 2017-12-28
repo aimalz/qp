@@ -17,7 +17,7 @@ from utils import lims as default_lims
 
 class Ensemble(object):
 
-    def __init__(self, N, truth=None, quantiles=None, histogram=None, gridded=None, samples=None, limits=None, scheme='linear', vb=True, procs=None):# where='ensemble.db', procs=None):#
+    def __init__(self, N, funcform=None, quantiles=None, histogram=None, gridded=None, samples=None, limits=None, scheme='linear', vb=True, procs=None):# where='ensemble.db', procs=None):#
         """
         Creates an object comprised of many qp.PDF objects to efficiently
         perform operations on all of them
@@ -26,8 +26,7 @@ class Ensemble(object):
         ----------
         N: int
             number of pdfs in the ensemble
-        truth: list of scipy.stats.rv_continuous objects or qp.composite objects
-            , optional
+        funcform: list of scipy.stats.rv_continuous objects or qp.composite objects, optional
             List of length (npdfs) containing the continuous, parametric forms of the PDFs
         quantiles: tuple of ndarrays, optional
             Pair of arrays of lengths (nquants) and (npdfs, nquants) containing
@@ -75,7 +74,7 @@ class Ensemble(object):
         self.n_pdfs = N
         self.pdf_range = range(N)
 
-        if truth is None and quantiles is None and histogram is None and gridded is None and samples is None:
+        if funcform is None and quantiles is None and histogram is None and gridded is None and samples is None:
             print 'Warning: initializing an Ensemble object without inputs'
             return
 
@@ -84,10 +83,10 @@ class Ensemble(object):
         else:
             self.limits = limits
 
-        if truth is None:
-            self.truth = [None] * N
+        if funcform is None:
+            self.mix_mod = [None] * N
         else:
-            self.truth = truth
+            self.mix_mod = funcform
         if samples is None:
             self.samples = [None] * N
         else:
@@ -104,7 +103,7 @@ class Ensemble(object):
             self.gridded = (None, [None] * N)
         else:
             self.gridded = (None, [(gridded[0], gridded[1][i]) for i in self.pdf_range])
-        self.mix_mod = None
+        # self.mix_mod = None
         self.evaluated = None
 
         self.scheme = scheme
@@ -121,7 +120,8 @@ class Ensemble(object):
         def make_pdfs_helper(i):
             # with open(self.logfilename, 'wb') as logfile:
             #     logfile.write('making pdf '+str(i)+'\n')
-            return qp.PDF(truth=self.truth[i], quantiles=self.quantiles[i],
+            return qp.PDF( funcform=self.mix_mod[i],
+                            quantiles=self.quantiles[i],
                             histogram=self.histogram[i],
                             gridded=self.gridded[-1][i], samples=self.samples[i], limits=self.limits,
                             scheme=self.scheme, vb=False)
@@ -275,7 +275,7 @@ class Ensemble(object):
 
         return self.mix_mod
 
-    def evaluate(self, loc, using=None, norm=False, vb=True):
+    def evaluate(self, loc, using=None, norm=False, vb=False):
         """
         Evaluates all PDFs
 
@@ -327,6 +327,8 @@ class Ensemble(object):
         integral: numpy.ndarray, float
             value of the integral
         """
+        if len(np.shape(limits)) == 1:
+            limits = [limits] * self.n_pdfs
         def integrate_helper(i):
             try:
                 return self.pdfs[i].integrate(limits[i], using=using, dx=dx, vb=False)

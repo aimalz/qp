@@ -25,7 +25,8 @@ from qp.utils import lims as default_lims
 
 class PDF(object):
 
-    def __init__(self, truth=None, quantiles=None, histogram=None,
+    def __init__(self, funcform=None,
+                 quantiles=None, histogram=None,
                  gridded=None, samples=None, limits=default_lims, scheme='linear',
                  vb=True):
         """
@@ -34,8 +35,8 @@ class PDF(object):
 
         Parameters
         ----------
-        truth: scipy.stats.rv_continuous object or qp.composite object, optional
-            Continuous, parametric form of the PDF
+        # truth: scipy.stats.rv_continuous object or qp.composite object, optional
+        #     Continuous, parametric form of the PDF
         quantiles: tuple of ndarrays, optional
             Pair of arrays of lengths (nquants, nquants) containing CDF
             values and quantiles
@@ -61,25 +62,28 @@ class PDF(object):
         TO DO: change dx --> dz (or delta)
         TO DO: consider changing quantiles input to just be the z-values since interpolation gives the p(z) values anyway
         """
-        self.truth = truth
+        # self.truth = truth
         self.quantiles = quantiles
         self.histogram = qp.utils.normalize_histogram(histogram, vb=vb)
         self.samples = samples
         self.gridded = qp.utils.normalize_integral(qp.utils.normalize_gridded(gridded))
-        self.mix_mod = None
+        self.mix_mod = funcform
+        self.mixmod = self.mix_mod
         self.limits = limits
-
         self.scheme = scheme
+        self.interpolator = [None, None]
+        if vb: print('interpolator set to '+str(self.interpolator))
 
-        if vb and self.truth is None and self.quantiles is None and self.histogram is None and self.gridded is None and self.samples is None:
-            print 'Warning: initializing a PDF object without inputs'
-            return
+        # if vb and self.quantiles is None and self.histogram is None and self.gridded is None and self.samples is None:# and self.truth is None:
+        #     print 'Warning: initializing a PDF object without inputs'
+        #     return
 
         # Record how the PDF object was initialized:
-        if self.truth is not None:
-            self.initialized = self.truth
-            self.first = 'truth'
+        if self.mix_mod is not None:
+            self.initialized = self.mix_mod
+            self.first = 'mix_mod'
         elif self.gridded is not None:
+        # if self.gridded is not None:
             self.initialized = self.gridded
             self.first = 'gridded'
             self.limits = (min(self.limits[0], np.min(self.gridded[0])), max(self.limits[-1], np.max(self.gridded[0])))
@@ -95,12 +99,15 @@ class PDF(object):
             self.initialized = self.quantiles
             self.first = 'quantiles'
             self.limits = (min(self.limits[0], np.min(self.quantiles[-1])), max(self.limits[-1], np.max(self.quantiles[-1])))
+        else:
+            print 'Warning: initializing a PDF object without inputs'
+            return
 
         # The most recent parametrization used is, at this point, the
         # first one:
+        self.truth = self.first
         self.last = self.first
-        self.interpolator = [None, None]
-        self.klds = {}
+        # self.klds = {}
 
         return
 
@@ -127,16 +134,16 @@ class PDF(object):
             the input locations and the value of the PDF (or its approximation) at the requested location(s)
         """
         if using is None:
-            using = self.first
+            using = self.last
 
-        if using == 'truth':
-            if self.truth is not None:
-                if vb: print 'Evaluating the true distribution.'
-                val = self.truth.pdf(loc)
-                self.evaluated = (loc, val)
-            else:
-                raise ValueError('true PDF is not set, use an approximation instead (the most recent one was '+self.last+')')
-        elif using == 'mix_mod':
+        # if using == 'truth':
+        #     if self.truth is not None:
+        #         if vb: print 'Evaluating the true distribution.'
+        #         val = self.truth.pdf(loc)
+        #         self.evaluated = (loc, val)
+        #     else:
+        #         raise ValueError('true PDF is not set, use an approximation instead (the most recent one was '+self.last+')')
+        if using == 'mix_mod':
             if self.mix_mod is None:
                 self.mix_mod = self.mix_mod_fit(vb=vb)
             if vb: print 'Evaluating the fitted mixture model distribution.'
@@ -230,8 +237,8 @@ class PDF(object):
         if limits is None:
             limits = self.limits
 
-        if self.truth is not None:
-            if isinstance(self.truth, qp.composite):
+        if self.mixmod is not None:
+            if isinstance(self.mixmod, qp.composite):
                 if type(self.scheme) != int:
                     order = 5
                 else:
@@ -241,13 +248,13 @@ class PDF(object):
                 min_delta = np.min(extrapoints[1:] - extrapoints[:-1])
 
                 grid = np.linspace(limits[0], limits[-1], N + 1)
-                icdf = self.truth.cdf(grid)
+                icdf = self.mixmod.cdf(grid)
                 unit_ext = 1. / (order + 1.)
                 low_extended = 0
                 while icdf[0] >= quantpoints[0]:
                     low_extended += 1
                     subgrid = np.linspace(limits[0] - 1., limits[0] - unit_ext, order)
-                    subcdf = self.truth.cdf(subgrid)
+                    subcdf = self.mixmod.cdf(subgrid)
                     grid = np.concatenate((subgrid, grid))
                     icdf = np.concatenate((subcdf, icdf))
                     limits = (limits[0] - 1., limits[-1])
@@ -257,7 +264,7 @@ class PDF(object):
                 while icdf[-1] <= quantpoints[-1]:
                     high_extended += 1
                     subgrid = np.linspace(limits[-1] + unit_ext, limits[-1] + 1., order)
-                    subcdf = self.truth.cdf(subgrid)
+                    subcdf = self.mixmod.cdf(subgrid)
                     grid = np.concatenate((grid, subgrid))
                     icdf = np.concatenate((icdf, subcdf))
                     limits = (limits[0], limits[-1] + 1.)
@@ -273,7 +280,7 @@ class PDF(object):
                         delta_i = new_deltas[i] / (order + 1.)
                         subgrid = np.linspace(grid[i] + delta_i, grid[i+1] - delta_i, order)
                         grid = np.sort(np.insert(grid, i, subgrid))
-                        subcdf = self.truth.cdf(subgrid)
+                        subcdf = self.mixmod.cdf(subgrid)
                         icdf = np.sort(np.insert(icdf, i, subcdf))
                     new_deltas = icdf[1:] - icdf[:-1]
                 if vb:
@@ -302,13 +309,13 @@ class PDF(object):
                 except AssertionError:
                     print('ERROR: splines failed because '+str(AssertionError)+', defaulting to optimization for '+str((icdf, grid)))
                     locs = np.array([bisect.bisect_right(icdf[:-1], quantpoints[n]) for n in range(N)])
-                    quantiles = self.truth.ppf(quantpoints, ivals=grid[locs])
+                    quantiles = self.mixmod.ppf(quantpoints, ivals=grid[locs])
                     assert(not np.any(np.isnan(quantiles)))
                 except Exception, e:
                     print('ERROR in `scipy.interpolate.InterpolatedUnivariateSpline`')
                 if vb: print('output quantiles = '+str(quantiles))
             else:
-                quantiles = self.truth.ppf(quantpoints)
+                quantiles = self.mixmod.ppf(quantpoints)
         else:
             print('New quantiles can only be computed from a truth distribution in this version.')
             return
@@ -363,14 +370,14 @@ class PDF(object):
 
         histogram = np.zeros(N)
         if vb: print 'Calculating histogram: ', binends
-        if self.truth is not None:
-            cdf = self.truth.cdf(binends)
+        if self.mixmod is not None:
+            cdf = self.mixmod.cdf(binends)
             heights = cdf[1:] - cdf[:-1]
             histogram = qp.utils.normalize_histogram((binends, heights), vb=vb)
             # for b in range(N):
             #     histogram[b] = (cdf[b+1]-cdf[b])/(binends[b+1]-binends[b])
         else:
-            print 'New histograms can only be computed from a truth distribution in this version.'
+            print 'New histograms can only be computed from a mixmod format in this version.'
             return
 
         if vb: print 'Result: ', histogram
@@ -491,9 +498,9 @@ class PDF(object):
 
         if vb: print 'Sampling from '+using+' parametrization.'
 
-        if using == 'truth':
-            samples = self.truth.rvs(size=N)
-        elif using == 'mix_mod':
+        # if using == 'truth':
+        #     samples = self.truth.rvs(size=N)
+        if using == 'mix_mod':
             samples = self.mix_mod.rvs(size=N)
 
         elif using == 'gridded':
@@ -573,8 +580,9 @@ class PDF(object):
             using = self.last
 
         if using == 'truth' or using == 'mix_mod':
+            interpolator = self.mix_mod.pdf
             print 'A functional form needs no interpolation.  Try converting to an approximate parametrization first.'
-            return
+            # return
 
         if using == 'quantiles':
             # First find the quantiles if none exist:
@@ -848,12 +856,12 @@ class PDF(object):
         styles['samples'] = '-.'#(0,(1,2))
 
         x = np.linspace(self.limits[0], self.limits[-1], 100)
-        if self.truth is not None:
-            [min_x, max_x] = [self.truth.ppf(np.array([0.001])), self.truth.ppf(np.array([0.999]))]
+        if self.mixmod is not None:
+            [min_x, max_x] = [self.mixmod.ppf(np.array([0.001])), self.mixmod.ppf(np.array([0.999]))]
             extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
             [min_x, max_x] = extrema
             x = np.linspace(min_x, max_x, 100)
-            y = self.truth.pdf(x)
+            y = self.mixmod.pdf(x)
             plt.plot(x, y, color=colors['truth'], linestyle=styles['truth'], lw=5.0, alpha=0.25, label='True PDF')
             if vb:
                 print 'Plotted truth.'
@@ -935,76 +943,76 @@ class PDF(object):
 
         return
 
-    def kld(self, using=None, limits=None, dx=0.01):
-        """
-        Calculates Kullback-Leibler divergence of quantile approximation from truth.
-
-        Parameters
-        ----------
-        using: string
-            parametrization to use
-        limits: tuple of floats, optional
-            endpoints of integration interval in which to calculate KLD
-        dx: float
-            resolution of integration grid
-
-        Returns
-        -------
-        KL: float
-            value of Kullback-Leibler divergence from approximation to truth
-            if truth is available; otherwise nothing.
-
-        Notes
-        -----
-        Example::
-            d = p.kld(limits=(-1., 1.), dx=1./100))
-        """
-        print('This function is deprecated; use `qp.utils.calculate_kld`.')
-        return
-        # print('This function is deprecated; use `qp.utils.calculate_kl_divergence`.')
-        # return
-        # if self.truth is None:
-        #     print('Truth not available for comparison.')
-        #     return
-        # else:
-        #     if using is None:
-        #         using = self.last
-        #     if limits is None:
-        #         limits = self.limits
-        #     D = int((limits[-1] - limits[0]) / dx)
-        #     grid = np.linspace(limits[0], limits[1], D)
-        #     KL = qp.utils.quick_kl_divergence(self.evaluate(grid, using='truth'), self.evaluate(grid, using=using), dx=dx)
-        #     self.klds[using] = KL
-        #     return(KL)
-
-    def rmse(self, limits=(0., 1.), dx=0.01):
-        """
-        Calculates root mean square difference between quantile approximation
-        and truth.
-
-        Parameters
-        ----------
-        limits: tuple of floats
-            endpoints of integration interval in which to calculate KLD
-        dx: float
-            resolution of integration grid
-
-        Returns
-        -------
-        RMS: float
-            value of root mean square difference between approximation of truth
-            if truth is available; otherwise nothing.
-
-        Notes
-        -----
-        Example::
-            d = p.rms(limits=(-1., 1.), dx=1./100))
-        """
-        print('This function is deprecated; use `qp.utils.calculate_rmse`.')
-        return
-        # if self.truth is None:
-        #     print('Truth not available for comparison.')
-        #     return
-        # else:
-        #     RMS = qp.utils.calculate_rms(self, self, limits=limits, dx=dx)
-        #     return(RMS)
+    # def kld(self, using=None, limits=None, dx=0.01):
+    #     """
+    #     Calculates Kullback-Leibler divergence of quantile approximation from truth.
+    #
+    #     Parameters
+    #     ----------
+    #     using: string
+    #         parametrization to use
+    #     limits: tuple of floats, optional
+    #         endpoints of integration interval in which to calculate KLD
+    #     dx: float
+    #         resolution of integration grid
+    #
+    #     Returns
+    #     -------
+    #     KL: float
+    #         value of Kullback-Leibler divergence from approximation to truth
+    #         if truth is available; otherwise nothing.
+    #
+    #     Notes
+    #     -----
+    #     Example::
+    #         d = p.kld(limits=(-1., 1.), dx=1./100))
+    #     """
+    #     print('This function is deprecated; use `qp.utils.calculate_kld`.')
+    #     return
+    #     # print('This function is deprecated; use `qp.utils.calculate_kl_divergence`.')
+    #     # return
+    #     # if self.truth is None:
+    #     #     print('Truth not available for comparison.')
+    #     #     return
+    #     # else:
+    #     #     if using is None:
+    #     #         using = self.last
+    #     #     if limits is None:
+    #     #         limits = self.limits
+    #     #     D = int((limits[-1] - limits[0]) / dx)
+    #     #     grid = np.linspace(limits[0], limits[1], D)
+    #     #     KL = qp.utils.quick_kl_divergence(self.evaluate(grid, using='truth'), self.evaluate(grid, using=using), dx=dx)
+    #     #     self.klds[using] = KL
+    #     #     return(KL)
+    #
+    # def rmse(self, limits=(0., 1.), dx=0.01):
+    #     """
+    #     Calculates root mean square difference between quantile approximation
+    #     and truth.
+    #
+    #     Parameters
+    #     ----------
+    #     limits: tuple of floats
+    #         endpoints of integration interval in which to calculate KLD
+    #     dx: float
+    #         resolution of integration grid
+    #
+    #     Returns
+    #     -------
+    #     RMS: float
+    #         value of root mean square difference between approximation of truth
+    #         if truth is available; otherwise nothing.
+    #
+    #     Notes
+    #     -----
+    #     Example::
+    #         d = p.rms(limits=(-1., 1.), dx=1./100))
+    #     """
+    #     print('This function is deprecated; use `qp.utils.calculate_rmse`.')
+    #     return
+    #     # if self.truth is None:
+    #     #     print('Truth not available for comparison.')
+    #     #     return
+    #     # else:
+    #     #     RMS = qp.utils.calculate_rms(self, self, limits=limits, dx=dx)
+    #     #     return(RMS)
