@@ -1,5 +1,17 @@
 import numpy as np
 
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+mpl.rcParams['text.usetex'] = True
+mpl.rcParams['mathtext.rm'] = 'serif'
+mpl.rcParams['font.family'] = 'serif'
+mpl.rcParams['font.serif'] = 'Times New Roman'
+mpl.rcParams['axes.titlesize'] = 16
+mpl.rcParams['axes.labelsize'] = 16
+mpl.rcParams['savefig.dpi'] = 250
+mpl.rcParams['savefig.format'] = 'pdf'
+mpl.rcParams['savefig.bbox'] = 'tight'
+
 import qp
 
 def calculate_moment(p, N, using=None, limits=None, dx=0.01, vb=False):
@@ -169,6 +181,7 @@ def calculate_rmse(p, q, limits=qp.utils.lims, dx=0.01, vb=False):
     Notes
     -----
     TO DO: change dx to N
+    TO DO: change PDF objects to parametrization objects
     """
     # Make a grid from the limits and resolution
     N = int((limits[-1] - limits[0]) / dx)
@@ -204,3 +217,160 @@ def quick_rmse(p_eval, q_eval, N):
     # Calculate the RMS between p and q
     rms = np.sqrt(np.sum((p_eval - q_eval) ** 2) / N)
     return rms
+
+def plot(PDF, limits=None, res=100, names=None, loc='plot.pdf', cmap=None,
+        style=False, vb=False):
+    """
+    Plots representations of a PDF
+
+    Parameters
+    ----------
+    PDF: qp.PDF object
+        the PDF object whose representations will be plotted
+    limits: tuple, float, optional
+        limits over which plot should be made
+    res: int, optional
+        number of points at which to evaluate representations
+    names: list, string, optional
+        names of the parametrizations to include in plot
+    loc: string, optional
+        filepath/name for saving the plot, optional
+    cmap: string, optional
+        name of colormap, must be an option from matplotlib colormaps
+    style: boolean, optional
+        plot formats with different linestyles?
+    vb: boolean, optional
+        report on progress to stdout?
+
+    Notes
+    -----
+    What this method plots depends on what information about the PDF
+    is stored in it: the more parametrizations the PDF has,
+    the more exciting the plot!
+    """
+    if limits is None:
+        limits = PDF.limits
+    x = np.linspace(limits[0], limits[-1], res)
+
+    if names is None:
+        names = PDF.parametrizations.keys()
+    n_p = len(names)
+    p_indices = range(n_p)
+
+    if cmap is None:
+        cmap = plt.get_cmap('nipy')
+    elif type(cmap) == str:
+        cmap = plt.get_cmap(cmap)
+
+    if not style:
+        style = ['-'] * range(n_p)
+    else:
+        style = [(0, (i+1, 2*(i+1))) for i in p_indices]
+
+    p_colors = np.linspace(0., 1., n_p)
+    colors, styles = {}, {}
+    for i in range(n_p):
+        colors[names[i]] = cmap(p_colors[i])
+        styles[names[i]] = styles[i]
+
+    # colors = {}
+    # colors['truth'] = 'k'
+    # colors['mix_mod'] = 'k'
+    # colors['gridded'] = 'k'
+    # colors['quantiles'] = 'blueviolet'
+    # colors['histogram'] = 'darkorange'
+    # colors['samples'] = 'forestgreen'
+    #
+    # styles = {}
+    # styles['truth'] = '-'
+    # styles['mix_mod'] = ':'
+    # styles['gridded'] = '--'
+    # styles['quantiles'] = '--'#(0,(5,10))
+    # styles['histogram'] = ':'#(0,(3,6))
+    # styles['samples'] = '-.'#(0,(1,2))
+
+    x = np.linspace(limits[0], limits[-1], 100)
+    for name in names:
+        y = PDF.parametrizations[name].convert('pointeval', x).parameters
+        plt.plot(x, y, color=colors[name], linestyle=styles[name], lw=2.0, alpha=0.5, label=name)
+        if vb: print 'Plotted ' + name + '.'
+
+
+    # if PDF.mixmod is not None:
+    #     [min_x, max_x] = [PDF.mixmod.ppf(np.array([0.001])), PDF.mixmod.ppf(np.array([0.999]))]
+    #     extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
+    #     [min_x, max_x] = extrema
+    #     x = np.linspace(min_x, max_x, res)
+    #     y = PDF.mixmod.pdf(x)
+    #     plt.plot(x, y, color=colors['truth'], linestyle=styles['truth'], lw=5.0, alpha=0.25, label='True PDF')
+    #
+    # if PDF.mix_mod is not None:
+    #     [min_x, max_x] = [PDF.mix_mod.ppf(np.array([0.001])), PDF.mix_mod.ppf(np.array([0.999]))]
+    #     extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
+    #     [min_x, max_x] = extrema
+    #     x = np.linspace(min_x, max_x, 100)
+    #     y = PDF.mix_mod.pdf(x)
+    #     plt.plot(x, y, color=colors['mix_mod'], linestyle=styles['mix_mod'], lw=2.0, alpha=1.0, label='Mixture Model PDF')
+    #
+    # if PDF.quantiles is not None:
+    #     # (z, p) = PDF.evaluate(PDF.quantiles[1], using='quantiles', vb=vb)
+    #     # print('first: '+str((z,p)))
+    #     (x, y) = qp.utils.normalize_quantiles(PDF.quantiles)
+    #     print('second: '+str((x, y)))
+    #     [min_x, max_x] = [min(x), max(x)]
+    #     extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
+    #     [min_x, max_x] = extrema
+    #     x = np.linspace(min_x, max_x, 100)
+    #     print('third: '+str(x))
+    #     (grid, qinterpolated) = PDF.approximate(x, vb=vb, using='quantiles')
+    #     plt.scatter(PDF.quantiles[1], np.zeros(np.shape(PDF.quantiles[1])), color=colors['quantiles'], marker='|', s=100, label='Quantiles', alpha=0.75)
+    #     # plt.vlines(z, np.zeros(len(PDF.quantiles[1])), p, color=colors['quantiles'], linestyle=styles['quantiles'], lw=1.0, alpha=1.0, label='Quantiles')
+    #     plt.plot(grid, qinterpolated, color=colors['quantiles'], lw=2.0, alpha=1.0, linestyle=styles['quantiles'], label='Quantile Interpolated PDF')
+    #
+    # if PDF.histogram is not None:
+    #     [min_x, max_x] = [min(PDF.histogram[0]), max(PDF.histogram[0])]
+    #     extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
+    #     [min_x, max_x] = extrema
+    #     x = np.linspace(min_x, max_x, 100)
+    #     # plt.vlines(PDF.histogram[0], PDF.histogram[0][:-1],
+    #     #            PDF.histogram[0][1:], color=colors['histogram'], linestyle=styles['histogram'], lw=1.0, alpha=1., label='histogram bin ends')
+    #     plt.scatter(PDF.histogram[0], np.zeros(np.shape(PDF.histogram[0])), color=colors['histogram'], marker='|', s=100, label='Histogram Bin Ends', alpha=0.75)
+    #     (grid, hinterpolated) = PDF.approximate(x, vb=vb,
+    #                                              using='histogram')
+    #     plt.plot(grid, hinterpolated, color=colors['histogram'], lw=2.0, alpha=1.0,
+    #              linestyle=styles['histogram'],
+    #              label='Histogram Interpolated PDF')
+    #     extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
+    #
+    # if PDF.gridded is not None:
+    #     [min_x, max_x] = [min(PDF.gridded[0]), max(PDF.gridded[0])]
+    #     extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
+    #     [min_x, max_x] = extrema
+    #     (x, y) = PDF.gridded
+    #     plt.plot(x, y, color=colors['gridded'], lw=1.0, alpha=0.5,
+    #              linestyle=styles['gridded'], label='Gridded PDF')
+    #     if vb:
+    #         print 'Plotted gridded.'
+    #
+    # if PDF.samples is not None:
+    #     [min_x, max_x] = [min(PDF.samples), max(PDF.samples)]
+    #     extrema = [min(extrema[0], min_x), max(extrema[1], max_x)]
+    #     [min_x, max_x] = extrema
+    #     x = np.linspace(min_x, max_x, 100)
+    #     plt.scatter(PDF.samples, np.zeros(np.shape(PDF.samples)), color=colors['samples'], marker='|', s=100, label='Samples', alpha=0.75)
+    #     (grid, sinterpolated) = PDF.approximate(x, vb=vb,
+    #                                              using='samples')
+    #     plt.plot(grid, sinterpolated, color=colors['samples'], lw=2.0,
+    #                 alpha=1.0, linestyle=styles['samples'],
+    #                 label='Samples Interpolated PDF')
+    #     if vb:
+    #         print('Plotted samples')
+
+    plt.xlim(extrema[0], extrema[-1])
+    plt.legend(fontsize='large')
+    plt.xlabel(r'$z$', fontsize=16)
+    plt.ylabel(r'$p(z)$', fontsize=16)
+    plt.tight_layout()
+    plt.savefig(loc, dpi=250)
+
+    return
