@@ -1,3 +1,4 @@
+lmfit
 matplotlib
 numpy
 pathos

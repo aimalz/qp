@@ -1,6 +1,6 @@
+import lmfit
 import numpy as np
 import scipy.interpolate as spi
-import scipy.optimize as spo
 import scipy.stats as sps
 
 class Parametrization(object):
@@ -110,11 +110,17 @@ class FuncForm(Parametrization):
         Parametrization.__init__(self, 'funcform', metaparam, param, name=name, vb=vb)
 
         self.function = self.metaparam['function']
-        params = self.metaparam
+        params = self.metaparam.copy()
         params.update(self.param)
         params.pop('function')
         self.params = params
-        self.representation = self.function(**self.params)
+        use_params = params.copy()
+        if 'shape' in params.keys() and params['shape'] is not None and len(params['shape']) == 0:
+            defaults = params['shape']
+            use_params.pop('shape')
+            self.representation = self.function(*defaults, **use_params)
+        else:
+            self.representation = self.function(**use_params)
 
     def _pdf(self):
         """
@@ -196,7 +202,7 @@ class FuncForm(Parametrization):
             if vb:
                 print 'Converting to '+format_type+' via '+via['format_type']
             intermediate = self.convert(via['format_type'], via['metaparam'], vb=vb)
-            target = intermediate.convert('funcform', metaparam, name=name, vb=vb)
+            target = intermediate.convert(format_type, metaparam, name=name, vb=vb)
         elif format_type == 'pointeval':
             try:
                 evaluator = self.pdf_evaluator
@@ -243,53 +249,121 @@ class PointEval(Parametrization):
         """
         Parametrization.__init__(self, 'pointeval', metaparam, param, name=name, vb=vb)
 
-    def _curve_fit(self):
+        self.last_fit_args = None
+        self.last_pdf_scheme = None
+        self.last_pdf_args = None
+        self.last_cdf_scheme = None
+        self.last_cdf_args = None
+
+    def _fit(self, **fit_args):
         """
         Returns a function that fits a functional form via optimization
+
+        Notes
+        -----
+        TO DO: add a way to actually feed in fit arguments
         """
-        def fit(function, metaparam, xdata, ydata, fit_args=None):
-            def fun(x, param):
-                y = qp.Parametrization.FuncForm(function, metaparam, param).pdf(x)
+        self.last_fit_args = fit_args
+        def fit(metaparam, ivals=None):
+            if ivals is None:
+                ivals = {}
+                intermediate = metaparam['function']()
+                shape, loc, scale = intermediate.dist._parse_args(*intermediate.args, **intermediate.kwds)
+                if len(shape) != 0:
+                    ivals['shape'] = shape
+                ivals['loc'] = loc
+                ivals['scale'] = scale
+            def fun(x, **param):
+                ff = FuncForm(metaparam, param)
+                pe = ff.convert('pointeval', x)
+                y = pe.param
                 return y
-            popt, pcov = spo.curve_fit(fun, xdata, ydata, **fit_args)
-            return popt
-        self.curve_fit_evaluator = fit
-        return self.curve_fit_evaluator
+            fmodel = lmfit.Model(fun)
+            pars = fmodel.make_params(**ivals)
+            res = fmodel.fit(self.param, params=pars, x=self.metaparam)
+            return res.values
+        self.fit_evaluator = fit
+        return self.fit_evaluator
 
-    def _interp1d(self):
+    def _pdf(self, scheme, **pdf_args):
         """
-        Returns an interpolating function using `scipy.interpolate.interp1d`
+        Returns a non-parametric PDF function
         """
-        def fit(x, xdata, ydata, fit_args=None):
-            fun = spi.interp1d(xdata, ydata, **fit_args)
-            return fun(x)
-        self.interp1d_evaluator = fit
-        return self.interp1d_evaluator
+        self.last_pdf_scheme = scheme
+        self.last_pdf_args = pdf_args
+        if scheme == 'interp1d':
+            def pdf(x):
+                fun = spi.interp1d(self.metaparam, self.param, pdf_args)
+                return fun(x)
+        if scheme == 'spline':
+            def pdf(x):
+                fun = spi.InterpolatedUnivariateSpline(self.metaparam, self.param, pdf_args)
+                return fun(x)
+        self.pdf_evaluator = pdf
+        return self.pdf_evaluator
 
-    def _spline(self):
+    def _rvs(self, scheme, **rvs_args):
         """
-        Returns an interpolating function using `scipy.interpolate.InterpolatingUnivariateSpline`
+        Returns a function giving samples
         """
-        def fun(xdata, ydata, fit_args=None):
-            fun = spi.InterpolatedUnivariateSpline(xdata, ydata, **fit_args)
-            return fun
-        self.spline_evaluator = fun
+        if self.last_pdf_scheme == scheme and self.last_pdf_args == rvs_args:
+            try:
+                pdf = self.pdf_evaluator
+            except AttributeError:
+                pdf = self._pdf(scheme, rvs_args)
+        else:
+            pdf = self._pdf(scheme, rvs_args)
+        (xmin, xmax) = (min(self.metaparam), max(self.metaparam))
+        (ymin, ymax) = (min(self.param), max(self.param))
+        (xran, yran) = (xmax - xmin, ymax - ymin)
+        def rvs(N):
+            xs = []
+            while len(samples) < N:
+                (x, y) = (xmin + xran * np.random.uniform(), ymin + yran * np.random.uniform())
+                if y < pdf(x):
+                    xs.append(x)
+            return xs
+        self.rvs_evaluator = rvs
+        return self.rvs_evaluator
 
-        def antiderivative(x, fit_args=None):
-            newfun = self.spline_evaluator.antiderivative(**fit_args)
-            return newfun
-        self.spline_antiderivative = antiderivative
+    def _cdf(self, scheme, **cdf_args):
+        """
+        Returns a function that gives the integral from the minimum evaluation point to specified value
+        """
+        self.last_cdf_scheme = scheme
+        self.last_cdf_args = cdf_args
+        if scheme == 'spline':
+            xi = min(self.metaparam)
+            def cdf(xf):
+                fun = spi.InterpolatedUnivariateSpline(self.metaparam, self.param, fit_args).integral
+                return fun(xi, xf)
+        else:
+            print scheme+' not yet supported'
+            return
+        self.cdf_evaluator = np.vectorize(cdf)
+        return self.cdf_evaluator
 
-        def derivative(x, fit_args=None):
-            newfun = self.spline_evaluator.derivative(**fit_args)
-            return newfun
-            self.spline_derivative = derivative
-
-        def integral(a, b):
-            return self.spline_evaluator.integral(a, b)
-        self.spline_integral = integral
-
-        return self.spline_evaluator
+    def _ppf(self, scheme, **ppf_args):
+        """
+        Returns a function that gives the PPF
+        """
+        if self.last_cdf_scheme == scheme and self.last_cdf_args == ppf_args:
+            try:
+                cdf = self.cdf_evaluator
+            except AttributeError:
+                cdf = self._cdf(scheme, ppf_args)
+        else:
+            cdf = self._cdf(scheme, ppf_args)
+        if scheme == 'spline':
+            def ppf(q):
+                iy = cdf(self.metaparam)
+                fun = spi.InterpolatedUnivariateSpline(iy, self.metaparam, ppf_args)
+                return fun(q)
+        else:
+            print scheme+' not yet supported'
+            return
+        self.ppf_evaluator = ppf
+        return self.ppf_evaluator
 
     def convert(self, format_type, metaparam, name=None, vb=True, via=None):
         """
@@ -315,33 +389,67 @@ class PointEval(Parametrization):
 
         Notes
         -----
-        TO DO: Add in keywords in via for complicated conversion options
+        TO DO: fix these try/excepts in if/elses
+        TO DO: rename fit to pdf, curve_fit to fit
+        TO DO: enable curve_fit arguments
         """
+        if vb: print 'PointEval converting to '+format_type+' with metaparam '+str(metaparam)
         if name is None:
             name = self.name
 
         if format_type == 'funcform':
-            intermediate = qp.Parametrization.FuncForm(metaparam, vb=vb)
-            target = intermediate.convert('funcform', metaparam, name=name, vb=vb)
+            try:
+                evaluator = self.fit_evaluator
+            except AttributeError:
+                evaluator = self._fit()
+            param = evaluator(metaparam)
+            target = FuncForm(metaparam, param, name=name, vb=vb)
         elif format_type == 'pointeval':
-            try:
-                evaluator = self.pdf_evaluator
-            except AttributeError:
-                evaluator = self._pdf()
-            param = evaluator(metaparam)
-            target = PointEval(metaparam, param, name=name, vb=vb)
+            if via is None:
+                via = {'scheme': 'interp1d', 'fit_args': None}
+            if 'format_type' in via:
+                if vb:
+                    print 'Converting to '+format_type+' via '+via['format_type']
+                intermediate = self.convert(via['format_type'], via['metaparam'], vb=vb, **via['fit_args'])
+                target = intermediate.convert(format_type, metaparam, name=Name, vb=vb)
+            elif 'scheme' in via:
+                if vb:
+                    print 'Converting to '+format_type+' via '+via['scheme']
+                if self.last_fit_scheme == via['scheme'] and self.last_fit_args == via['fit_args']:
+                    try:
+                        evaluator = self.pdf_evaluator
+                    except AttributeError:
+                        evaluator = self._pdf(via['scheme'], **via['fit_args'])
+                else:
+                    evaluator = self._pdf(via['scheme'], **via['fit_args'])
+                param = evaluator(metaparam)
+                target = PointEval(metaparam, param, name=name, vb=vb)
         elif format_type == 'quantile':
-            try:
-                evaluator = self.ppf_evaluator
-            except AttributeError:
-                evaluator = self._ppf()
-            param = evaluator(metaparam)
-            target = Quantile(metaparam, param, name=name, vb=vb)
+            if via is None:
+                via = {'scheme': 'spline', 'fit_args': None}
+            if 'format_type' in via:
+                if vb:
+                    print 'Converting to '+format_type+' via '+via['format_type']
+                intermediate = self.convert(via['format_type'], via['metaparam'], vb=vb)
+                target = intermediate.convert(format_type, metaparam, name=Name, vb=vb)
+            elif 'scheme' in via:
+                if vb:
+                    print 'Converting to '+format_type+' via '+via['scheme']
+                if via['scheme'] == 'spline':
+                    if self.last_fit_scheme == via['scheme'] and self.last_fit_args == via['fit_args']:
+                        try:
+                            evaluator = self.ppf_evaluator
+                        except AttributeError:
+                            evaluator = self._ppf(via['scheme'], via['fit_args'])
+                    else:
+                        evaluator = self._ppf(via['scheme'], via['fit_args'])
+                param = evaluator(metaparam)
+                target = Quantile(metaparam, param, name=name, vb=vb)
         elif format_type == 'sample':
             try:
                 evaluator = self.rvs_evaluator
             except AttributeError:
-                evaluator = self._rvs()
+                evaluator = self._rvs(via['scheme'], via['fit_args'])
             param = evaluator(metaparam)
             target = Sample(param, name=name, vb=vb)
         else:
