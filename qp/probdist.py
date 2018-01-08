@@ -36,7 +36,7 @@ class ProbDist(object):
         """
         self.parametrizations[parametrization.name] = parametrization
         if base or self.base is None:
-            self.base = prametrization.name
+            self.base = parametrization.name
         return
 
     def convert(self, target_format, target_metaparameters, target_name=None, origin=None, vb=True, **kwargs):

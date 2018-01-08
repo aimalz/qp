@@ -34,7 +34,7 @@ class Parametrization(object):
         else:
             self.name = name
 
-    def convert(self, format_type, metaparam, name=None, vb=True, **kwargs):
+    def convert(self, format_type, metaparam, name=None, vb=True, via=None, **kwargs):
         """
         Converts to a different parametrization
 
@@ -48,6 +48,8 @@ class Parametrization(object):
             name of the target parametrization
         vb: boolean, optional
             report on progress to stdout?
+        via: dict, optional
+            keyword arguments for conversion through an intermediate parametrization
         kwargs: dict, optional
             optional keyword arguments for the conversion method
 
@@ -122,15 +124,6 @@ class FuncForm(Parametrization):
         else:
             self.representation = self.function(**use_params)
 
-    def _pdf(self):
-        """
-        Makes a function that evaluates the PDF of a functional form
-        """
-        def pdf(x):# x points
-            return self.representation.pdf(x)
-        self.pdf_evaluator = pdf
-        return self.pdf_evaluator
-
     def _cdf(self):
         """
         Makes a function that evaluates the CDF of a functional form
@@ -139,6 +132,24 @@ class FuncForm(Parametrization):
             return self.representation.cdf(x)
         self.cdf_evaluator = cdf
         return self.cdf_evaluator
+
+    def _fit(self):
+        """
+        Returns a function that fits to a different functional form
+        """
+        def fit(x):# x points
+            return self.representation.fit(x)
+        self.fit_evaluator = fit
+        return self.fit_evaluator
+
+    def _pdf(self):
+        """
+        Makes a function that evaluates the PDF of a functional form
+        """
+        def pdf(x):# x points
+            return self.representation.pdf(x)
+        self.pdf_evaluator = pdf
+        return self.pdf_evaluator
 
     def _ppf(self):
         """
@@ -157,15 +168,6 @@ class FuncForm(Parametrization):
             return self.representation.rvs(x)
         self.rvs_evaluator = rvs
         return self.rvs_evaluator
-
-    def _fit(self):
-        """
-        Returns a function that fits to a different functional form
-        """
-        def fit(x):# x points
-            return self.representation.fit(x)
-        self.fit_evaluator = fit
-        return self.fit_evaluator
 
     def convert(self, format_type, metaparam, name=None, vb=True, via=None):
         """
@@ -255,6 +257,23 @@ class PointEval(Parametrization):
         self.last_cdf_scheme = None
         self.last_cdf_args = None
 
+    def _cdf(self, scheme, **cdf_args):
+        """
+        Returns a function that gives the integral from the minimum evaluation point to specified value
+        """
+        self.last_cdf_scheme = scheme
+        self.last_cdf_args = cdf_args
+        if scheme == 'spline':
+            xi = min(self.metaparam)
+            def cdf(xf):
+                fun = spi.InterpolatedUnivariateSpline(self.metaparam, self.param, fit_args).integral
+                return fun(xi, xf)
+        else:
+            print scheme+' not yet supported'
+            return
+        self.cdf_evaluator = np.vectorize(cdf)
+        return self.cdf_evaluator
+
     def _fit(self, **fit_args):
         """
         Returns a function that fits a functional form via optimization
@@ -302,6 +321,28 @@ class PointEval(Parametrization):
         self.pdf_evaluator = pdf
         return self.pdf_evaluator
 
+    def _ppf(self, scheme, **ppf_args):
+        """
+        Returns a function that gives the PPF
+        """
+        if self.last_cdf_scheme == scheme and self.last_cdf_args == ppf_args:
+            try:
+                cdf = self.cdf_evaluator
+            except AttributeError:
+                cdf = self._cdf(scheme, ppf_args)
+        else:
+            cdf = self._cdf(scheme, ppf_args)
+        if scheme == 'spline':
+            def ppf(q):
+                iy = cdf(self.metaparam)
+                fun = spi.InterpolatedUnivariateSpline(iy, self.metaparam, ppf_args)
+                return fun(q)
+        else:
+            print scheme+' not yet supported'
+            return
+        self.ppf_evaluator = ppf
+        return self.ppf_evaluator
+
     def _rvs(self, scheme, **rvs_args):
         """
         Returns a function giving samples
@@ -325,45 +366,6 @@ class PointEval(Parametrization):
             return xs
         self.rvs_evaluator = rvs
         return self.rvs_evaluator
-
-    def _cdf(self, scheme, **cdf_args):
-        """
-        Returns a function that gives the integral from the minimum evaluation point to specified value
-        """
-        self.last_cdf_scheme = scheme
-        self.last_cdf_args = cdf_args
-        if scheme == 'spline':
-            xi = min(self.metaparam)
-            def cdf(xf):
-                fun = spi.InterpolatedUnivariateSpline(self.metaparam, self.param, fit_args).integral
-                return fun(xi, xf)
-        else:
-            print scheme+' not yet supported'
-            return
-        self.cdf_evaluator = np.vectorize(cdf)
-        return self.cdf_evaluator
-
-    def _ppf(self, scheme, **ppf_args):
-        """
-        Returns a function that gives the PPF
-        """
-        if self.last_cdf_scheme == scheme and self.last_cdf_args == ppf_args:
-            try:
-                cdf = self.cdf_evaluator
-            except AttributeError:
-                cdf = self._cdf(scheme, ppf_args)
-        else:
-            cdf = self._cdf(scheme, ppf_args)
-        if scheme == 'spline':
-            def ppf(q):
-                iy = cdf(self.metaparam)
-                fun = spi.InterpolatedUnivariateSpline(iy, self.metaparam, ppf_args)
-                return fun(q)
-        else:
-            print scheme+' not yet supported'
-            return
-        self.ppf_evaluator = ppf
-        return self.ppf_evaluator
 
     def convert(self, format_type, metaparam, name=None, vb=True, via=None):
         """
@@ -390,8 +392,7 @@ class PointEval(Parametrization):
         Notes
         -----
         TO DO: fix these try/excepts in if/elses
-        TO DO: rename fit to pdf, curve_fit to fit
-        TO DO: enable curve_fit arguments
+        TO DO: enable _fit arguments
         """
         if vb: print 'PointEval converting to '+format_type+' with metaparam '+str(metaparam)
         if name is None:
@@ -464,6 +465,30 @@ class Quantile(Parametrization):
     """
     def __init__(self, metaparam, param, name=None, vb=True):
         Parametrization.__init__(self, 'quantile', metaparam, param, name=name, vb=vb)
+
+    def convert(self, format_type, metaparam, name=None, vb=True, via=None):
+        """
+        Converts to a different parametrization
+
+        Parameters
+        ----------
+        format_type: string
+            format of the target parametrization
+        metaparam: integer or numpy.ndarray, float
+            metaparameter(s) for the target parametrization
+        name: string, optional
+            name of the target parametrization
+        vb: boolean, optional
+            report progress to stdout?
+        via: dict, optional
+            keywords for intermediate format
+
+        Returns
+        -------
+        parametrization: qp.Parametrization object
+            the target parametrization object
+        """
+
 
 class Sample(Parametrization):
     """
