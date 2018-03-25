@@ -17,7 +17,7 @@ from utils import lims as default_lims
 
 class Ensemble(object):
 
-    def __init__(self, N, truth=None, quantiles=None, histogram=None, gridded=None, samples=None, limits=None, scheme='linear', vb=True, procs=None):# where='ensemble.db', procs=None):#
+    def __init__(self, N, funcform=None, quantiles=None, histogram=None, gridded=None, samples=None, limits=None, scheme='linear', vb=True, procs=None):# where='ensemble.db', procs=None):#
         """
         Creates an object comprised of many qp.PDF objects to efficiently
         perform operations on all of them
@@ -26,8 +26,7 @@ class Ensemble(object):
         ----------
         N: int
             number of pdfs in the ensemble
-        truth: list of scipy.stats.rv_continuous objects or qp.composite objects
-            , optional
+        funcform: list of scipy.stats.rv_continuous objects or qp.composite objects, optional
             List of length (npdfs) containing the continuous, parametric forms of the PDFs
         quantiles: tuple of ndarrays, optional
             Pair of arrays of lengths (nquants) and (npdfs, nquants) containing
@@ -75,7 +74,7 @@ class Ensemble(object):
         self.n_pdfs = N
         self.pdf_range = range(N)
 
-        if truth is None and quantiles is None and histogram is None and gridded is None and samples is None:
+        if funcform is None and quantiles is None and histogram is None and gridded is None and samples is None:
             print 'Warning: initializing an Ensemble object without inputs'
             return
 
@@ -84,10 +83,10 @@ class Ensemble(object):
         else:
             self.limits = limits
 
-        if truth is None:
-            self.truth = [None] * N
+        if funcform is None:
+            self.mix_mod = [None] * N
         else:
-            self.truth = truth
+            self.mix_mod = funcform
         if samples is None:
             self.samples = [None] * N
         else:
@@ -104,14 +103,14 @@ class Ensemble(object):
             self.gridded = (None, [None] * N)
         else:
             self.gridded = (None, [(gridded[0], gridded[1][i]) for i in self.pdf_range])
-        self.mix_mod = None
+        # self.mix_mod = None
         self.evaluated = None
 
         self.scheme = scheme
 
         self.make_pdfs()
 
-        self.stacked = {}
+        # self.stacked = {}
         self.klds = {}
 
     def make_pdfs(self):
@@ -121,7 +120,8 @@ class Ensemble(object):
         def make_pdfs_helper(i):
             # with open(self.logfilename, 'wb') as logfile:
             #     logfile.write('making pdf '+str(i)+'\n')
-            return qp.PDF(truth=self.truth[i], quantiles=self.quantiles[i],
+            return qp.PDF( funcform=self.mix_mod[i],
+                            quantiles=self.quantiles[i],
                             histogram=self.histogram[i],
                             gridded=self.gridded[-1][i], samples=self.samples[i], limits=self.limits,
                             scheme=self.scheme, vb=False)
@@ -275,7 +275,7 @@ class Ensemble(object):
 
         return self.mix_mod
 
-    def evaluate(self, loc, using=None, norm=False, vb=True):
+    def evaluate(self, loc, using=None, norm=False, vb=False):
         """
         Evaluates all PDFs
 
@@ -327,6 +327,8 @@ class Ensemble(object):
         integral: numpy.ndarray, float
             value of the integral
         """
+        if len(np.shape(limits)) == 1:
+            limits = [limits] * self.n_pdfs
         def integrate_helper(i):
             try:
                 return self.pdfs[i].integrate(limits[i], using=using, dx=dx, vb=False)
@@ -521,39 +523,39 @@ class Ensemble(object):
 
         return rmses
 
-    def stack(self, loc, using, vb=True):
-        """
-        Produces an average of the PDFs in the ensemble
-
-        Parameters
-        ----------
-        loc: ndarray, float or float
-            location(s) at which to evaluate the PDFs
-        using: string
-            which parametrization to use for the approximation
-        vb: boolean
-            report on progress
-
-        Returns
-        -------
-        self.stacked: tuple, ndarray, float
-            pair of arrays for locations where approximations were evaluated
-            and the values of the stacked PDFs at those points
-
-        Notes
-        -----
-        Stacking refers to taking the sum of PDFs evaluated on a shared grid and normalizing it such that it integrates to unity.  This is equivalent to calculating an average probability (based on the PDFs in the ensemble) over the grid.  This probably should be done in a script and not by qp!  The right way to do it would be to call qp.Ensemble.evaluate() and sum those outputs appropriately.
-        TO DO: make this do something more efficient for mixmod, grid, histogram, samples
-        TO DO: enable stacking on irregular grid
-        """
-        loc_range = max(loc) - min(loc)
-        delta = loc_range / len(loc)
-        evaluated = self.evaluate(loc, using=using, norm=True, vb=vb)
-        stack = np.mean(evaluated[1], axis=0)
-        stack /= np.sum(stack) * delta
-        assert(np.isclose(np.sum(stack) * delta, 1.))
-        self.stacked[using] = (evaluated[0], stack)
-        return self.stacked
+    # def stack(self, loc, using, vb=True):
+    #     """
+    #     Produces an average of the PDFs in the ensemble
+    #
+    #     Parameters
+    #     ----------
+    #     loc: ndarray, float or float
+    #         location(s) at which to evaluate the PDFs
+    #     using: string
+    #         which parametrization to use for the approximation
+    #     vb: boolean
+    #         report on progress
+    #
+    #     Returns
+    #     -------
+    #     self.stacked: tuple, ndarray, float
+    #         pair of arrays for locations where approximations were evaluated
+    #         and the values of the stacked PDFs at those points
+    #
+    #     Notes
+    #     -----
+    #     Stacking refers to taking the sum of PDFs evaluated on a shared grid and normalizing it such that it integrates to unity.  This is equivalent to calculating an average probability (based on the PDFs in the ensemble) over the grid.  This probably should be done in a script and not by qp!  The right way to do it would be to call qp.Ensemble.evaluate() and sum those outputs appropriately.
+    #     TO DO: make this do something more efficient for mixmod, grid, histogram, samples
+    #     TO DO: enable stacking on irregular grid
+    #     """
+    #     loc_range = max(loc) - min(loc)
+    #     delta = loc_range / len(loc)
+    #     evaluated = self.evaluate(loc, using=using, norm=True, vb=vb)
+    #     stack = np.mean(evaluated[1], axis=0)
+    #     stack /= np.sum(stack) * delta
+    #     assert(np.isclose(np.sum(stack) * delta, 1.))
+    #     self.stacked[using] = (evaluated[0], stack)
+    #     return self.stacked
 
 # Note: A copious quantity of commented code has been removed in this commit!
 # For future reference, it can still be found here:
