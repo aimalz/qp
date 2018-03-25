@@ -10,6 +10,24 @@ infty = sys.float_info.max * epsilon
 global lims
 lims = (epsilon, 1.)
 
+def find_shortest_path(graph, start, end, path=[]):
+    """
+    stolen wholesale from https://www.python.org/doc/essays/graphs/
+    """
+        path = path + [start]
+        if start == end:
+            return path
+        if not graph.has_key(start):
+            return None
+        shortest = None
+        for node in graph[start]:
+            if node not in path:
+                newpath = find_shortest_path(graph, node, end, path)
+                if newpath:
+                    if not shortest or len(newpath) < len(shortest):
+                        shortest = newpath
+        return shortest
+
 def sandwich(in_arr, ends):
     """
     Adds given values to the ends of a 1D array

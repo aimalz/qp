@@ -3,127 +3,95 @@ import scipy as sp
 from scipy import stats as sps
 import scipy.optimize as op
 
-import qp
+import formatter.Formatter as Formatter
 
-class MixMod(object):
-    def __init__(self, components, vb=False):
-        """
-        A mixture model of scipy.stats.rv_continuous objects
+class MixMod(Formatter):
+    def __init__(self, metaparam, param):
+        # metaparam is list of scipy.stats.rv_continuous objects
+        # param is list of dicts with coefficient and params (which is a dict itself)
+        super(MixMod, self).__init__(metaparam, param)
 
-        Parameters
-        ----------
-        components: list or tuple, dicts
-            aggregation of dicts defining component functions and their coefficients
-        vb: boolean
-            report progress to stdout?
-        """
-        self.components = components
-        self.n_components = len(self.components)
-        self.component_range = range(self.n_components)
+        self.N_component = len(self.metaparam)
+        self.component_range = range(self.N_component)
 
-        coefficients = np.array([component['coefficient'] for component in self.components])
+        self.res = sum([1 + len(self.param[i]['param'].keys()) for i in self.component_range])
+
+        coefficients = [self.param[i]['coefficient'] for i in self.component_range]
         self.coefficients = coefficients / np.sum(coefficients)
-        self.functions = np.array([component['function'] for component in self.components])
+        each_param = [self.param[i]['param'] for i in self.component_range]
 
-    def add(self, component):
-        return
+        self.functions = [self.metaparam[i](**each_param[i]) for i in self.component_range]
+#         coefficients = np.array([mp['coefficient'] for mp in self.metaparam])
+#         self.functions = np.array([mp['function'] for mp in self.metaparam])
 
-    def pdf(self, xs):
+    @classmethod
+    def _set_easy(cls):
+#         print ('calling MixMod._set_easy()')
+        cls.easy_to = ['cdf', 'pdf', 'rvs']
+        cls.easy_from = ['fit']
+
+    def _cdf(self, metaparam):
         """
-        Evaluates the composite PDF at locations
-
-        Parameters
-        ----------
-        xs: float or numpy.ndarray, float
-            value(s) at which to evaluate the PDF
-
-        Returns
-        -------
-        ps: float or numpy.ndarray, float
-            value(s) of the PDF at xs
+        metaparam is array of points at which to evaluate
         """
-        p = np.zeros(np.shape(xs))
+        if metaparam is None:
+            randos = self._rvs(None)
+            metaparam = np.linspace(min(randos), max(randos), self.res)
+        param = np.zeros(np.shape(metaparam))
         for c in self.component_range:
-            p += self.coefficients[c] * self.functions[c].pdf(xs)
-        return p
+            param += self.coefficients[c] * self.functions[c].cdf(metaparam)
+        return (metaparam, param)
 
-    def cdf(self, xs):
+    def _pdf(self, metaparam):
         """
-        Evaluates the composite CDF at locations
-
-        Parameters
-        ----------
-        xs: float or numpy.ndarray, float
-            value(s) at which to evaluate the CDF
-
-        Returns
-        -------
-        ps: float or numpy.ndarray, float
-            value(s) of the CDF at xs
+        metaparam is array of points at which to evaluate
         """
-        ps = np.zeros(np.shape(xs))
+        if metaparam is None:
+            randos = self._rvs(None)
+            metaparam = np.linspace(min(randos), max(randos), self.res)
+        param = np.zeros(np.shape(metaparam))
         for c in self.component_range:
-            ps += self.coefficients[c] * self.functions[c].cdf(xs)
-        return ps
+            param += self.coefficients[c] * self.functions[c].pdf(metaparam)
+        return (metaparam, param)
 
-    def rvs(self, size):
+    def _ppf(self, metaparam, ivals=None, **kwargs):
         """
-        Samples the composite probability distribution
-
-        Parameters
-        ----------
-        size: int
-            number of samples to take
-
-        Returns
-        -------
-        xs: numpy.ndarray, float
-            samples from the PDF
+        metaparam is array of probabilities at which to evaluate
         """
-        groups = np.random.choice(self.component_range, size, p=self.coefficients)
+        print('PPF not recommended; performing optimization with '+str(kwargs))
+        if metaparam is None:
+            metaparam = np.linspace(1. / (self.res + 1.), 1., self.res, endpoint=False)
+        if 'method' not in kwargs:
+            kwargs['method'] = 'Nelder-Mead'
+        if 'options' not in kwargs:
+            kwargs['options'] = {"maxfev": 1e5, "maxiter":1e5}
+        if 'tol' not in kwargs:
+            kwargs['tol'] = 1e-8
+        if ivals is not None:
+            param0 = ivals
+        else:
+            all_cdfs = np.zeros(self.res)
+            for c in self.component_range:
+                all_cdfs += self.functions[c].ppf(metaparam)
+            param0 = all_cdfs / self.n_components
+        param = np.zeros(self.res)
+        for n in range(self.res):
+            def ppf_helper(x):
+                return np.absolute(metaparam[n] - self._cdf(x))
+            res = spo.minimize(ppf_helper, param0[n], kwargs)
+            param[n] += res.x
+        return (metaparam, param)
+
+    def _rvs(self, metaparam):
+        """
+        metaparam is integer of samples
+        """
+        if metaparam is None:
+            metaparam = self.res
+        groups = np.random.choice(self.component_range, metaparam, p=self.coefficients)
         u, counts = np.unique(groups, return_counts=True)
         samples = np.empty(0)
         for i in range(len(u)):
             samples = np.append(samples, self.functions[u[i]].rvs(counts[i]))
-        return np.array(samples).flatten()
-
-    def ppf(self, cdfs, ivals=None):
-        """
-        Evaluates the composite PPF at locations
-
-        Parameters
-        ----------
-        cdfs: float or numpy.ndarray, float
-            value(s) at which to find quantiles
-        ivals: float or numpy.ndarray, float
-            initial guesses for quantiles
-
-        Returns
-        -------
-        xs: float or numpy.ndarray, float
-            quantiles
-        """
-        N = np.shape(cdfs)[0]
-        xs = np.zeros(N)
-
-        if ivals is not None:
-            xs0 = ivals
-        else:
-            all_cdfs = np.zeros(N)
-            for c in self.component_range:
-                all_cdfs += self.functions[c].ppf(cdfs)
-            xs0 = all_cdfs / self.n_components
-
-        for n in range(N):
-            def ppf_helper(x):
-                return np.absolute(cdfs[n] - self.cdf(x))
-            res = op.minimize(ppf_helper, xs0[n], method="Nelder-Mead", options={"maxfev": 1e5, "maxiter":1e5}, tol=1e-8)
-                    # res = op.basinhopping(ppf_helper, xs0[n])#, method="Nelder-Mead", options={"maxfev": 1e5, "maxiter":1e5})
-            xs[n] += res.x
-            # if vb:
-            #     print(res.message, res.success)
-
-        return xs
-
-    def fit(self, data):
-        return
+        param = np.array(samples).flatten()
+        return (metaparam, param)

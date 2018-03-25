@@ -1,3 +1,5 @@
+from formats import *
+
 class ProbDist(object):
     """
     An object that is defined by its parametrizations of a single PDF

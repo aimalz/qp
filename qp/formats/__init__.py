@@ -1,4 +1,5 @@
-import representation
+import metaformatter
 
-import from_scipy
-import from_pomegranate
+import formatter
+
+import mixmod

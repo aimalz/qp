@@ -5,7 +5,7 @@ import scipy.optimize as op
 
 import qp
 
-class composite(object):
+class Composite(object):
 
     def __init__(self, components, vb=True):
         """
