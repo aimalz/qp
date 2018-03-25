@@ -465,7 +465,7 @@ of the $m^{\mathrm{th}}$ moment
 of a PDF.
 We note that $M_{0}[P]=1$ for all properly normalized probability 
 distributions, $M_{1}[P]=\bar{z}$ is the \textit{mean}, $M_{2}[P]$ is the 
-\textit{variance}, and $M_{3}[P]$ is the \textit{kurtosis}.
+\textit{variance}, and $M_{3}[P]$ is the \textit{skewness}.
 Though the first few moments are not in general sufficient to characterize a 
 highly structured probability distribution, they are included in this analysis 
 because they can prove useful in setting ballpark estimates of the influence of 
@@ -705,7 +705,7 @@ acceptable degree of information loss.
     \includegraphics[width=\columnwidth]{graham_pz_kld.pdf}
     \includegraphics[width=\columnwidth]{schmidt_pz_kld.pdf}
     \caption{
-    The means of the mean ($\pentagon$), variance ($\bigstar$), and kurtosis 
+    The means of the mean ($\pentagon$), variance ($\bigstar$), and skewness 
 ($\APLstar$) of the log-KLD distributions for each dataset as a function of the 
 number $N_{f}$ of stored parameters for the quantile (dashed purple line), 
 samples (dash-dotted green line), and histogram (dotted orange line) formats 
@@ -762,7 +762,7 @@ $1\sigma$ Gaussian error bars.
     \includegraphics[width=\columnwidth]{schmidt_pz_err.pdf}
     \caption{
    The median $\log_{10}$-percent errors on the mean ($\pentagon$), variance 
-($\bigstar$), and kurtosis ($\APLstar$) of the \pz s for each dataset as a 
+($\bigstar$), and skewness ($\APLstar$) of the \pz s for each dataset as a 
 function of the number $N_{f}$ of stored parameters per \pz\ for the quantile 
 (dashed purple line), samples (dash-dotted green line), and histogram (dotted 
 orange line) formats with interquartile range error bars based on 10 
@@ -952,7 +952,7 @@ range for traditional $1\sigma$ Gaussian error bars.
 \includegraphics[width=\columnwidth]{schmidt_nz_err.pdf}
     \caption{
     The percent error on the mean ($\pentagon$), variance ($\bigstar$), and 
-kurtosis ($\APLstar$) of the stacked estimator $hat{n}(z)$ of the redshift 
+skewness ($\APLstar$) of the stacked estimator $hat{n}(z)$ of the redshift 
 distribution for each dataset as a function of the number $N_{f}$ of stored 
 parameters for the quantile (dashed purple line), samples (dash-dotted 
 greenline), and histogram (dotted orangeline) formats with interquartile range 
@@ -1192,6 +1192,7 @@ provide context for this work outside cosmology.
 \input{contributions}
 
 \input{acknowledgments}
+
 
 
 \bibliography{lsstdesc,main}
