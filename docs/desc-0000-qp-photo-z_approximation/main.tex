@@ -105,14 +105,14 @@ distribution function (PDF) conveying the potential for such systematic errors
 for each galaxy in the survey \citep{tanaka_photometric_2017, 
 de_jong_third_2017, sheldon_photometric_2012}.
 
-Given that the \pz\ catalogs of ongoing surveys already include $\sim10^{7}$ 
-galaxies, and that those of upcoming surveys will include $\sim10^{10}$ 
-galaxies, storage of these probability distributions must balance of accuracy 
-of the catalog against limited storage resources.
-For example, the public catalog that LSST will release will be limited to 
-$\sim100$ floating point numbers per galaxy for all redshift information 
-\citep[Section 4.2.2]{juric_data_2017}, with plans to store \pz s derived by 
-multiple methods.
+\textbf{Given that the \pz\ catalogs of ongoing surveys already include 
+$\sim10^{7}$ galaxies, and that those of upcoming surveys will include 
+$\sim10^{10}$ galaxies, storage of these probability distributions must balance 
+accuracy of the catalog against limited storage resources.}
+\textbf{For example, the public catalog that LSST will release will be limited 
+to $\sim100$ floating point numbers per galaxy for all information 
+characterizing the redshift \citep[Section 4.2.2]{juric_data_2017}, including 
+\pz s derived by multiple methods.}
 Furthermore, the problem of storing PDFs is not unique to galaxy surveys.
 Gaia\footnote{\url{https://www.gaia-eso.eu/}}, for example, has committed to 
 providing a catalog of PDFs of stellar properties including velocities, so an 
@@ -163,7 +163,8 @@ The \qp\ package also provides a few built-in metrics for the accuracy of a
 representation of a PDF relative to a given reference representation.
 Built-in plots are made using 
 \texttt{matplotlib}\footnote{\url{https://matplotlib.org/}}.
-A subset of the included metrics are described in Section~\ref{sec:metric}.
+\textbf{A subset of the included metrics is described in 
+Section~\ref{sec:metric}.}
 
 Catalog-level manipulations are performed using the \texttt{qp.Ensemble} class 
 that serves as a wrapper for operations over collections of \texttt{qp.PDF} 
@@ -177,10 +178,9 @@ html}} \citep{mckerns_building_2012, mckerns_pathos:_2010} package.
 
 First, we establish a vocabulary for the approximations.
 Each \textit{parametrization} of a \pz\ is defined in terms of the 
-\textit{parameters} $\vec{c}$ unique to its catalog entry, the 
-\textit{metaparameters} $\vec{C}$ shared over the whole catalog, and the 
-\textit{format} function $\mathcal{F}$ that reconstructs a PDF from its 
-parameters and metaparameters.
+\textit{parameters} $\vec{c}$ unique to its galaxy, the \textit{metaparameters} 
+$\vec{C}$ shared over many galaxies, and the \textit{format} function 
+$\mathcal{F}$ that reconstructs a PDF from its parameters and metaparameters.
 A parametrization in turn corresponds to a \textit{representation}
 \begin{align}
   \label{eq:definition}
@@ -191,12 +191,32 @@ of the approximated \pz, denoted as $\hat{p}(z)$ for brevity.
 The \textit{dimensionality} of $\vec{c}$ is the number $N_{f}$ of stored 
 parameters per \pz, which are presumed to be scalar numbers unless otherwise 
 specified.
-The number of elements of $\vec{C}$ is of little importance so long as the 
-metaparameters can be stored outside the catalog entries.
+The number of elements of $\vec{C}$ is of little significance so long as the 
+metaparameters do not have storage requirements that are competitive with those 
+of the ensemble of per-galaxy parameters.
 
-\qp\ currently supports conversion of \pz\ approximations between five formats: 
-step functions, samples, quantiles, evaluations, and mixtures of 
-\texttt{scipy.rv\_continuous} objects.
+\textbf{While it is possible to construct a catalog where $N_{f}$ is not shared 
+among all members but is instead optimized for each galaxy, we restrict this 
+study to metaparameters shared over all galaxies considered.
+A non-uniform $\vec{C}$ scheme would have the advantage of re-allocating 
+storage resources from galaxies whose \pz s can be fully characterized by very 
+few numbers to galaxies with highly featured \pz s that require more numbers 
+for complete characterization; consider the case of a delta function \pz\ for 
+which no more information is preserved for any elements of $\vec{c}$ than the 
+location of the peak as opposed to the case of a highly multimodal \pz\ whose 
+shape cannot be easily parametrized by any known functional form and would 
+benefit from the $N_{f}-1$ parameters wasted on the galaxy with a trivial shape.
+However, this scheme has not yet been formally proposed in the literature, so 
+we could thus only speculate as to the potential scope and specific goals of 
+such an optimization procedure.
+Thus, we postpone such an investigation and eagerly anticipate future 
+consideration of this possibility.}
+
+\textbf{\qp\ currently supports conversion of \pz\ approximations between five 
+formats: step functions, samples, quantiles, evaluations, and functional forms, 
+which may be general mixture models of PDFs from a comprehensive selection of 
+probability distributions with functional forms implemented as 
+\texttt{scipy.rv\_continuous} objects.}
 When the format function is not specified by the approximation, we refer to a 
 generic interpolator function $F_{\vec{C}'}(z; \vec{c}, \mathcal{F}_{\vec{C}})$ 
 with its own metaparameters $\vec{C}'$, which must be chosen by the researcher.
@@ -310,9 +330,9 @@ to the discrete nature of training sets \citep{de_vicente_dnf_2016}.
 Such approaches by default typically produce large numbers of samples, far more 
 than can realistically be stored by any survey, so are commonly compressed by 
 subsampling \citep{hoyle_dark_2017}.
-Samples are easy to use in standard science applications developed for redshift 
-point estimates, so they have an established presence in the literature\citep 
-{bonnett_redshift_2016}.
+\textbf{Samples are easy to use in standard science applications developed for 
+redshift point estimates, so they have an established presence in the 
+literature \citep {bonnett_redshift_2016}.}
 The samples format of PDF storage appears elsewhere in astronomy, including the 
 Gaia-ESO Survey's commitment to provide multi-dimensional PDFs of stellar 
 parameters in the samples format \citep{bailer-jones_gaia_2013}.
@@ -320,9 +340,6 @@ parameters in the samples format \citep{bailer-jones_gaia_2013}.
 The parameters of the samples format are the $N_{f}$ samples $\vec{c}=(z_{1}, 
 z_{2}, \dots, z_{N_{f}-1}, z_{N_{f}})$, where $C=N_{f}$ is an implicit 
 metaparameter.
-Though it is possible to construct a catalog where $N_{f}$ is not uniform over 
-the catalog, but is instead somehow optimized for each galaxy, we leave its 
-investigation to future work, as it has not yet appeared in the literature.
 The format function $\mathcal{F}^{s}$ that turns samples into a representation 
 of the \pz\ is simply the interpolator $F$.
 In the tests presented here, we use the Gaussian kernel density estimate (KDE) 
@@ -402,7 +419,7 @@ quantiles based on CDF evaluations on a grid.
 \subsection{Comparison Metrics}
 \label{sec:metric}
 
-We aim to probe how closely \pz s reconstructed from limited set of stored 
+We aim to probe how closely \pz s reconstructed from a limited set of stored 
 parameters approximate the original, high-resolution representation 
 $\hat{p}^{r}(z)$ of the reference catalog.
 This is done without reference to a galaxy's true redshift; there is, in fact, 
@@ -465,7 +482,7 @@ of the $m^{\mathrm{th}}$ moment
 of a PDF.
 We note that $M_{0}[P]=1$ for all properly normalized probability 
 distributions, $M_{1}[P]=\bar{z}$ is the \textit{mean}, $M_{2}[P]$ is the 
-\textit{variance}, and $M_{3}[P]$ is the \textit{kurtosis}.
+\textit{variance}, and $M_{3}[P]$ is the \textit{skewness}.
 Though the first few moments are not in general sufficient to characterize a 
 highly structured probability distribution, they are included in this analysis 
 because they can prove useful in setting ballpark estimates of the influence of 
@@ -554,10 +571,10 @@ may differ according to the properties of the original photometric data, we
 demonstrate a procedure for vetting \pz\ parametrizations on a pair of mock 
 datasets, each intended to be realistic predictions of subsets of the 
 anticipated LSST \pz s.
-All \pz s were fit to LSST 10-year $ugrizy$ magnitudes and errors 
-\citep{ivezic_lsst:_2008} using the publicly available Bayesian Photometric 
-Redshift (BPZ) code \citep{benitez_bayesian_2000}, which employs fitting to a 
-library of spectral energy distribution (SED) templates.
+\textbf{All \pz s were fit to simulated LSST 10-year $ugrizy$ magnitudes and 
+errors \citep{ivezic_lsst:_2008} using the publicly available Bayesian 
+Photometric Redshift (BPZ) code \citep{benitez_bayesian_2000}, which employs 
+fitting to a library of spectral energy distribution (SED) templates.}
 The choice of \pz\ estimation method, however, is not relevant to this study; 
 so long as the mock \pz s are \textit{realistically complex}, meaning they take 
 shapes similar to those we expect to see in \pz s from real datasets with 
@@ -603,13 +620,14 @@ The data builds on the Millennium simulation of large-scale structure
 \citep{springel_simulations_2005}, the galaxy formation models of 
 \citet{gonzalez-perez_how_2014}, and the lightcone construction techniques of 
 \citet{merson_lightcone_2013}.
-The apparent $ugrizy$ magnitudes are derived from the true magnitudes using the 
-aforementioned 10-year LSST errors using the software of 
-\citet{connolly_end--end_2014}.
-The sample is limited to galaxies with a catalog $i$-band magnitude of $i<25$ 
-and true redshifts $z<3.5$, omitting any magnitudes fainter than the predicted 
-10-year limiting magnitudes in each filter ($u<26.1$, $g<27.4$, $r<27.5$, 
-$z<26.1$, and $y<24.9$) to realistically simulate non-detections.
+\textbf{We use the software of \citet{connolly_end--end_2014} to derive 
+observed apparent $ugrizy$ magnitudes from the true magnitudes and the 10-year 
+LSST observational errors of \citet{ivezic_lsst:_2008}.}
+The sample of observed apparent magnitudes is then limited to galaxies with a 
+catalog $i$-band magnitude of $i<25$ and true redshifts $z<3.5$, omitting any 
+magnitudes fainter than the predicted 10-year limiting magnitudes in each 
+filter ($u<26.1$, $g<27.4$, $r<27.5$, $z<26.1$, and $y<24.9$) to realistically 
+simulate non-detections.
 
 The \pz\ estimates for this simulated catalog use BPZ templates based on the 
 VIsible MultiObject Spectrograph Very Large Telescope Deep Survey set of 
@@ -643,8 +661,12 @@ We use a custom BPZ prior using a subset of the Buzzard-highres-v1.0 catalog
 and a spanning template set via a simple k-means clustering algorithm based on 
 $100$ of the SDSS SEDs used to create the Buzzard catalog.
 BPZ produces \pz s in the format of probability density evaluations on a 
-regular grid of $N_{ff}=211$ redshifts $0.005\leq z\leq2.105$, a subsample of 
-which are plotted in the right panel of Figure~\ref{fig:example_pzs}.
+regular grid of $N_{ff}=211$ redshifts $0.005\leq z\leq2.105$, \textbf{Our 
+analysis characterizes the results for ten instantiated catalogs using the 
+interquartile range (IQR), with lower and upper bounds representing the 
+$25^{\mathrm{th}}$ and $75^{\mathrm{th}}$ percentiles, as a model-independent 
+error characterization.}a subsample of which are plotted in the right panel of 
+Figure~\ref{fig:example_pzs}.
 The exceptional depth and known degeneracies (e.~g.~the Lyman/Balmer break 
 degeneracy) lead us to expect the presence of multimodal \pz s observed in the 
 figure.
@@ -659,6 +681,10 @@ We evaluate the metrics of Section~\ref{sec:metric} on 10 random instantiations
 of catalogs of $N_{g}=100$ galaxies drawn randomly from each of the datasets 
 discussed in Section~\ref{sec:data} and with each of $N_{f}=3,\ 10,\ 30,\ 100$ 
 stored parameters for the three formats of Section~\ref{sec:approx}.
+\textbf{Our analysis characterizes the results using the interquartile range 
+(IQR), with lower and upper bounds representing the $25^{\mathrm{th}}$ and 
+$75^{\mathrm{th}}$ percentiles, as a model-independent error characterization 
+appropriate for our small number of mock catalogs.}
 We then illustrate how our results could be used to choose an appropriate 
 parametrization for each dataset given constraints on the distribution of KLDs 
 or moment percent errors of individual \pz s, the KLD or moment percent error 
@@ -705,12 +731,12 @@ acceptable degree of information loss.
     \includegraphics[width=\columnwidth]{graham_pz_kld.pdf}
     \includegraphics[width=\columnwidth]{schmidt_pz_kld.pdf}
     \caption{
-    The means of the mean ($\pentagon$), variance ($\bigstar$), and kurtosis 
-($\APLstar$) of the log-KLD distributions for each dataset as a function of the 
-number $N_{f}$ of stored parameters for the quantile (dashed purple line), 
-samples (dash-dotted green line), and histogram (dotted orange line) formats 
-with $1\sigma$ Gaussian error bars based on 10 instantiations of 100 galaxies, 
-which are offset about $N_{f}$ to improve readability.
+    \textbf{The medians of the mean ($\pentagon$), variance ($\bigstar$), and 
+skewness ($\APLstar$) of the log-KLD distributions for each dataset as a 
+function of the number $N_{f}$ of stored parameters for the quantile (purple 
+dashed line), samples (green dash-dotted line), and histogram (orange dotted 
+line) formats with IQR error bars based on 10 instantiations of 100 galaxies, 
+which are offset about $N_{f}$ to improve readability.}
     Left panel: The distribution of individual \pz\ KLD values of the \mgdata 
 mock catalog is most well-behaved when they are stored as samples, except at 
 large $N_{f}$.
@@ -725,44 +751,36 @@ $N_{f}$.
 Figure~\ref{fig:kld_moments} is rich in information.
 For both datasets, the behavior of the first three log-moments of the log-KLD 
 distribution is highly correlated for a given format and number of parameters.
-The error bars on the log-KLD log-moments increase at high $N_{f}$ for all 
-formats on both datasets beyond what one would expect simply based on the log 
-scaling.
 
 The \mgdata dataset has higher log-KLD log-moments than the \ssdata dataset at 
 all $N_{f}$ and across all formats, meaning information loss is enhanced for 
 more strongly featured data; this observation is not surprising because the 
 narrow, unimodal \pz s of the \mgdata dataset have long tails of very low 
 probability that are emphasized by the KLD.
-The \ssdata dataset shows almost no change in the log-KLD log-moments between 
-$N_{f}=3$ and $N_{f}=10$ parameters, but both datasets otherwise exhibit a 
-steady decrease in all moments for the quantile and samples formats as $N_{f}$ 
-increases.
+Both datasets exhibit decreasing moments for the quantile and samples formats 
+as $N_{f}$ increases, \textbf{indicating convergence toward Gaussianity with 
+increasing $N_{f}$}.
 
 The log-KLD log-moments are higher for quantiles than for samples for both 
 datasets, except at $N_{f}=100$ for the \mgdata dataset; this is not an 
 unexpected result because our choice of PDF reconstruction method for the 
 quantile format is most susceptible to error in the tails of the distribution, 
 where the KLD has the highest sensitivity.
-The histogram format's log-KLD log-moments are higher than for other formats at 
-the lowest $N_{f}$ and steadily decrease in a manner similar to the other 
-formats, except at the highest $N_{f}$ values where the histogram format's 
-log-KLD log-moments decrease much more quickly.
+The histogram format's log-KLD log-moments are higher than those of other 
+formats at the lowest $N_{f}$ and steadily decrease in a manner similar to the 
+other formats, except at the highest $N_{f}$ values where the histogram 
+format's log-KLD log-moments decrease much more quickly.
 
 In Figure~\ref{fig:pz_moment_errs}, we also examine the percent error on the 
 first three moments of the \pz s under each approximation, using the base-10 
 log for interpretability.
-Because the distribution of moment percent errors is highly non-Gaussian due to 
-a small number ($<1\%$) of truly extreme outliers for both datasets, across all 
-$N_{f}$ and all formats, we substitute the interquartile range for traditional 
-$1\sigma$ Gaussian error bars.
 \begin{figure*}
   \begin{center}
     \includegraphics[width=\columnwidth]{graham_pz_err.pdf}
     \includegraphics[width=\columnwidth]{schmidt_pz_err.pdf}
     \caption{
    The median $\log_{10}$-percent errors on the mean ($\pentagon$), variance 
-($\bigstar$), and kurtosis ($\APLstar$) of the \pz s for each dataset as a 
+($\bigstar$), and skewness ($\APLstar$) of the \pz s for each dataset as a 
 function of the number $N_{f}$ of stored parameters per \pz\ for the quantile 
 (dashed purple line), samples (dash-dotted green line), and histogram (dotted 
 orange line) formats with interquartile range error bars based on 10 
@@ -952,7 +970,7 @@ range for traditional $1\sigma$ Gaussian error bars.
 \includegraphics[width=\columnwidth]{schmidt_nz_err.pdf}
     \caption{
     The percent error on the mean ($\pentagon$), variance ($\bigstar$), and 
-kurtosis ($\APLstar$) of the stacked estimator $hat{n}(z)$ of the redshift 
+skewness ($\APLstar$) of the stacked estimator $hat{n}(z)$ of the redshift 
 distribution for each dataset as a function of the number $N_{f}$ of stored 
 parameters for the quantile (dashed purple line), samples (dash-dotted 
 greenline), and histogram (dotted orangeline) formats with interquartile range 
@@ -1192,6 +1210,7 @@ provide context for this work outside cosmology.
 \input{contributions}
 
 \input{acknowledgments}
+
 
 
 \bibliography{lsstdesc,main}
