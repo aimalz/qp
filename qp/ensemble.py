@@ -1,55 +1,38 @@
+"""Implemenation of an ensemble of distributions"""
+
+import os
 import numpy as np
 import pathos
 from pathos.multiprocessing import ProcessingPool as Pool
 # import psutil
-import timeit
-import os
-import sys
-# import sqlalchemy
-import scipy.interpolate as spi
-import matplotlib.pyplot as plt
+#import timeit
 
-import qp
-import utils as u
-from utils import infty as default_infty
-from utils import epsilon as default_eps
-from utils import lims as default_lims
+from astropy.table import Table
 
-class Ensemble(object):
 
-    def __init__(self, N, funcform=None, quantiles=None, histogram=None, gridded=None, samples=None, limits=None, scheme='linear', vb=True, procs=None):# where='ensemble.db', procs=None):#
-        """
-        Creates an object comprised of many qp.PDF objects to efficiently
-        perform operations on all of them
+from .dict_utils import slice_dict, print_dict_shape
+
+from .metrics import quick_kld, quick_rmse
+
+from .persistence import get_qp_reader
+
+
+class Ensemble:
+    """An object comprised of many qp.PDF objects to efficiently perform operations on all of them"""
+    def __init__(self, gen_class, data, **kwargs):
+        """Class constructor
 
         Parameters
         ----------
-        N: int
-            number of pdfs in the ensemble
-        funcform: list of scipy.stats.rv_continuous objects or qp.composite objects, optional
-            List of length (npdfs) containing the continuous, parametric forms of the PDFs
-        quantiles: tuple of ndarrays, optional
-            Pair of arrays of lengths (nquants) and (npdfs, nquants) containing
-            shared CDF values and quantiles for each pdf
-        histogram: tuple of ndarrays, optional
-            Pair of arrays of lengths (nbins+1) and (npdfs, nbins) containing
-            shared endpoints of bins and values in bins for each pdf
-        gridded: tuple of ndarrays, optional
-            Pair of arrays of lengths (npoints) and (npdfs, npoints) containing
-            shared points at which pdfs are evaluated and the values of each
-            pdf at those points
-        samples: ndarray, optional
-            Array of size (npdfs, nsamples) containing sampled values
-        limits: tuple, float, optional
-            shared limits of the space over which the PDFs are defined
-        scheme: string, optional
-            name of interpolation scheme to use.
-        vb: boolean, optional
-            report on progress
-        where: string
-            path to file corresponding to Ensemble, presumed to not yet exist
-        procs: int, optional
-            limit the number of processors used, otherwise use all available
+        gen : `class`
+            Generic distribution object
+        data : `dict`
+            Dictionary with data used to construct the ensemble
+
+        Keywords
+        --------
+        procs : `int`
+            Number of processors to use
 
         Notes
         -----
@@ -63,162 +46,379 @@ class Ensemble(object):
         TO DO: standardize n/N
         TO DO: add an option to carry around ID numbers
         """
-        start_time = timeit.default_timer()
+        #start_time = timeit.default_timer()
+        procs = kwargs.pop('procs', None)
         if procs is not None:
             self.n_procs = procs
         else:
             self.n_procs = pathos.helpers.cpu_count()
         self.pool = Pool(self.n_procs)
-        print('made the pool of '+str(self.n_procs)+' in '+str(timeit.default_timer() - start_time))
+        #print('made the pool of '+str(self.n_procs)+' in '+str(timeit.default_timer() - start_time))
 
-        self.n_pdfs = N
-        self.pdf_range = range(N)
+        self._gen_class = gen_class
+        self._gen_obj, self._freeze_data = gen_class.create_gen(**data)
+        self._frozen = self._gen_obj(**self._freeze_data)
 
-        if funcform is None and quantiles is None and histogram is None and gridded is None and samples is None:
-            print 'Warning: initializing an Ensemble object without inputs'
-            return
+        self._gridded = None
+        self._samples = None
 
-        if limits is None:
-            self.limits = default_lims
-        else:
-            self.limits = limits
 
-        if funcform is None:
-            self.mix_mod = [None] * N
-        else:
-            self.mix_mod = funcform
-        if samples is None:
-            self.samples = [None] * N
-        else:
-            self.samples = samples
-        if quantiles is None:
-            self.quantiles = [None] * N
-        else:
-            self.quantiles = [(quantiles[0], quantiles[1][i]) for i in self.pdf_range]
-        if histogram is None:
-            self.histogram = [None] * N
-        else:
-            self.histogram = [(histogram[0], histogram[1][i]) for i in self.pdf_range]
-        if gridded is None:
-            self.gridded = (None, [None] * N)
-        else:
-            self.gridded = (None, [(gridded[0], gridded[1][i]) for i in self.pdf_range])
-        # self.mix_mod = None
-        self.evaluated = None
+    def __getitem__(self, key):
+        """Build a `scipy.rv_frozen` object for a sub-set of the PDFs in this ensemble
 
-        self.scheme = scheme
-
-        self.make_pdfs()
-
-        # self.stacked = {}
-        self.klds = {}
-
-    def make_pdfs(self):
-        """
-        Makes a list of qp.PDF objects based on input
-        """
-        def make_pdfs_helper(i):
-            # with open(self.logfilename, 'wb') as logfile:
-            #     logfile.write('making pdf '+str(i)+'\n')
-            return qp.PDF( funcform=self.mix_mod[i],
-                            quantiles=self.quantiles[i],
-                            histogram=self.histogram[i],
-                            gridded=self.gridded[-1][i], samples=self.samples[i], limits=self.limits,
-                            scheme=self.scheme, vb=False)
-
-        start_time = timeit.default_timer()
-        self.pdfs = self.pool.map(make_pdfs_helper, self.pdf_range)
-        print('made the catalog in '+str(timeit.default_timer() - start_time))
-
-        return
-
-    def sample(self, samps=100, infty=default_infty, using=None, vb=True):
-        """
-        Samples the pdf in given representation
-
-        Parameters
-        ----------
-        samps: int, optional
-            number of samples to produce
-        infty: float, optional
-            approximate value at which CDF=1.
-        using: string, optional
-            Parametrization on which to interpolate, defaults to initialization
-        vb: boolean
-            report on progress
+        Parameter
+        ---------
+        key : `int` or `slice`
+            Used to slice the data to pick out one PDF from this ensemble
 
         Returns
         -------
-        samples: ndarray
-            array of sampled values
+        pdf : `scipy.rv_frozen`
+            The distribution for the requeseted element or slide
+        """
+        red_data = slice_dict(self._freeze_data, key)
+        red_data.update(slice_dict(self._frozen.kwds, key))
+        return self._gen_obj(**red_data)
+
+    @property
+    def gen_class(self):
+        """Return the class used to generate distributions for this ensemble"""
+        return self._gen_class
+
+    @property
+    def gen_obj(self):
+        """Return the `scipy.stats.rv_continuous` object that generates distributions for this ensemble"""
+        return self._gen_obj
+
+    @property
+    def frozen(self):
+        """Return the `scipy.stats.rv_frozen` object that encapsultes the distributions for this ensemble"""
+        return self._frozen
+
+    def metadata(self):
+        """Return the metadata for this ensemble
+
+        Returns
+        -------
+        metadata : `dict`
+            The metadata
 
         Notes
         -----
-        TODO: change syntax samps --> N
+        Metadata are elements that are the same for all the PDFs in the ensemble
+        These include the name and version of the PDF generation class
         """
-        def sample_helper(i):
-            try:
-            # with open(self.logfilename, 'wb') as logfile:
-            #     logfile.write('sampling pdf '+str(i)+'\n')
-                return self.pdfs[i].sample(N=samps, infty=infty, using=using, vb=False)
-            except Exception:
-                print('ERROR: sampling failed on '+str(i)+' because '+str(sys.exc_info()[0]))
 
-        self.samples = self.pool.map(sample_helper, self.pdf_range)
+        dd = {}
+        dd.update(self._gen_obj.metadata)
+        return dd
 
-        return self.samples
-
-    def quantize(self, quants=None, N=None, limits=None, vb=True):
-        """
-        Computes an array of evenly-spaced quantiles for each PDF
-
-        Parameters
-        ----------
-        quants: ndarray, float, optional
-            array of quantile locations as decimals
-        percent: float, optional
-            the separation of the requested quantiles, in percent
-        N: int, optional
-            the number of quantiles to compute.
-        infty: float, optional
-            approximate value at which CDF=1.
-        vb: boolean
-            report on progress
+    def objdata(self):
+        """Return the object data for this ensemble
 
         Returns
         -------
-        self.quantiles: ndarray, tuple, ndarray, float
-            array of tuples of the CDF values and the quantiles for each PDF
+        objdata : `dict`
+            The object data
+
+        Notes
+        -----
+        Object data are elements that differ for each PDFs in the ensemble
         """
-        def quantize_helper(i):
-            # try:
-            # with open(self.logfilename, 'wb') as logfile:
-            #     logfile.write('quantizing pdf '+str(i)+'\n')
-            return self.pdfs[i].quantize(quants=quants,
-                                            N=N, limits=None, vb=vb)
-            # except Exception:
-                # print('ERROR: quantization failed on '+str(i)+' because '+str(sys.exc_info()[0]))
 
-        self.quantiles = self.pool.map(quantize_helper, self.pdf_range)
-        self.quantiles = np.swapaxes(np.array(self.quantiles), 0, 1)
-        self.quantiles = (self.quantiles[0][0], self.quantiles[1])
+        dd = {}
+        dd.update(self._frozen.kwds)
+        dd.pop('row', None)
+        dd.update(self._gen_obj.objdata)
+        return dd
 
-        return self.quantiles
+    def build_tables(self):
+        """Build and return `astropy.Table` objects for the meta data and object data
+        for this ensemble
 
-    def histogramize(self, binends=None, N=10, binrange=None, vb=True):
+        Returns
+        -------
+        meta : `astropy.Table`
+            Table with the meta data
+        data : `astropy.Table`
+            Table with the object data
+        """
+        try:
+            meta = Table(self.metadata())
+        except ValueError as exep:
+            print_dict_shape(self.metadata())
+            raise ValueError from exep
+        try:
+            data = Table(self.objdata())
+        except ValueError as exep:
+            print_dict_shape(self.objdata())
+            raise ValueError from exep
+        return dict(meta=meta, data=data)
+
+    def gridded(self, grid):
+        """Build, cache are return the PDF values at grid points
+
+        Parameters
+        ----------
+        grid : array-like
+            The grid points
+
+        Returns
+        -------
+        gridded : (grid, pdf_values)
+
+        Notes
+        -----
+        This first comparse grid to the cached value, if they match it returns
+        the cached value
+        """
+        if self._gridded is None or not np.array_equal(self._gridded[0], grid):
+            self._gridded = (grid, self.pdf(grid))
+        return self._gridded
+
+    def write_to(self, filename):
+        """Save this ensemble to a file
+
+        Parameters
+        ----------
+        filename : `str`
+
+        Notes
+        -----
+        This will actually write two files, one for the metadata and one for the object data
+
+        This uses `astropy.Table` to write the data, so any filesuffix that works for
+        `astropy.Table.write` will work here.
+        """
+        basename, ext = os.path.splitext(filename)
+        meta_ext = "_meta%s" % ext
+        meta_filename = basename + meta_ext
+
+        tables = self.build_tables()
+        tables['meta'].write(meta_filename, overwrite=True)
+        tables['data'].write(filename, overwrite=True)
+
+
+    @classmethod
+    def read_from(cls, filename):
+        """Read this ensemble from a file
+
+        Parameters
+        ----------
+        filename : `str`
+
+        Notes
+        -----
+        This will actually read two files, one for the metadata and one for the object data
+
+        This uses `astropy.Table` to write the data, so any filesuffix that works for
+        `astropy.Table.write` will work here.
+
+        This will use information in the meta data to figure out how to construct the data
+        need to build the ensemble.
+        """
+        basename, ext = os.path.splitext(filename)
+        meta_ext = "_meta%s" % ext
+        meta_filename = basename + meta_ext
+
+        md_table = Table.read(meta_filename)
+        data_table = Table.read(filename)
+
+        data_dict = {}
+        for col in md_table.columns:
+            col_data = md_table[col].data
+            if len(col_data.shape) > 1:
+                data_dict[col] = np.squeeze(col_data)
+            else:
+                data_dict[col] = col_data
+
+        for col in data_table.columns:
+            col_data = data_table[col].data
+            if len(col_data.shape) < 2:
+                data_dict[col] = np.expand_dims(data_table[col].data, -1)
+            else:
+                data_dict[col] = col_data
+
+        pdf_name = data_dict.pop('pdf_name')[0].decode()
+        pdf_version = data_dict.pop('pdf_version')[0]
+        class_to = get_qp_reader(pdf_name, pdf_version)
+        return cls(class_to, data=data_dict)
+
+
+    def pdf(self, x):
+        """
+        Evaluates the probablity density function for the whole ensemble
+
+        Parameters
+        ----------
+        x: float or ndarray, float
+            location(s) at which to do the evaluations
+
+        Returns
+        -------
+        """
+        return self._frozen.pdf(x)
+
+    def logpdf(self, x):
+        """
+        Evaluates the log of the probablity density function for the whole ensemble
+
+        Parameters
+        ----------
+        x: float or ndarray, float
+            location(s) at which to do the evaluations
+
+        Returns
+        -------
+        """
+        return self._frozen.logpdf(x)
+
+
+    def cdf(self, x):
+        """
+        Evaluates the cumalative distribution function for the whole ensemble
+
+        Parameters
+        ----------
+        x: float or ndarray, float
+            location(s) at which to do the evaluations
+
+        Returns
+        -------
+        """
+        return self._frozen.cdf(x)
+
+    def logcdf(self, x):
+        """
+        Evaluates the log of the cumalative distribution function for the whole ensemble
+
+        Parameters
+        ----------
+        x: float or ndarray, float
+            location(s) at which to do the evaluations
+
+        Returns
+        -------
+        """
+        return self._frozen.logcdf(x)
+
+    def ppf(self, q):
+        """
+        Evaluates all the PPF of the distribution
+
+        Parameters
+        ----------
+        q: float or ndarray, float
+            location(s) at which to do the evaluations
+
+        Returns
+        -------
+        """
+        return self._frozen.ppf(q)
+
+
+    def sf(self, q):
+        """
+        Evaluates the survival fraction of the distribution
+
+        Parameters
+        ----------
+        x: float or ndarray, float
+            (s) at which to evaluate the pdfs
+
+        Returns
+        -------
+        """
+        return self._frozen.sf(q)
+
+    def isf(self, q):
+        """
+        Evaluates the inverse of the survival fraction of the distribution
+
+        Parameters
+        ----------
+        x: float or ndarray, float
+            (s) at which to evaluate the pdfs
+
+        Returns
+        -------
+        """
+        return self._frozen.sf(q)
+
+    def rvs(self, size=None, random_state=None):
+        """
+        Generate samples from this ensmeble
+
+        Parameters
+        ----------
+        size: int
+            number of samples to return
+
+        Returns
+        -------
+        """
+        return self._frozen.rvs(size=(self._frozen.npdf, size), random_state=random_state)
+
+
+    def stats(self, moments='mv'):
+        """
+        Retrun the stats for this ensemble
+
+        Parameters
+        ----------
+        moments: `str`
+            Which moments to include
+
+        Returns
+        -------
+        """
+        return self._frozen.stats(moments=moments)
+
+    def median(self):
+        """ Return the medians for this ensemble """
+        return self._frozen.median()
+
+    def mean(self):
+        """ Return the means for this ensemble """
+        return self._frozen.mean()
+
+    def var(self):
+        """ Return the variences for this ensemble """
+        return self._frozen.var()
+
+    def std(self):
+        """ Return the standard deviations for this ensemble """
+        return self._frozen.std()
+
+    def moment(self, n):
+        """ Return the nth moments for this ensemble """
+        return self._frozen.moment(n)
+
+    def entropy(self):
+        """ Return the entropy for this ensemble """
+        return self._frozen.entropy()
+
+    def pmf(self, k):
+        """ Return the kth pmf for this ensemble """
+        return self._frozen.pmf(k)
+
+    def logpmf(self, k):
+        """ Return the log of the kth pmf for this ensemble """
+        return self._frozen.logpmf(k)
+
+    def interval(self, alpha):
+        """ Return the intervals corresponding to a confidnce level of alpha for this ensemble"""
+        return self._frozen.interval(alpha)
+
+
+    def histogramize(self, bins):
         """
         Computes integrated histogram bin values for all PDFs
 
         Parameters
         ----------
-        binends: ndarray, float, optional
+        bins: ndarray, float, optional
             Array of N+1 endpoints of N bins
-        N: int, optional
-            Number of bins if no binends provided
-        binrange: tuple, float, optional
-            Pair of values of endpoints of total bin range
-        vb: boolean
-            Report on progress
 
         Returns
         -------
@@ -226,22 +426,33 @@ class Ensemble(object):
             Array of pairs of arrays of lengths (N+1, N) containing endpoints
             of bins and values in bins
         """
-        def histogram_helper(i):
-            try:
-            # with open(self.logfilename, 'wb') as logfile:
-            #     logfile.write('histogramizing pdf '+str(i)+'\n')
-                return self.pdfs[i].histogramize(binends=binends, N=N,
-                                                binrange=binrange, vb=False)
-            except Exception:
-                print('ERROR: histogramization failed on '+str(i)+' because '+str(sys.exc_info()[0]))
+        cdf_vals = self.cdf(bins)
+        bin_vals = cdf_vals[:,1:] - cdf_vals[:,0:-1]
+        return (bins, bin_vals)
 
-        self.histogram = self.pool.map(histogram_helper, self.pdf_range)
-        self.histogram = np.swapaxes(np.array(self.histogram), 0, 1)
-        self.histogram = (self.histogram[0][0], self.histogram[1])
 
-        return self.histogram
+    def integrate(self, limits):
+        """
+        Computes the integral under the ensemble of PDFs between the given limits.
 
-    def mix_mod_fit(self, comps=5, using=None, vb=True):
+        Parameters
+        ----------
+        limits: numpy.ndarray, tuple, float
+            limits of integration, may be different for all PDFs in the ensemble
+        using: string
+            parametrization over which to approximate the integral
+        dx: float, optional
+            granularity of integral
+
+        Returns
+        -------
+        integral: numpy.ndarray, float
+            value of the integral
+        """
+        return self.cdf(limits[1]) - self.cdf(limits[0])
+
+
+    def mix_mod_fit(self, comps=5):
         """
         Fits the parameters of a given functional form to an approximation
 
@@ -263,265 +474,76 @@ class Ensemble(object):
         -----
         Currently only supports mixture of Gaussians
         """
-        def mixmod_helper(i):
-            try:
-            # with open(self.logfilename, 'wb') as logfile:
-            #     logfile.write('fitting pdf '+str(i)+'\n')
-                return self.pdfs[i].mix_mod_fit(n_components=comps, using=using, vb=False)
-            except Exception:
-                print('ERROR: mixture model fitting failed on '+str(i)+' because '+str(sys.exc_info()[0]))
+        raise NotImplementedError("mix_mod_fit %i" % comps)
 
-        self.mix_mod = self.pool.map(mixmod_helper, self.pdf_range)
 
-        return self.mix_mod
 
-    def evaluate(self, loc, using=None, norm=False, vb=False):
-        """
-        Evaluates all PDFs
-
-        Parameters
-        ----------
-        loc: float or ndarray, float
-            location(s) at which to evaluate the pdfs
-        using: string
-            which parametrization to evaluate, defaults to initialization
-        norm: boolean, optional
-            True to normalize the evaluation, False if expected probability outside loc
-        vb: boolean
-            report on progress
-
-        Returns
-        -------
-        self.gridded: tuple(string, tuple(ndarray, ndarray, float))
-            tuple of string and tuple of grid and values of the PDFs (or their approximations) at the requested location(s), of shape (npdfs, nlocs)
-        """
-        def evaluate_helper(i):
-            try:
-            # with open(self.logfilename, 'wb') as logfile:
-            #     logfile.write('evaluating pdf '+str(i)+'\n')
-                return self.pdfs[i].evaluate(loc=loc, using=using, norm=norm, vb=vb)
-            except Exception:
-                 print('REAL ERROR: evaluation with '+using+' failed on '+str(i)+' because '+str(sys.exc_info()[0]))
-            # return result
-        self.gridded = self.pool.map(evaluate_helper, self.pdf_range)
-        self.gridded = np.swapaxes(np.array(self.gridded), 0, 1)
-        self.gridded = (using, (self.gridded[0][0], self.gridded[1]))
-
-        return self.gridded[-1]
-
-    def integrate(self, limits, using, dx=0.001):
-        """
-        Computes the integral under the ensemble of PDFs between the given limits.
-
-        Parameters
-        ----------
-        limits: numpy.ndarray, tuple, float
-            limits of integration, may be different for all PDFs in the ensemble
-        using: string
-            parametrization over which to approximate the integral
-        dx: float, optional
-            granularity of integral
-
-        Returns
-        -------
-        integral: numpy.ndarray, float
-            value of the integral
-        """
-        if len(np.shape(limits)) == 1:
-            limits = [limits] * self.n_pdfs
-        def integrate_helper(i):
-            try:
-                return self.pdfs[i].integrate(limits[i], using=using, dx=dx, vb=False)
-            except Exception:
-                print('ERROR: integration failed on '+str(i)+' because '+str(sys.exc_info()[0]))
-
-        integrals = self.pool.map(integrate_helper, self.pdf_range)
-
-        return integrals
-
-    def moment(self, N, using=None, limits=None, dx=0.01, vb=False):
-        """
-        Calculates a given moment for each PDF in the ensemble
-
-        Parameters
-        ----------
-        N: int
-            number of moment
-        using: string
-            which parametrization to use
-        limits: tuple of floats, optional
-            endpoints of integration interval in which to calculate moment
-        dx: float
-            resolution of integration grid
-        vb: boolean
-            print progress to stdout?
-
-        Returns
-        -------
-        moments: numpy.ndarray, float
-            moment values of each PDF under the using approximation or truth
-        """
-        D = int((limits[-1] - limits[0]) / dx)
-        grid = np.linspace(limits[0], limits[1], D)
-        dx = (limits[-1] - limits[0]) / (D - 1)
-        grid_to_N = grid ** N
-
-        if self.gridded[0] == using and np.array_equal(self.gridded[-1][0], grid):
-            if vb: print('taking a shortcut')
-            def moment_helper(i):
-                return u.quick_moment(self.gridded[-1][-1][i], grid_to_N, dx)
-        else:
-            def moment_helper(i):
-                p_eval = self.pdfs[i].evaluate(grid, using=using, vb=vb)[1]
-                return u.quick_moment(p_eval, grid_to_N, dx)
-
-        moments = self.pool.map(moment_helper, self.pdf_range)
-
-        moments = np.array(moments)
-        return moments
-
-    def kld(self, using=None, limits=None, dx=0.01, vb=False):
+    def kld(self, other, limits, dx=0.01):
         """
         Calculates the KLD for each PDF in the ensemble
-
         Parameters
         ----------
-        using: string
-            which parametrization to use
+        other: `qp.ensemble`
+            Other ensemble
         limits: tuple of floats, optional
             endpoints of integration interval in which to calculate KLD
         dx: float
             resolution of integration grid
-        vb: boolean
-            print progress to stdout?
 
         Returns
         -------
         klds: numpy.ndarray, float
             KLD values of each PDF under the using approximation relative to the truth
         """
-        if self.truth is None:
-            print('Metrics can only be calculated relative to the truth.')
-            return
-        else:
-            def P_func(pdf):
-                return qp.PDF(truth=pdf.truth, vb=False)
-
-        if limits is None:
-            limits = self.limits
-
-        if using == 'quantiles':
-            def Q_func(pdf):
-                assert(pdf.quantiles is not None)
-                return qp.PDF(quantiles=pdf.quantiles, limits=limits, vb=False)
-        elif using == 'histogram':
-            def Q_func(pdf):
-                assert(pdf.histogram is not None)
-                return qp.PDF(histogram=pdf.histogram, limits=limits, vb=False)
-        elif using == 'samples':
-            def Q_func(pdf):
-                assert(pdf.samples is not None)
-                return qp.PDF(samples=pdf.samples, limits=limits, vb=False)
-        elif using == 'gridded':
-            def Q_func(pdf):
-                assert(pdf.gridded is not None)
-                return qp.PDF(gridded=pdf.gridded, limits=limits, vb=False)
-        else:
-            print(using + ' not available; try a different parametrization.')
-            return
+        if other is None:
+            print('Metrics can only be calculated relative another distribution.')
+            return None
 
         D = int((limits[-1] - limits[0]) / dx)
         grid = np.linspace(limits[0], limits[1], D)
         # dx = (limits[-1] - limits[0]) / (D - 1)
 
-        self.klds[using] = np.empty(self.n_pdfs)
-        if self.gridded[0] == using and np.array_equal(self.gridded[-1][0], grid):
-            if vb: print('taking a shortcut')
-            def kld_helper(i):
-                P_eval = P_func(self.pdfs[i]).evaluate(grid, using='truth', vb=vb, norm=True)[-1]
-                KL = u.quick_kl_divergence(P_eval, self.gridded[-1][-1][i], dx=dx)
-                self.pdfs[i].klds[using] = KL
-                self.klds[using][i] = KL
-                return KL
-        else:
-            def kld_helper(i):
-                P_eval = P_func(self.pdfs[i]).evaluate(grid, using='truth', vb=vb, norm=True)[-1]
-                Q_eval = Q_func(self.pdfs[i]).evaluate(grid, vb=vb, using=using, norm=True)[-1]
-                KL = u.quick_kl_divergence(P_eval, Q_eval, dx=dx)
-                self.pdfs[i].klds[using] = KL
-                self.klds[using][i] = KL
-                return KL
+        P_eval = other.gridded(grid)[1]
+        Q_eval = self.gridded(grid)[1]
+        def kld_helper(p_row, q_row):
+            return quick_kld(p_row, q_row, dx)
+        klds = np.array(self.pool.map(kld_helper, P_eval, Q_eval))
+        return klds
 
-        klds = self.pool.map(kld_helper, self.pdf_range)
-        klds = np.array(klds)
 
-        return self.klds
 
-    def rmse(self, using=None, limits=None, dx=0.01, vb=False):
+    def rmse(self, other, limits, dx=0.01):
         """
         Calculates the RMSE for each PDF in the ensemble
-
         Parameters
         ----------
-        using: string
-            which parametrization to use
-        limits: tuple of floats
-            endpoints of integration interval in which to calculate RMSE
+        other: `qp.ensemble`
+            Other ensemble
+        limits: tuple of floats, optional
+            endpoints of integration interval in which to calculate KLD
         dx: float
             resolution of integration grid
-        vb: boolean
-            print progress to stdout?
 
         Returns
         -------
         rmses: numpy.ndarray, float
-            RMSE values of each PDF under the using approximation relative to the truth
+            KLD values of each PDF under the using approximation relative to the truth
         """
-        if self.truth is None:
-            print('Metrics can only be calculated relative to the truth.')
-            return
-        else:
-            def P_func(pdf):
-                return qp.PDF(truth=pdf.truth, vb=False)
-
-        if limits is None:
-            limits = self.limits
-
-        if using == 'quantiles':
-            def Q_func(pdfs):
-                return qp.PDF(quantiles=pdf.quantiles, vb=False)
-        elif using == 'histogram':
-            def Q_func(pdfs):
-                return qp.PDF(histogram=pdf.histogram, vb=False)
-        elif using == 'samples':
-            def Q_func(pdfs):
-                return qp.PDF(samples=pdf.samples, vb=False)
-        elif using == 'gridded':
-            def Q_func(pdfs):
-                return qp.PDF(quantiles=pdf.gridded, vb=False)
-        else:
-            print(using + ' not available; try a different parametrization.')
-            return
+        if other is None:
+            print('Metrics can only be calculated relative another distribution.')
+            return None
 
         D = int((limits[-1] - limits[0]) / dx)
         grid = np.linspace(limits[0], limits[1], D)
-        dx = (limits[-1] - limits[0]) / (D - 1)
+        # dx = (limits[-1] - limits[0]) / (D - 1)
 
-        if self.gridded[0] == using and np.array_equal(self.gridded[-1][0], grid):
-            if vb: print('taking a shortcut')
-            def rmse_helper(i):
-                return u.quick_rmse(self.gridded[-1][-1][i], grid, dx=dx)
-        else:
-            def rmse_helper(i):
-                P_eval = P_func(self.pdfs[i]).evaluate(grid, norm=True, vb=vb)[-1]
-                Q_eval = Q_func(self.pdfs[i]).evaluate(grid, norm=True, vb=vb)[-1]
-                return u.quick_rmse(P_eval, Q_eval, dx=dx)
-
-        rmses = self.pool.map(rmse_helper, self.pdf_range)
-
-        rmses = np.array(rmses)
-
+        P_eval = other.gridded(grid)[1]
+        Q_eval = self.gridded(grid)[1]
+        def rmse_helper(p_row, q_row):
+            return quick_rmse(p_row, q_row, D)
+        rmses = np.array(self.pool.map(rmse_helper, P_eval, Q_eval))
         return rmses
+
 
     # def stack(self, loc, using, vb=True):
     #     """

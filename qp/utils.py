@@ -1,13 +1,14 @@
+"""Utility functions for the qp package"""
+
 import numpy as np
-import scipy as sp
+
 from scipy import stats as sps
+from scipy.interpolate import interp1d, splev, splrep
+from scipy.integrate import quad
 import sys
 
-global epsilon
 epsilon = sys.float_info.epsilon
-global infty
 infty = sys.float_info.max * epsilon
-global lims
 lims = (epsilon, 1.)
 
 def sandwich(in_arr, ends):
@@ -26,11 +27,11 @@ def sandwich(in_arr, ends):
     out_arr: numpy.ndarray, float
         array with front and back concatenations
     """
-    if type(ends[0]) == np.ndarray:
+    if isinstance(ends[0], np.ndarray):
         prepend = len(ends[0])
     else:
         prepend = 1
-    if type(ends[-1]) == np.ndarray:
+    if isinstance(ends[-1], np.ndarray):
         append = -1 * len(ends[-1])
     else:
         append = -1
@@ -258,7 +259,8 @@ def evaluate_quantiles(in_data, threshold=epsilon, vb=False):
             assert False
     y = diy / dx
     (xs, ys) = evaluate_histogram((x, y), threshold=threshold, vb=vb)
-    if vb: print('input shape: '+str((len(x), len(y)))+', output shape: '+str((len(xs), len(ys))))
+    if vb:
+        print('input shape: '+str((len(x), len(y)))+', output shape: '+str((len(xs), len(ys))))
     #     try:
     #         assert (np.all(xs > threshold) and np.all(ys > threshold))
     #     except AssertionError:
@@ -304,29 +306,117 @@ def normalize_quantiles(in_data, threshold=epsilon, vb=False):
     out_data = (xs, ys)
     return out_data
 
-def make_kludge_interpolator(in_data, threshold=epsilon):
+
+def normalize_interp1d(xvals, yvals, limits, **kwargs):
     """
-    Linear interpolation by hand for debugging
+    Normalize a set of 1D interpolators
 
     Parameters
     ----------
-    in_data: tuple, numpy.ndarray, float
-        values x and PDF values y at which interpolator is fit
-    threshold: float, optional
-        minimum value to use outside interpolation range
+    xvals : array-like
+        X-values used for the interpolation
+    yvals : array-like
+        Y-values used for the interpolation
+    limits : tuple (2)
+        Lower and Upper limits of integration
+
+    Keywords
+    --------
+    Passed to the `scipy.quad` intergation function
 
     Returns
     -------
-    kludge_interpolator: function
-        evaluates linear interpolant based on input points
+    ynorm: array-like
+        Normalized y-vals
     """
-    (x, y) = in_data
-    dx = x[1:] - x[:-1]
-    dy = y[1:] - y[:-1]
-    def kludge_interpolator(xf):
-        yf = np.ones(np.shape(xf)) * threshold
-        for i in range(len(x)):
-            inside = ((xf >= x[i]) & (xf <= x[i+1])).nonzero()[0]
-            yf[inside] = y[i] + (y[i+1] - y[i]) * (xf[inside] - x[i]) / dx[i]
-        return yf
-    return kludge_interpolator
+
+    def row_integral(irow):
+        return quad(interp1d(xvals[irow], yvals[irow], **kwargs), limits[0], limits[1])[0]
+
+    vv = np.vectorize(row_integral)
+    integrals = vv(np.arange(xvals.shape[0]))
+    return (yvals.T / integrals).T
+
+
+def normalize_spline(xvals, yvals, limits, **kwargs):
+    """
+    Normalize a set of 1D interpolators
+
+    Parameters
+    ----------
+    xvals : array-like
+        X-values used for the spline
+    yvals : array-like
+        Y-values used for the spline
+    limits : tuple (2)
+        Lower and Upper limits of integration
+
+    Keywords
+    --------
+    Passed to the `scipy.quad` intergation function
+
+    Returns
+    -------
+    ynorm: array-like
+        Normalized y-vals
+    """
+
+    def row_integral(irow):
+        spline = lambda xv : splev(xv, splrep(xvals[irow], yvals[irow]))
+        return quad(spline, limits[0], limits[1], **kwargs)[0]
+
+    vv = np.vectorize(row_integral)
+    integrals = vv(np.arange(xvals.shape[0]))
+    return (yvals.T / integrals).T
+
+
+def build_splines(xvals, yvals):
+    """
+    Build a set of 1D spline representations
+
+    Parameters
+    ----------
+    xvals : array-like
+        X-values used for the spline
+    yvals : array-like
+        Y-values used for the spline
+
+    Returns
+    -------
+    splx : array-like
+        Spline knot xvalues
+    sply : array-like
+        Spline knot yvalues
+    spln : array-like
+        Spline knot order paramters
+    """
+    l_x = []
+    l_y = []
+    l_n = []
+    for xrow, yrow in zip(xvals, yvals):
+        rep = splrep(xrow, yrow)
+        l_x.append(rep[0])
+        l_y.append(rep[1])
+        l_n.append(rep[2])
+    return np.vstack(l_x), np.vstack(l_y), np.vstack(l_n)
+
+
+def build_kdes(samples, **kwargs):
+    """
+    Build a set of Gaussian Kernal Density Estimates
+
+    Parameters
+    ----------
+    samples : array-like
+        X-values used for the spline
+
+    Keywords
+    --------
+    Passed to the `scipy.stats.gaussian_kde` constructor
+
+
+    Retruns
+    -------
+    kdes : list of `scipy.stats.gaussian_kde` objects
+    """
+    return [ sps.gaussian_kde(row, **kwargs) for row in samples ]
