@@ -797,7 +797,7 @@ class kde_rows_gen(Pdf_rows_gen):
         """Return the xvalues"""
         return self._yvals
 
-    
+
     def _pdf(self, x, row):
         # pylint: disable=arguments-differ
         def pdf_row(irow, xv):
@@ -820,7 +820,7 @@ class kde_rows_gen(Pdf_rows_gen):
         vv = np.vectorize(ppf_row)
         return vv(row, x)
 
-    
+
     def _updated_ctor_param(self):
         """
         Set the bins as additional constructor argument
@@ -841,8 +841,8 @@ class kde_rows_gen(Pdf_rows_gen):
         axes, _, kw = get_axes_and_xlims(**kwargs)
         if pdf.dist.samples is None: #pragma: no cover
             xvals_row = pdf.dist.xvals[pdf.kwds['row']]
-            return plot_pdf_on_axes(axes, pdf, xvals_row, **kw)        
-        samples = pdf.dist.samples[pdf.kwds['row']]            
+            return plot_pdf_on_axes(axes, pdf, xvals_row, **kw)
+        samples = pdf.dist.samples[pdf.kwds['row']]
         return plot_pdf_samples_on_axes(axes, pdf, samples, **kw)
 
 

@@ -98,7 +98,7 @@ def convert_using_hist_samples(in_dist, class_to, **kwargs):
             samples = in_dist.dist.samples
         except AttributeError:
             samples = in_dist.rvs(size)
-    
+
     def hist_helper(sample):
         return np.histogram(sample, bins=bins)[0]
     vv = np.vectorize(hist_helper, signature="(%i)->(%i)" % (samples.shape[0], bins.size-1))
