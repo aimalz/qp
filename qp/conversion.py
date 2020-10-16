@@ -2,6 +2,8 @@
 
 import sys
 
+from scipy.stats._distn_infrastructure import rv_frozen
+
 from .ensemble import Ensemble
 
 from .dict_utils import get_val_or_default, set_val_or_default, pretty_print
@@ -31,11 +33,11 @@ class ConversionDict:
     def _get_convertor(self, class_to, class_from, method=None):
 
         to_dict = get_val_or_default(self._conv_dict, class_to)
-        if to_dict is None:
-            return None
+        if to_dict is None: #pragma : no cover
+            raise KeyError("No conversions defined for %s " % class_to)
         to_from_dict = get_val_or_default(to_dict, class_from)
-        if to_from_dict is None:
-            return None
+        if to_from_dict is None: #pragma : no cover
+            raise KeyError("No conversions defined for %s -> %s" % (class_to, class_from))
         func = get_val_or_default(to_from_dict, method)
         return func
 
@@ -45,6 +47,13 @@ class ConversionDict:
         class_from = ensemble_from.gen_class
         convert = self._get_convertor(class_to, class_from, method)
         return convert(ensemble_from, class_to, **kwargs)
+
+
+    def _convert_frozen(self, frozen_from, class_to, method=None, **kwargs):
+
+        class_from = frozen_from.dist
+        convert = self._get_convertor(class_to, class_from, method)
+        return convert(frozen_from, class_to, **kwargs)
 
 
     def convert(self, obj_from, class_to, method=None, **kwargs):
@@ -70,7 +79,9 @@ class ConversionDict:
         """
         if isinstance(obj_from, Ensemble):
             return self._convert_ensemble(obj_from, class_to, method, **kwargs)
-        raise TypeError("Tried to convert object of type %s" % type(obj_from))
+        if isinstance(obj_from, rv_frozen):
+            return self._convert_frozen(obj_from, class_to, method, **kwargs)
+        raise TypeError("Tried to convert object of type %s" % type(obj_from)) #pragma : no cover
 
 
     def add_mapping(self, func, class_to, class_from, method=None):
@@ -129,17 +140,27 @@ def qp_convert(obj_from, class_to, method=None, **kwargs):
     return CONVERSIONS.convert(obj_from, class_to, method, **kwargs)
 
 
-def qp_add_mapping(func, class_to, class_from, method=None):
+def set_default_conversion(func):
     """
     Parameters
     ----------
     func : `function`
-        The function used to do the conversion
-    class_to : sub-class of `scipy.stats.rv_continuous`
-        The class we are converting to
-    class_from :  sub-class of `scipy.stats.rv_continuous`
-        The class we are converting from
-    method : `str`
-        Optional argument to specify a non-default conversion algorithm
+        The function to use as the default for conversions
     """
-    return CONVERSIONS.add_mapping(func, class_to, class_from, method)
+    CONVERSIONS.add_mapping(func, None, None)
+
+
+
+def register_class_conversions(cls):
+    """
+    Parameters
+    ----------
+    cls : `class`
+        The class whose conversions we want go register
+    """
+    for class_from, func in cls.conversion_map.items():
+        if isinstance(func, dict): #pragma: no cover
+            for method, func2 in func.items():
+                CONVERSIONS.add_mapping(func2, cls, class_from, method)
+            continue
+        CONVERSIONS.add_mapping(func, cls, class_from, None)

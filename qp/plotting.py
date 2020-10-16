@@ -38,13 +38,61 @@ STYLES['histogram'] = ':'#(0,(3,6))
 STYLES['samples'] = '-.'#(0,(1,2))
 
 
+
+def make_figure_axes(xlim, **kwargs):
+    """
+    Build a figure and a set of figure axes to plot data on
+
+    Parameters
+    ----------
+    xlim : (float, float)
+        The x-axis limits of the plot
+
+    Keywords
+    --------
+    **kwargs : passed directly to the `matplotlib` plot function
+
+    Return
+    ------
+    fig, axes : The figure and axes
+    """
+
+    xlabel = kwargs.pop('xlabel', r'$z$')
+    ylabel = kwargs.pop('ylabel', r'$p(z)$')
+
+    fig = plt.figure()
+    axes = fig.add_subplot(111)
+    axes.set_xlim(xlim[0], xlim[-1])
+    axes.set_xlabel(xlabel, fontsize=16)
+    axes.set_ylabel(ylabel, fontsize=16)
+
+    return (fig, axes)
+
+
+def get_axes_and_xlims(**kwargs):
+    """Get and return the axes and xlims from the kwargs"""
+    axes = kwargs.pop('axes', None)
+    xlim = kwargs.pop('xlim', None)
+    if axes is None:
+        if xlim is None: #pragma : no cover
+            raise ValueError("Either xlim or axes must be provided")
+        _, axes = make_figure_axes(xlim, **kwargs)
+    else:
+        if xlim is not None: #pragma : no cover
+            raise ValueError("Only one of xlim and axes should be provided")
+        xlim = axes.get_xlim()
+    return axes, xlim, kwargs
+
+
+
 def plot_pdf_on_axes(axes, pdf, xvals, **kwargs):
     """
     Plot a PDF on a set of axes, by evaluating it a set of points
 
     Parameters
     ----------
-    axes : The axes we want to plot the data on
+    axes : `matplotlib.axes` or `None`
+        The axes we want to plot the data on
 
     pdf : `scipy.stats.rv_frozen`
         The distribution we want to plot
@@ -52,7 +100,9 @@ def plot_pdf_on_axes(axes, pdf, xvals, **kwargs):
     xvals : `np.array`
         The locations we evaluate the PDF at for plotting
 
-    **kwargs : passed directly to the `matplotlib` plot function
+    Keywods
+    -------
+    Keywords are passed to matplotlib
 
     Return
     ------
@@ -63,81 +113,40 @@ def plot_pdf_on_axes(axes, pdf, xvals, **kwargs):
     return axes
 
 
-def plot_dist_pdf(axes, pdf, **kwargs):
+def plot_dist_pdf(pdf, **kwargs):
     """
     Plot a PDF on a set of axes, using the axes limits
 
     Parameters
     ----------
-    axes : The axes we want to plot the data on
-
     pdf : `scipy.stats.rv_frozen`
         The distribution we want to plot
 
     Keywords
     --------
-    npoints : `int`
-        Number of points to use in the plotting.  Evenly spaced along the axis provided.
+    axes : `matplotlib.axes`
+        The axes to plot on
 
-    **kwargs : passed directly to the `matplotlib` plot function
+    xlim : (float, float)
+        The x-axis limits
+
+    npts : int
+        The number of x-axis points
+
+    remaining kwargs : passed directly to the `plot_pdf_on_axes` plot function
 
     Return
     ------
     axes : The axes the data are plotted on
     """
-
-    xlim = axes.get_xlim()
-    npoints = kwargs.pop('npoints', 101)
+    axes, xlim, kw = get_axes_and_xlims(**kwargs)
+    npoints = kw.pop('npts', 101)
     xvals = np.linspace(xlim[0], xlim[1], npoints)
-    return plot_pdf_on_axes(axes, pdf, xvals, **kwargs)
+    return plot_pdf_on_axes(axes, pdf, xvals, **kw)
 
 
-def plot_xspline_dist_pdf(axes, pdf, **kwargs):
-    """
-    Plot a PDF on a set of axes, by evaluating it at the points carried by the distribution
 
-    Parameters
-    ----------
-    axes : The axes we want to plot the data on
-
-    pdf : `scipy.stats.rv_frozen`
-        The distribution we want to plot
-
-    Keywords
-    --------
-    **kwargs : passed directly to the `matplotlib` plot function
-
-    Return
-    ------
-    axes : The axes the data are plotted on
-    """
-    xvals_row = pdf.dist.splx[pdf.kwds['row']]
-    return plot_pdf_on_axes(axes, pdf, xvals_row, **kwargs)
-
-
-def plot_xval_dist_pdf(axes, pdf, **kwargs):
-    """
-    Plot a PDF on a set of axes, by evaluating it at the points carried by the distribution
-
-    Parameters
-    ----------
-    axes : The axes we want to plot the data on
-
-    pdf : `scipy.stats.rv_frozen`
-        The distribution we want to plot
-
-    Keywords
-    --------
-    **kwargs : passed directly to the `matplotlib` plot function
-
-    Return
-    ------
-    axes : The axes the data are plotted on
-    """
-    xvals_row = pdf.dist.xvals[pdf.kwds['row']]
-    return plot_pdf_on_axes(axes, pdf, xvals_row, **kwargs)
-
-def plot_pdf_quantiles_on_axes(axes, pdf, quantiles, **kwargs):
+def plot_pdf_quantiles_on_axes(axes, xvals, yvals, quantiles, **kwargs):
     """
     Plot a PDF on a set of axes, by evaluating at the quantiles provided
 
@@ -145,8 +154,11 @@ def plot_pdf_quantiles_on_axes(axes, pdf, quantiles, **kwargs):
     ----------
     axes : The axes we want to plot the data on
 
-    pdf : `scipy.stats.rv_frozen`
-        The distribution we want to plot
+    xvals : array_like
+        Pdf xvalues
+
+    yvals : array_like
+        Pdf yvalues
 
     quantiles : (`np.array`, `np.array`)
        The quantiles that define the distribution pdf
@@ -162,38 +174,11 @@ def plot_pdf_quantiles_on_axes(axes, pdf, quantiles, **kwargs):
     ------
     axes : The axes the data are plotted on
     """
-    npoints = kwargs.pop('npoints', 101)
-    xlim = axes.get_xlim()
-    xvals = np.linspace(xlim[0], xlim[1], npoints)
-    yvals = np.squeeze(pdf.pdf(xvals))
     kwargs.setdefault('label', 'Quantiles')
     axes.scatter(quantiles[1], np.zeros(np.shape(quantiles[1])), color=COLORS['quantiles'], marker='|', s=100, alpha=0.75, **kwargs)
     kwargs.setdefault('label', 'Quantile Interpolated PDF')
     axes.plot(xvals, yvals, color=COLORS['quantiles'], lw=2.0, alpha=1.0, linestyle=STYLES['quantiles'], **kwargs)
     return axes
-
-
-def plot_quantile_dist_pdf(axes, pdf, **kwargs):
-    """
-    Plot a PDF on a set of axes, by evaluating it at the quantiles points carried by the distribution
-
-    Parameters
-    ----------
-    axes : The axes we want to plot the data on
-
-    pdf : `scipy.stats.rv_frozen`
-        The distribution we want to plot
-
-    Keywords
-    --------
-    **kwargs : passed directly to the `matplotlib` plot function
-
-    Return
-    ------
-    axes : The axes the data are plotted on
-    """
-    locs = pdf.dist.locs[pdf.kwds['row']]
-    return plot_pdf_quantiles_on_axes(axes, pdf, quantiles=(pdf.dist.quants, np.squeeze(locs)), **kwargs)
 
 
 def plot_pdf_histogram_on_axes(axes, hist, **kwargs):
@@ -223,29 +208,6 @@ def plot_pdf_histogram_on_axes(axes, hist, **kwargs):
     return axes
 
 
-def plot_hist_dist_pdf(axes, pdf, **kwargs):
-    """
-    Plot a PDF on a set of axes, by evaluating it at the histogram bins carried by the distribution
-
-    Parameters
-    ----------
-    axes : The axes we want to plot the data on
-
-    dist : `scipy.stats.rv_continuous`
-        The distribution we want to plot
-
-    Keywords
-    --------
-    **kwargs : passed directly to the `matplotlib` plot function
-
-    Return
-    ------
-    axes : The axes the data are plotted on
-    """
-    vals = pdf.dist.hpdfs[pdf.kwds['row']]
-    hist = (pdf.dist.hbins, vals)
-    return plot_pdf_histogram_on_axes(axes, hist=hist, **kwargs)
-
 
 def plot_pdf_samples_on_axes(axes, pdf, samples, **kwargs):
     """
@@ -269,7 +231,7 @@ def plot_pdf_samples_on_axes(axes, pdf, samples, **kwargs):
     ------
     axes : The axes the data are plotted on
     """
-    kwargs.setdefault('label', 'Samples')    
+    kwargs.setdefault('label', 'Samples')
     axes.scatter(samples, np.zeros(np.shape(samples)), color=COLORS['samples'], marker='|', s=100, alpha=0.75, **kwargs)
     npoints = kwargs.pop('npoints', 101)
     xlim = axes.get_xlim()
@@ -279,122 +241,14 @@ def plot_pdf_samples_on_axes(axes, pdf, samples, **kwargs):
     plt.plot(xvals, yvals, color=COLORS['samples'], lw=2.0, alpha=1.0, linestyle=STYLES['samples'], **kwargs)
     return axes
 
-def plot_kde_dist_pdf(axes, pdf, **kwargs):
-    """
-    Plot a PDF on a set of axes, by displaying the samples carried around by the sample
 
-    Parameters
-    ----------
-    axes : The axes we want to plot the data on
-
-    pdf : `scipy.stats.rv_frozen`
-        The distribution we want to plot
-
-    Keywords
-    --------
-    **kwargs : passed directly to the `matplotlib` plot function
-
-    Return
-    ------
-    axes : The axes the data are plotted on
-    """
-    samples = pdf.dist.samples[pdf.kwds['row']]
-    return plot_pdf_samples_on_axes(axes, pdf, samples, **kwargs)
+def qp_plot_native(pdf, **kwargs):
+    """Utility function to plot a pdf in a format that is specific to that type of pdf"""
+    axes = pdf.dist.plot_native(pdf, **kwargs)
+    return axes.figure, axes
 
 
-def make_figure_axes(limits, **kwargs):
-    """
-    Build a figure and a set of figure axes to plot data on
-
-    Parameters
-    ----------
-    limits : (float, float)
-        The x-axis limits of the plot
-
-    Keywords
-    --------
-    **kwargs : passed directly to the `matplotlib` plot function
-
-    Return
-    ------
-    fig, axes : The figure and axes
-    """
-
-    xlabel = kwargs.pop('xlabel', r'$z$')
-    ylabel = kwargs.pop('ylabel', r'$p(z)$')
-
-    fig = plt.figure()
-    axes = fig.add_subplot(111)
-    axes.set_xlim(limits[0], limits[-1])
-    axes.set_xlabel(xlabel, fontsize=16)
-    axes.set_ylabel(ylabel, fontsize=16)
-
-    return (fig, axes)
-
-
-
-NATIVE_PLOT_DICT = {}
-
-
-def qp_plot_native(axes, pdf, **kwargs):
-    """
-    Plot a PDF using the native representation for that type of distribution
-
-    Parameters
-    ----------
-    axes : The axes we want to plot the data on
-
-    pdf : `scipy.stats.rv_frozen`
-        The distribution we want to plot
-
-    Keywords
-    --------
-    **kwargs : passed directly to the `matplotlib` plot function
-
-    Return
-    ------
-    fig, axes : The figure and axes the data are plotted on
-
-    Notes
-    -----
-    The native representations are defined by a dict that maps class to a particular plotting function
-    """
-    limits = kwargs.pop('limits', None)
-    if axes is None:
-        if limits is None:
-            raise ValueError("You must either provide an axis to plot on, or specify limits for x-axis")
-        fig, axes = make_figure_axes(limits=limits)
-    else:
-        fig = axes.figure
-
-    func = NATIVE_PLOT_DICT.get(type(pdf.dist), plot_dist_pdf)
-    legend = kwargs.pop('legend', False)
-    func(axes, pdf, **kwargs)
-    if legend:
-        fig.legend()
-    return fig, axes
-
-
-def qp_add_plot_native_func(func, cls):
-    """
-    Add a mapping to the native representation functions.
-
-    Parameters
-    ----------
-    func : `function`
-        The plotting function to use for this class
-
-    cls : `class`
-        The class we are adding to the mapping
-    """
-
-    NATIVE_PLOT_DICT[cls] = func
-
-
-
-#qp_add_plot_native_func(plot_xval_dist_pdf, interp_dist)
-#qp_add_plot_native_func(plot_xval_dist_pdf, spline_dist)
-#qp_add_plot_native_func(plot_xval_dist_pdf, intspline_dist)
-#qp_add_plot_native_func(plot_kde_dist_pdf, kde_dist)
-#qp_add_plot_native_func(plot_quantile_dist_pdf, quantile_dist)
-#qp_add_plot_native_func(plot_hist_dist_pdf, rv_histogram)
+def qp_plot(pdf, **kwargs):
+    """Utility function to plot a pdf in a format that is specific to that type of pdf"""
+    axes = pdf.dist.plot(pdf, **kwargs)
+    return axes.figure, axes

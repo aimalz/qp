@@ -60,7 +60,7 @@ def quick_moment(p_eval, grid_to_N, dx):
     M = np.dot(p_eval, grid_to_N) * dx
     return M
 
-def calculate_kld(p, q, limits, dx=0.01, vb=False):
+def calculate_kld(p, q, limits, dx=0.01):
     """
     Calculates the Kullback-Leibler Divergence between two qp.PDF objects.
 
@@ -74,8 +74,6 @@ def calculate_kld(p, q, limits, dx=0.01, vb=False):
         endpoints of integration interval in which to calculate KLD
     dx: float
         resolution of integration grid
-    vb: boolean
-        report on progress to stdout?
 
     Returns
     -------
@@ -107,7 +105,7 @@ def calculate_kld(p, q, limits, dx=0.01, vb=False):
     # logq = safelog(qn)
     # Calculate the KLD from q to p
     Dpq = quick_kld(pn, qn, dx=dx)# np.dot(pn * logquotient, np.ones(len(grid)) * dx)
-    if Dpq < 0.:
+    if Dpq < 0.: #pragma : no cover
         print('broken KLD: '+str((Dpq, pn, qn, dx)))
         Dpq = epsilon
     return Dpq
@@ -141,7 +139,7 @@ def quick_kld(p_eval, q_eval, dx=0.01):
     Dpq = dx * np.sum(p_eval * logquotient)
     return Dpq
 
-def calculate_rmse(p, q, limits, dx=0.01, vb=False):
+def calculate_rmse(p, q, limits, dx=0.01):
     """
     Calculates the Root Mean Square Error between two qp.PDF objects.
 
@@ -155,8 +153,6 @@ def calculate_rmse(p, q, limits, dx=0.01, vb=False):
         endpoints of integration interval in which to calculate RMS
     dx: float
         resolution of integration grid
-    vb: boolean
-        report on progress to stdout?
 
     Returns
     -------

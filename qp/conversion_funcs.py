@@ -5,9 +5,10 @@ That will allow the automated conversion mechanisms to work.
 
 import numpy as np
 from sklearn import mixture
+from scipy.stats._distn_infrastructure import rv_frozen
 
 from .ensemble import Ensemble
-
+from .conversion import set_default_conversion
 
 def convert_using_xy_vals(in_dist, class_to, **kwargs):
     """Convert using a set of x and y values.
@@ -22,7 +23,7 @@ def convert_using_xy_vals(in_dist, class_to, **kwargs):
     """
 
     xvals = kwargs.pop('xvals', None)
-    if xvals is None:
+    if xvals is None: # pragma: no cover
         raise ValueError("To convert to class %s using convert_using_xy_vals you must specify xvals" % class_to)
     yvals = in_dist.pdf(xvals)
     expand_x = np.ones(yvals.shape) * np.squeeze(xvals)
@@ -40,8 +41,12 @@ def convert_using_samples(in_dist, class_to, **kwargs):
     -------
     dist : An distrubtion object of type class_to, instantiated using the x and y values
     """
-    samples = in_dist.rvs(kwargs.pop('size', 10000))
-    return Ensemble(class_to, data=dict(samples=samples), **kwargs)
+    if isinstance(in_dist, Ensemble):
+        samples = in_dist.rvs(size=kwargs.pop('size', 1000))
+    else: #pragma: no cover
+        samples = in_dist.rvs(size=(in_dist.npdf, kwargs.pop('size', 1000)))
+    xvals = kwargs.pop('xvals')
+    return Ensemble(class_to, data=dict(samples=samples, xvals=xvals, yvals=None), **kwargs)
 
 
 def convert_using_hist_values(in_dist, class_to, **kwargs):
@@ -59,7 +64,7 @@ def convert_using_hist_values(in_dist, class_to, **kwargs):
     """
 
     bins = kwargs.pop('bins', None)
-    if bins is None:
+    if bins is None: # pragma: no cover
         raise ValueError("To convert to class %s using convert_using_hist_samples you must specify bins" % class_to)
     hist = in_dist.histogramize(bins=bins)
     return Ensemble(class_to, data=dict(bins=hist[0], pdfs=hist[1]), **kwargs)
@@ -80,10 +85,25 @@ def convert_using_hist_samples(in_dist, class_to, **kwargs):
     """
 
     bins = kwargs.pop('bins', None)
-    if bins is None:
+    size = kwargs.pop('size', 1000)
+    if bins is None: # pragma: no cover
         raise ValueError("To convert to class %s using convert_using_hist_samples you must specify xvals" % class_to)
-    hist = np.histogram(in_dist.rvs(kwargs.pop('size', 10000)), bins=bins)
-    return Ensemble(class_to, data=dict(bins=hist[0], pdfs=hist[1]), **kwargs)
+    if isinstance(in_dist, Ensemble):
+        try:
+            samples = in_dist.gen_obj.samples
+        except AttributeError: #pragma: no cover
+            samples = in_dist.rvs(size)
+    elif isinstance(in_dist, rv_frozen): #pragma: no cover
+        try:
+            samples = in_dist.dist.samples
+        except AttributeError:
+            samples = in_dist.rvs(size)
+    
+    def hist_helper(sample):
+        return np.histogram(sample, bins=bins)[0]
+    vv = np.vectorize(hist_helper, signature="(%i)->(%i)" % (samples.shape[0], bins.size-1))
+    pdfs = vv(samples)
+    return Ensemble(class_to, data=dict(bins=bins, pdfs=pdfs), **kwargs)
 
 
 def convert_using_quantiles(in_dist, class_to, **kwargs):
@@ -99,13 +119,13 @@ def convert_using_quantiles(in_dist, class_to, **kwargs):
     """
 
     quants = kwargs.pop('quants', None)
-    if quants is None:
+    if quants is None: # pragma: no cover
         raise ValueError("To convert to class %s using convert_using_quantiles you must specify quants" % class_to)
     locs = in_dist.ppf(quants)
     return Ensemble(class_to, data=dict(quants=quants, locs=locs), **kwargs)
 
 
-def convert_using_fit(in_dist, class_to, **kwargs):
+def convert_using_fit(in_dist, class_to, **kwargs): # pragma: no cover
     """Convert to a functional distribution by fitting it to a set of x and y values
     Keywords
     --------
@@ -136,7 +156,7 @@ def convert_using_mixmod_fit_samples(in_dist, class_to, **kwargs):
     -------
     dist : An distrubtion object of type class_to, instantiated by fitting to the samples.
     """
-    n_comps = kwargs.pop('ncomps', 5)
+    n_comps = kwargs.pop('ncomps', 3)
     n_sample = kwargs.pop('nsamples', 1000)
     samples = in_dist.rvs(size=n_sample)
     def mixmod_helper(samps):
@@ -151,3 +171,6 @@ def convert_using_mixmod_fit_samples(in_dist, class_to, **kwargs):
     vv = np.vectorize(mixmod_helper, signature="(%i)->(3,%i)" % (n_sample, n_comps))
     fit_vals = vv(samples)
     return Ensemble(class_to, data=dict(weights=fit_vals[:,0,:], means=fit_vals[:,1,:], stds=fit_vals[:,2,:]))
+
+
+set_default_conversion(convert_using_fit)

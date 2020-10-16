@@ -2,8 +2,6 @@
 
 import os
 import numpy as np
-import pathos
-from pathos.multiprocessing import ProcessingPool as Pool
 # import psutil
 #import timeit
 
@@ -12,14 +10,14 @@ from astropy.table import Table
 
 from .dict_utils import slice_dict, print_dict_shape
 
-from .metrics import quick_kld, quick_rmse
+from .metrics import quick_kld, quick_rmse, quick_moment
 
 from .persistence import get_qp_reader
 
 
 class Ensemble:
     """An object comprised of many qp.PDF objects to efficiently perform operations on all of them"""
-    def __init__(self, gen_class, data, **kwargs):
+    def __init__(self, gen_class, data):
         """Class constructor
 
         Parameters
@@ -29,32 +27,8 @@ class Ensemble:
         data : `dict`
             Dictionary with data used to construct the ensemble
 
-        Keywords
-        --------
-        procs : `int`
-            Number of processors to use
-
-        Notes
-        -----
-        The qp.Ensemble object is a wrapper for a collection of qp.PDF
-        objects enabling the methods of qp.PDF objects to be applied in parallel.  This is very much a work in progress!  The current version
-        holds a list of qp.PDF objects in place.  (Ultimately, we would like the qp.Ensemble object to be a wrapper for a database of
-        parameters corresponding to a large collection of PDFs.  The excessive
-        quantities of commented code were building toward this ambitious goal
-        but have been temporarily abandoned to meet a deadline.)
-        TO DO: change dx --> dz (or delta)
-        TO DO: standardize n/N
-        TO DO: add an option to carry around ID numbers
         """
         #start_time = timeit.default_timer()
-        procs = kwargs.pop('procs', None)
-        if procs is not None:
-            self.n_procs = procs
-        else:
-            self.n_procs = pathos.helpers.cpu_count()
-        self.pool = Pool(self.n_procs)
-        #print('made the pool of '+str(self.n_procs)+' in '+str(timeit.default_timer() - start_time))
-
         self._gen_class = gen_class
         self._gen_obj, self._freeze_data = gen_class.create_gen(**data)
         self._frozen = self._gen_obj(**self._freeze_data)
@@ -94,6 +68,24 @@ class Ensemble:
     def frozen(self):
         """Return the `scipy.stats.rv_frozen` object that encapsultes the distributions for this ensemble"""
         return self._frozen
+
+    def convert_to(self, gen_class, method=None, **kwargs):
+        """Convert a distribution or ensemble
+
+        Parameters
+        ----------
+        gen_class :  `scipy.stats.rv_continuous or qp.ensemble`
+            Class to convert to
+        method : `str`
+            Optional argument to specify a non-default conversion algorithm
+        kwargs : keyword arguments are passed to the output class constructor
+
+        Returns
+        -------
+        ens : `qp.Ensemble`
+            Ensemble of pdfs yype class_to using the data from this object
+        """
+        return gen_class.convert_from(self, method, **kwargs)
 
     def metadata(self):
         """Return the metadata for this ensemble
@@ -145,12 +137,12 @@ class Ensemble:
         """
         try:
             meta = Table(self.metadata())
-        except ValueError as exep:
+        except ValueError as exep: #pragma : no cover
             print_dict_shape(self.metadata())
             raise ValueError from exep
         try:
             data = Table(self.objdata())
-        except ValueError as exep:
+        except ValueError as exep: #pragma : no cover
             print_dict_shape(self.objdata())
             raise ValueError from exep
         return dict(meta=meta, data=data)
@@ -343,7 +335,7 @@ class Ensemble:
         Returns
         -------
         """
-        return self._frozen.sf(q)
+        return self._frozen.isf(q)
 
     def rvs(self, size=None, random_state=None):
         """
@@ -398,13 +390,13 @@ class Ensemble:
         """ Return the entropy for this ensemble """
         return self._frozen.entropy()
 
-    def pmf(self, k):
-        """ Return the kth pmf for this ensemble """
-        return self._frozen.pmf(k)
+    #def pmf(self, k):
+    #    """ Return the kth pmf for this ensemble """
+    #    return self._frozen.pmf(k)
 
-    def logpmf(self, k):
-        """ Return the log of the kth pmf for this ensemble """
-        return self._frozen.logpmf(k)
+    #def logpmf(self, k):
+    #    """ Return the log of the kth pmf for this ensemble """
+    #    return self._frozen.logpmf(k)
 
     def interval(self, alpha):
         """ Return the intervals corresponding to a confidnce level of alpha for this ensemble"""
@@ -452,7 +444,7 @@ class Ensemble:
         return self.cdf(limits[1]) - self.cdf(limits[0])
 
 
-    def mix_mod_fit(self, comps=5):
+    def mix_mod_fit(self, comps=5): #pragma: no cover
         """
         Fits the parameters of a given functional form to an approximation
 
@@ -477,6 +469,16 @@ class Ensemble:
         raise NotImplementedError("mix_mod_fit %i" % comps)
 
 
+    def moment_partial(self, n, limits, dx=0.01):
+        """ Return the nth moments for this over a particular range"""
+        D = int((limits[-1] - limits[0]) / dx)
+        grid = np.linspace(limits[0], limits[1], D)
+        # dx = (limits[-1] - limits[0]) / (D - 1)
+
+        P_eval = self.gridded(grid)[1]
+        grid_to_n = grid**n
+        return quick_moment(P_eval, grid_to_n, dx)
+
 
     def kld(self, other, limits, dx=0.01):
         """
@@ -495,10 +497,6 @@ class Ensemble:
         klds: numpy.ndarray, float
             KLD values of each PDF under the using approximation relative to the truth
         """
-        if other is None:
-            print('Metrics can only be calculated relative another distribution.')
-            return None
-
         D = int((limits[-1] - limits[0]) / dx)
         grid = np.linspace(limits[0], limits[1], D)
         # dx = (limits[-1] - limits[0]) / (D - 1)
@@ -507,7 +505,8 @@ class Ensemble:
         Q_eval = self.gridded(grid)[1]
         def kld_helper(p_row, q_row):
             return quick_kld(p_row, q_row, dx)
-        klds = np.array(self.pool.map(kld_helper, P_eval, Q_eval))
+        vv = np.vectorize(kld_helper)
+        klds = vv(P_eval, Q_eval)
         return klds
 
 
@@ -529,10 +528,6 @@ class Ensemble:
         rmses: numpy.ndarray, float
             KLD values of each PDF under the using approximation relative to the truth
         """
-        if other is None:
-            print('Metrics can only be calculated relative another distribution.')
-            return None
-
         D = int((limits[-1] - limits[0]) / dx)
         grid = np.linspace(limits[0], limits[1], D)
         # dx = (limits[-1] - limits[0]) / (D - 1)
@@ -541,7 +536,8 @@ class Ensemble:
         Q_eval = self.gridded(grid)[1]
         def rmse_helper(p_row, q_row):
             return quick_rmse(p_row, q_row, D)
-        rmses = np.array(self.pool.map(rmse_helper, P_eval, Q_eval))
+        vv = np.vectorize(rmse_helper)
+        rmses = vv(P_eval, Q_eval)
         return rmses
 
 

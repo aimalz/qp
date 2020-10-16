@@ -93,23 +93,6 @@ def pretty_print(in_dict, prefixes, idx=0, stream=sys.stdout):
             stream.write("%s%s : %s\n" % (prefix, key_str, val))
 
 
-def tablerow_to_dict(table_row):
-    """Convert a row in a `astropy.Table` to a `dict`
-
-    Parameters
-    ----------
-    table_row :  `astropy.TableRow`
-        A row in an `astropy.table`
-
-    Returns
-    -------
-    out_dict : `dict`
-        The converted dicionary
-    """
-    out_dict = { col : table_row[col] for col in table_row.colnames }
-    return out_dict
-
-
 def print_dict_shape(in_dict):
     """Print the shape of arrays in a dictionary.
     This is useful for debugging `astropy.Table` creation.
@@ -143,6 +126,6 @@ def slice_dict(in_dict, subslice):
     for key, val in in_dict.items():
         try:
             out_dict[key] = val[subslice]
-        except KeyError:
+        except (KeyError, TypeError):
             out_dict[key] = val
     return out_dict
