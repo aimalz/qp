@@ -64,7 +64,7 @@ class EnsembleTestCase(unittest.TestCase):
             check_moment = ens.moment_partial(N, limits=(-5, 5)) - qp.calculate_moment(ens, N, limits=(-5.,5))
             assert np.allclose(check_moment, 0, atol=1e-2)
 
-            #sps_moment = ens.moment(N)
+            sps_moment = ens.moment(N)
             #pmf = ens.pmf(N)
             #logpmf = ens.logpmf(N)
 
