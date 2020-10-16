@@ -20,8 +20,9 @@ import numpy as np
 from numpy import asarray
 
 from scipy.stats import rv_continuous
-from scipy.stats._distn_infrastructure import rv_frozen
+from scipy.stats._distn_infrastructure import rv_frozen, _moment_from_stats
 from scipy.stats import _continuous_distns as scipy_dist
+from scipy.special import comb
 from scipy import stats as sps
 
 from scipy.interpolate import interp1d, splev, splint
@@ -129,6 +130,50 @@ class Pdf_gen:
         return qp_convert(obj_from, cls, method, **kwargs)
 
 
+    def _moment_fix(self, n, *args, **kwds):
+        """Hack fix for the moments calculation in scipy.stats, which can't handle
+        the case of multiple PDFs.
+
+        Parameters
+        ----------
+        n : int
+            Order of the moment
+
+        Returns
+        -------
+        moments : array_like
+            The requested moments
+        """
+        # pylint: disable=no-member
+        args, loc, scale = self._parse_args(*args, **kwds)
+        cond = self._argcheck(*args) & (scale > 0)
+
+        if np.floor(n) != n: #pragma: no cover
+            raise ValueError("Moment must be an integer.")
+        if n < 0: #pragma: no cover
+            raise ValueError("Moment must be positive.")
+        mu, mu2, g1, g2 = None, None, None, None
+        if 0 < n < 5:
+            if self._stats_has_moments:
+                mdict = {'moments': {1: 'm', 2: 'v', 3: 'vs', 4: 'vk'}[n]}
+            else:
+                mdict = {}
+            mu, mu2, g1, g2 = self._stats(*args, **mdict)
+        val = np.where(cond, _moment_from_stats(n, mu, mu2, g1, g2, self._munp, args), np.nan)
+        # Convert to transformed  X = L + S*Y
+        # E[X^n] = E[(L+S*Y)^n] = L^n sum(comb(n, k)*(S/L)^k E[Y^k], k=0...n)
+        def mom_at_zero():
+            return scale**n * val
+        def mom_non_zero():
+            result = np.zeros(cond.shape)
+            fac = scale / np.where(loc != 0, loc, 1)
+            for k in range(n):
+                valk = _moment_from_stats(k, mu, mu2, g1, g2, self._munp, args)
+                result += comb(n, k, exact=True)*(fac**k) * valk
+            result += fac**n * val
+            return result * loc**n
+        return np.where(loc==0, mom_at_zero(), mom_non_zero())
+
 
 
 class rv_frozen_func(rv_frozen):
@@ -153,7 +198,6 @@ class rv_frozen_func(rv_frozen):
     def npdf(self):
         """Return the number of PDFs this object represents"""
         return self._npdf
-
 
 
 class Pdf_gen_simple(Pdf_gen):
@@ -213,6 +257,24 @@ class norm_gen(scipy_dist.norm_gen, Pdf_gen_simple):
         """Overrides the freeze function to work with `qp`"""
         return self.my_freeze(*args, **kwargs)
 
+    def _argcheck(self, *args):
+        return np.atleast_1d(scipy_dist.norm_gen._argcheck(self, *args))
+
+    def moment(self, n, *args, **kwds):
+        """Returns the moments request moments for all the PDFs.
+        This calls a hacked version `Pdf_gen._moment_fix` which can handle cases of multiple PDFs.
+
+        Parameters
+        ----------
+        n : int
+            Order of the moment
+
+        Returns
+        -------
+        moments : array_like
+            The requested moments
+        """
+        return self._moment_fix(n, *args, **kwds)
 
 norm = norm_gen(name='norm_dist')
 
@@ -263,7 +325,7 @@ class Pdf_rows_gen(rv_continuous, Pdf_gen):
         cond = 1
         if args:
             cond = np.logical_and(cond, np.logical_and(asarray(args[0]) >= 0, asarray(args[0]) < self._npdf))
-        return cond
+        return np.atleast_1d(cond)
 
     def freeze(self, *args, **kwds):
         """Freeze the distribution for the given arguments.
@@ -286,6 +348,22 @@ class Pdf_rows_gen(rv_continuous, Pdf_gen):
         """Create and return a `scipy.stats.rv_continuous` object using the
         keyword arguemntets provided"""
         return (cls(**kwds), dict())
+
+    def moment(self, n, *args, **kwds):
+        """Returns the moments request moments for all the PDFs.
+        This calls a hacked version `Pdf_gen._moment_fix` which can handle cases of multiple PDFs.
+
+        Parameters
+        ----------
+        n : int
+            Order of the moment
+
+        Returns
+        -------
+        moments : array_like
+            The requested moments
+        """
+        return Pdf_gen._moment_fix(self, n, *args, **kwds)
 
 
 class hist_rows_gen(Pdf_rows_gen):
