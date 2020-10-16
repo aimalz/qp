@@ -198,8 +198,6 @@ class Pdf_gen_simple(Pdf_gen):
 
 
 
-
-
 class norm_gen(scipy_dist.norm_gen, Pdf_gen_simple):
     """Trival extension of the `scipy.stats.norm_gen` class for `qp`"""
     name = 'norm_dist'

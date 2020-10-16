@@ -38,7 +38,6 @@ STYLES['histogram'] = ':'#(0,(3,6))
 STYLES['samples'] = '-.'#(0,(1,2))
 
 
-
 def make_figure_axes(xlim, **kwargs):
     """
     Build a figure and a set of figure axes to plot data on
