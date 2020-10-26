@@ -36,7 +36,8 @@ class PDFTestCase(unittest.TestCase):
         for key, val in test_data['ctor_data'].items():
             test_val = pdf.kwds.get(key, None)
             if test_val is None:
-                assert hasattr(pdf.dist, key)
+                if not hasattr(pdf.dist, key):
+                    raise ValueError("%s %s" % (pdf.dist, key))
             
         #FIXME
         if pdf.dist.npdf is not None:
@@ -100,7 +101,11 @@ class PDFTestCase(unittest.TestCase):
         key = 'mixmod'
         pdf = self._run_pdf_func_tests(key, GEN_TEST_DATA[key])
 
-        
+    def test_flex(self):
+        key = 'flex'
+        pdf = self._run_pdf_func_tests(key, GEN_TEST_DATA[key])
+
+
         
                                            
 

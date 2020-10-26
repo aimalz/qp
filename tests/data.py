@@ -24,7 +24,8 @@ STD_MIXMOD = np.vstack([np.linspace(0.8, 1.2, NPDF), np.linspace(0.8, 1.2, NPDF)
 WEIGHT_MIXMOD = np.vstack([0.7*np.ones((NPDF)), 0.2*np.ones((NPDF)), 0.1*np.ones((NPDF))]).T
 
 HIST_TOL = 4./NBIN
-
+FLEX_BASIS_SYST = 'cosine'
+FLEX_COEFS = np.load('test_flex_coefs.npy', allow_pickle=True)
 
 
 GEN_TEST_DATA = dict(
@@ -43,7 +44,9 @@ GEN_TEST_DATA = dict(
     kde=dict(gen_class=qp.kde_rows_gen, ctor_data=dict(samples=SAMPLES, xvals=np.linspace(-5, 5, 51), yvals=None),\
                    convert_data=dict(xvals=np.linspace(-5, 5, 51)), test_xvals=TEST_XVALS),\
     mixmod=dict(gen_class=qp.mixmod_rows_gen, ctor_data=dict(weights=WEIGHT_MIXMOD, means=MEAN_MIXMOD, stds=STD_MIXMOD),\
-                   convert_data=dict(), test_xvals=TEST_XVALS))
+                    convert_data=dict(), test_xvals=TEST_XVALS),\
+    flex=dict(gen_class=qp.flex_rows_gen, ctor_data=dict(coefs=FLEX_COEFS, basis_system=FLEX_BASIS_SYST, z_min=-5, z_max=5), 
+                   convert_data=dict(grid=TEST_XVALS, basis_system=FLEX_BASIS_SYST), test_xvals=TEST_XVALS))
 
 
 def assert_all_small(arr, atol):
