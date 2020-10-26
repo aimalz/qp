@@ -3,3 +3,4 @@ numpy
 pathos
 scipy
 sklearn
+Flexcode
