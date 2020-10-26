@@ -16,7 +16,7 @@ import numpy as np
 from scipy.stats import rv_continuous
 from scipy.optimize import least_squares
 
-from flexcode.basis_functions import evaluate_basis, BasisCoefs
+from flexcode.basis_functions import evaluate_basis
 from flexcode.helpers import box_transform
 
 from .pdf_gen import Pdf_rows_gen
@@ -120,7 +120,6 @@ class flex_rows_gen(Pdf_rows_gen):
         """
         self._coefs = np.asarray(coefs)
         self._basis_system = basis_system
-        self._flex_obj = BasisCoefs(coefs, basis_system, z_min, z_max)
 
         # Set support
         kwargs['a'] = self.a = z_min
