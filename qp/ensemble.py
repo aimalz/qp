@@ -51,7 +51,7 @@ class Ensemble:
         pdf : `scipy.rv_frozen`
             The distribution for the requeseted element or slide
         """
-        red_data = slice_dict(self._gen_obj.objdata, key)
+        red_data = {}
         red_data.update(slice_dict(self._frozen.kwds, key))
         return self._gen_obj(**red_data)
 
