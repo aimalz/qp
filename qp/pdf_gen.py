@@ -30,10 +30,10 @@ from scipy.interpolate import interp1d, splev, splint
 from .persistence import register_pdf_class
 from .conversion import register_class_conversions, qp_convert
 from .conversion_funcs import convert_using_xy_vals,\
-     convert_using_quantiles, convert_using_samples, convert_using_hist_values, convert_using_hist_samples,\
-     convert_using_mixmod_fit_samples
+     convert_using_quantiles, convert_using_samples, convert_using_hist_values,\
+     convert_using_mixmod_fit_samples, convert_using_hist_samples
 from .plotting import get_axes_and_xlims, plot_pdf_on_axes, plot_dist_pdf,\
-     plot_pdf_histogram_on_axes, plot_pdf_quantiles_on_axes, plot_pdf_samples_on_axes
+     plot_pdf_histogram_on_axes, plot_pdf_quantiles_on_axes
 from .utils import normalize_interp1d, normalize_spline, build_splines, build_kdes, evaluate_kdes
 
 
@@ -51,8 +51,6 @@ class Pdf_gen:
 
     Object data are elements that differ for each PDFs
     """
-
-    conversion_map = {}
 
     def __init__(self, *args, **kwargs):
         """C'tor"""
@@ -199,6 +197,26 @@ class rv_frozen_func(rv_frozen):
         """Return the number of PDFs this object represents"""
         return self._npdf
 
+    def histogramize(self, bins):
+        """
+        Computes integrated histogram bin values for all PDFs
+
+        Parameters
+        ----------
+        bins: ndarray, float, optional
+            Array of N+1 endpoints of N bins
+
+        Returns
+        -------
+        self.histogram: ndarray, tuple, ndarray, floats
+            Array of pairs of arrays of lengths (N+1, N) containing endpoints
+            of bins and values in bins
+        """
+        cdf_vals = self.cdf(bins)
+        bin_vals = cdf_vals[:,1:] - cdf_vals[:,0:-1]
+        return (bins, bin_vals)
+
+
 
 class Pdf_gen_simple(Pdf_gen):
     """Mixing class to extend `scipy.stats.rv_continuous` with
@@ -299,6 +317,27 @@ class rv_frozen_rows(rv_frozen):
         return self._npdf
 
 
+    def histogramize(self, bins):
+        """
+        Computes integrated histogram bin values for all PDFs
+
+        Parameters
+        ----------
+        bins: ndarray, float, optional
+            Array of N+1 endpoints of N bins
+
+        Returns
+        -------
+        self.histogram: ndarray, tuple, ndarray, floats
+            Array of pairs of arrays of lengths (N+1, N) containing endpoints
+            of bins and values in bins
+        """
+        cdf_vals = self.cdf(bins)
+        bin_vals = cdf_vals[:,1:] - cdf_vals[:,0:-1]
+        return (bins, bin_vals)
+
+
+
 class Pdf_rows_gen(rv_continuous, Pdf_gen):
     """Class extend `scipy.stats.rv_continuous` with
     information needed for `qp` when we want to have a collection
@@ -381,8 +420,6 @@ class hist_rows_gen(Pdf_rows_gen):
 
     _support_mask = rv_continuous._support_mask
 
-    conversion_map = {None:convert_using_hist_values}
-
     def __init__(self, bins, pdfs, *args, **kwargs):
         """
         Create a new distribution using the given histogram
@@ -462,6 +499,14 @@ class hist_rows_gen(Pdf_rows_gen):
         return plot_pdf_histogram_on_axes(axes, hist=(pdf.dist.bins, vals), **kw)
 
 
+    @classmethod
+    def add_conversion_mappings(cls, conv_dict):
+        """
+        Add this classes mappings to the conversion dictionary
+        """
+        conv_dict.add_mapping((cls.create, convert_using_hist_values), cls, None, None)
+        conv_dict.add_mapping((cls.create, convert_using_hist_samples), cls, None, 'samples')
+
 
 
 hist = hist_rows_gen.create
@@ -483,8 +528,6 @@ class interp_rows_gen(Pdf_rows_gen):
     version = 0
 
     _support_mask = rv_continuous._support_mask
-
-    conversion_map = {None:convert_using_xy_vals}
 
     def __init__(self, xvals, yvals, *args, **kwargs):
         """
@@ -567,6 +610,13 @@ class interp_rows_gen(Pdf_rows_gen):
         xvals_row = pdf.dist.xvals[pdf.kwds['row']]
         return plot_pdf_on_axes(axes, pdf, xvals_row, **kw)
 
+    @classmethod
+    def add_conversion_mappings(cls, conv_dict):
+        """
+        Add this classes mappings to the conversion dictionary
+        """
+        conv_dict.add_mapping((cls.create, convert_using_xy_vals), cls, None, None)
+
 
 interp = interp_rows_gen.create
 
@@ -585,18 +635,12 @@ class spline_rows_gen(Pdf_rows_gen):
 
     _support_mask = rv_continuous._support_mask
 
-    conversion_map = {None:convert_using_xy_vals}
-
     def __init__(self, *args, **kwargs):
         """
         Create a new distribution using the given histogram
 
         Keywords
         --------
-        xvals : array_like
-          The x-values used to do the interpolation
-        yvals : array_like
-          The y-values used to do the interpolation
         splx : array_like
           The x-values of the spline knots
         sply : array_like
@@ -608,53 +652,99 @@ class spline_rows_gen(Pdf_rows_gen):
         -----
         Either (xvals and yvals) or (splx, sply and spln) must be provided.
         """
-        xvals = kwargs.pop('xvals', None)
-        yvals = kwargs.pop('yvals', None)
         splx = kwargs.pop('splx', None)
         sply = kwargs.pop('sply', None)
         spln = kwargs.pop('spln', None)
 
-        if xvals is None:
-            if splx is None:  # pragma: no cover
-                raise ValueError("Either xvals or splx must be provided")
-            if splx.shape != sply.shape:  # pragma: no cover
-                raise ValueError("Shape of xvals (%s) != shape of yvals (%s)" % (splx.shape, sply.shape))
-            kwargs['a'] = self.a = np.min(splx)
-            kwargs['b'] = self.b = np.max(splx)
-            kwargs['npdf'] = splx.shape[0]
-            self._xvals = None
-            self._yvals = None
-            self._splx = splx
-            self._sply = sply
-            self._spln = spln
-        else:
-            if splx is not None:  # pragma: no cover
-                raise ValueError("Only one of yvals or splreps must be provided")
-            if xvals.shape != yvals.shape:  # pragma: no cover
-                raise ValueError("Shape of xvals (%s) != shape of yvals (%s)" % (xvals.shape, yvals.shape))
-            self._xvals = xvals
-            self.a = np.min(xvals)
-            self.b = np.max(xvals)
-            self._yvals = normalize_spline(xvals, yvals, limits=(self.a, self.b), **kwargs)
-            self._splx, self._sply, self._spln = build_splines(self._xvals, self._yvals)
-            kwargs['a'] = self.a
-            kwargs['b'] = self.b
-            kwargs['npdf'] = xvals.shape[0]
-
+        if splx is None:  # pragma: no cover
+            raise ValueError("Either splx must be provided")
+        if splx.shape != sply.shape:  # pragma: no cover
+            raise ValueError("Shape of xvals (%s) != shape of yvals (%s)" % (splx.shape, sply.shape))
+        kwargs['a'] = self.a = np.min(splx)
+        kwargs['b'] = self.b = np.max(splx)
+        kwargs['npdf'] = splx.shape[0]
+        self._splx = splx
+        self._sply = sply
+        self._spln = spln
         super(spline_rows_gen, self).__init__(*args, **kwargs)
         self._addobjdata('splx', self._splx)
         self._addobjdata('sply', self._sply)
         self._addobjdata('spln', self._spln)
 
-    @property
-    def xvals(self):
-        """Return x-values used to do the interpolation"""
-        return self._xvals
 
-    @property
-    def yvals(self):
-        """Return y-values used to do the interpolation"""
-        return self._yvals
+    @staticmethod
+    def build_normed_splines(xvals, yvals, **kwargs):
+        """
+        Build a set of normalized splines using the x and y values
+
+        Parameters
+        ----------
+        xvals : array_like
+          The x-values used to do the interpolation
+        yvals : array_like
+          The y-values used to do the interpolation
+
+        Returns
+        -------
+        splx : array_like
+          The x-values of the spline knots
+        sply : array_like
+          The y-values of the spline knots
+        spln : array_like
+          The order of the spline knots
+        """
+        if xvals.shape != yvals.shape:  # pragma: no cover
+            raise ValueError("Shape of xvals (%s) != shape of yvals (%s)" % (xvals.shape, yvals.shape))
+        xmin = np.min(xvals)
+        xmax = np.max(xvals)
+        yvals = normalize_spline(xvals, yvals, limits=(xmin, xmax), **kwargs)
+        return build_splines(xvals, yvals)
+
+
+    @classmethod
+    def create_from_xy_vals(cls, xvals, yvals, **kwargs):
+        """
+        Create a new distribution using the given x and y values
+
+        Parameters
+        ----------
+        xvals : array_like
+          The x-values used to do the interpolation
+        yvals : array_like
+          The y-values used to do the interpolation
+
+        Returns
+        -------
+        pdf_obj : `spline_rows_gen`
+            The requested PDF
+        """
+        splx, sply, spln = spline_rows_gen.build_normed_splines(xvals, yvals, **kwargs)
+        gen_obj = cls(splx=splx, sply=sply, spln=spln)
+        return gen_obj(**kwargs)
+
+    @classmethod
+    def create_from_samples(cls, xvals, samples, **kwargs):
+        """
+        Create a new distribution using the given x and y values
+
+        Parameters
+        ----------
+        xvals : array_like
+          The x-values used to do the interpolation
+        samples : array_like
+          The sample values used to build the KDE
+
+        Returns
+        -------
+        pdf_obj : `spline_rows_gen`
+            The requested PDF
+        """
+        kdes = build_kdes(samples)
+        kwargs.pop('yvals', None)
+        yvals = evaluate_kdes(xvals, kdes)
+        xvals_expand = (np.expand_dims(xvals, -1)*np.ones(samples.shape[0])).T
+        return cls.create_from_xy_vals(xvals_expand, yvals, **kwargs)
+
 
     @property
     def splx(self):
@@ -707,8 +797,18 @@ class spline_rows_gen(Pdf_rows_gen):
         xvals = pdf.dist.splx[pdf.kwds['row']]
         return plot_pdf_on_axes(axes, pdf, xvals, **kw)
 
+    @classmethod
+    def add_conversion_mappings(cls, conv_dict):
+        """
+        Add this classes mappings to the conversion dictionary
+        """
+        conv_dict.add_mapping((cls.create_from_xy_vals, convert_using_xy_vals), cls, None, None)
+        conv_dict.add_mapping((cls.create_from_samples, convert_using_samples), cls, None, "samples")
+
 
 spline = spline_rows_gen.create
+spline_from_xy = spline_rows_gen.create_from_xy_vals
+spline_from_samples = spline_rows_gen.create_from_samples
 
 
 class quant_rows_gen(Pdf_rows_gen):
@@ -727,9 +827,6 @@ class quant_rows_gen(Pdf_rows_gen):
     version = 0
 
     _support_mask = rv_continuous._support_mask
-
-    conversion_map = {None:convert_using_quantiles}
-
 
     def __init__(self, quants, locs, *args, **kwargs):
         """
@@ -793,139 +890,17 @@ class quant_rows_gen(Pdf_rows_gen):
         yvals = np.squeeze(pdf.pdf(xvals))
         return plot_pdf_quantiles_on_axes(axes, xvals, yvals, quantiles=(quants, locs), **kw)
 
+    @classmethod
+    def add_conversion_mappings(cls, conv_dict):
+        """
+        Add this classes mappings to the conversion dictionary
+        """
+        conv_dict.add_mapping((cls.create, convert_using_quantiles), cls, None, None)
 
 
 quant = quant_rows_gen.create
 
 
-
-class kde_rows_gen(Pdf_rows_gen):
-    """Kernal density estimate based distribution
-
-    Notes
-    -----
-    This implements a PDF using a Kernal density estimate
-
-    It simply takes a set of samples and uses `scipy.stats.gaussian_kde`
-    to build the PDF.
-    """
-    # pylint: disable=protected-access
-
-    name = 'kde_dist'
-    version = 0
-
-    _support_mask = rv_continuous._support_mask
-
-    conversion_map = {None:convert_using_samples}
-
-    def __init__(self, xvals, *args, **kwargs):
-        """
-        Create a new distribution using the given samples
-
-        Parameters
-        ----------
-        xvals : array_like
-            X-values at which to define the distribution
-
-        Keywords
-        --------
-        samples : array_like
-            Samples used to build the KDE
-        yvals : array_like
-            y-value constructed from the KDE
-        """
-        self._samples = kwargs.pop('samples', None)
-        self._xvals = xvals
-        self._yvals = kwargs.pop('yvals', None)
-        if self._samples is not None:
-            self._kdes = build_kdes(self._samples)
-            self._yvals = evaluate_kdes(self._xvals, self._kdes)
-        else:
-            if self._yvals is None: #pragma: no cover
-                raise ValueError("Either samples or yvals must be specified")
-            self._kdes = None
-        copy_shape = np.array(self._yvals.shape)
-        self._ycumul = np.ndarray(copy_shape)
-        self._ycumul[:,0] = 0.
-        self._ycumul[:,1:] = np.cumsum(self._xvals[1:]*self._yvals[:,1:] - self._xvals[:-1]*self._yvals[:,1:], axis=1)
-
-        kwargs['npdf'] = self._yvals.shape[0]
-        super(kde_rows_gen, self).__init__(*args, **kwargs)
-        self._addmetadata('xvals', self._xvals)
-        self._addobjdata('yvals', self._yvals)
-
-
-    @property
-    def samples(self):
-        """Return the samples used to build the KDEs"""
-        return self._samples
-
-    @property
-    def kdes(self):
-        """Return the KDEs"""
-        return self._kdes
-
-    @property
-    def xvals(self):
-        """Return the xvalues"""
-        return self._xvals
-
-    @property
-    def yvals(self):
-        """Return the xvalues"""
-        return self._yvals
-
-
-    def _pdf(self, x, row):
-        # pylint: disable=arguments-differ
-        def pdf_row(irow, xv):
-            return interp1d(self._xvals, self._yvals[irow])(xv)
-
-        vv = np.vectorize(pdf_row)
-        return vv(row, x)
-
-    def _cdf(self, x, row):
-        # pylint: disable=arguments-differ
-        def cdf_row(irow, xv):
-            return interp1d(self._xvals, self._ycumul[irow])(xv)
-        vv = np.vectorize(cdf_row)
-        return vv(row, x)
-
-    def _ppf(self, x, row):
-        # pylint: disable=arguments-differ
-        def ppf_row(irow, xv):
-            return interp1d(self._ycumul[irow], self._xvals)(xv)
-        vv = np.vectorize(ppf_row)
-        return vv(row, x)
-
-
-    def _updated_ctor_param(self):
-        """
-        Set the bins as additional constructor argument
-        """
-        dct = super(kde_rows_gen, self)._updated_ctor_param()
-        dct['samples'] = self._samples
-        dct['xvals'] = self._xvals
-        dct['yvals'] = self._yvals
-        return dct
-
-
-    @classmethod
-    def plot_native(cls, pdf, **kwargs):
-        """Plot the PDF in a way that is particular to this type of distibution
-
-        For a kde this shows the samples
-        """
-        axes, _, kw = get_axes_and_xlims(**kwargs)
-        if pdf.dist.samples is None: #pragma: no cover
-            xvals_row = pdf.dist.xvals[pdf.kwds['row']]
-            return plot_pdf_on_axes(axes, pdf, xvals_row, **kw)
-        samples = pdf.dist.samples[pdf.kwds['row']]
-        return plot_pdf_samples_on_axes(axes, pdf, samples, **kw)
-
-
-
-kde = kde_rows_gen.create
 
 
 
@@ -942,8 +917,6 @@ class mixmod_rows_gen(Pdf_rows_gen):
     version = 0
 
     _support_mask = rv_continuous._support_mask
-
-    conversion_map = {None:convert_using_mixmod_fit_samples}
 
     def __init__(self, means, stds, weights, *args, **kwargs):
         """
@@ -1001,16 +974,20 @@ class mixmod_rows_gen(Pdf_rows_gen):
         dct['weights'] = self._weights
         return dct
 
+    @classmethod
+    def add_conversion_mappings(cls, conv_dict):
+        """
+        Add this classes mappings to the conversion dictionary
+        """
+        conv_dict.add_mapping((cls.create, convert_using_mixmod_fit_samples), cls, None, None)
+
+
 mixmod = mixmod_rows_gen.create
-
-
-hist_rows_gen.conversion_map[kde_rows_gen] = convert_using_hist_samples
 
 
 register_class_conversions(interp_rows_gen)
 register_class_conversions(spline_rows_gen)
 register_class_conversions(quant_rows_gen)
-register_class_conversions(kde_rows_gen)
 register_class_conversions(hist_rows_gen)
 register_class_conversions(mixmod_rows_gen)
 
@@ -1018,6 +995,5 @@ register_pdf_class(norm_gen)
 register_pdf_class(hist_rows_gen)
 register_pdf_class(interp_rows_gen)
 register_pdf_class(spline_rows_gen)
-register_pdf_class(kde_rows_gen)
 register_pdf_class(quant_rows_gen)
 register_pdf_class(mixmod_rows_gen)

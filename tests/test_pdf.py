@@ -23,21 +23,24 @@ class PDFTestCase(unittest.TestCase):
         pass
 
 
-    def _run_pdf_func_tests(self, key, test_data, short=False):
+    def _run_pdf_func_tests(self, key, test_data, short=False, check_props=True):
         """Run the test for a practicular class"""
 
-        gen_class = test_data['gen_class']
+        gen_func = test_data['gen_func']
+        
         try:
-            pdf = gen_class.create(**test_data['ctor_data'])
+            pdf = gen_func(**test_data['ctor_data'])
         except Exception as msg:
             raise ValueError("Failed to make %s %s %s" % (key, test_data['ctor_data'], msg))
         xpts = test_data['test_xvals']
-
-        for key, val in test_data['ctor_data'].items():
-            test_val = pdf.kwds.get(key, None)
-            if test_val is None:
-                if not hasattr(pdf.dist, key):
-                    raise ValueError("%s %s" % (pdf.dist, key))
+        
+        if check_props:
+            # if we used the c'tor, make sure the class keeps the data used in the c'tor
+            for key, val in test_data['ctor_data'].items():
+                test_val = pdf.kwds.get(key, None)
+                if test_val is None:
+                    if not hasattr(pdf.dist, key):
+                        raise ValueError("%s %s" % (pdf.dist, key))
             
         #FIXME
         if pdf.dist.npdf is not None:
@@ -80,14 +83,14 @@ class PDFTestCase(unittest.TestCase):
     def test_spline(self):
         key = 'spline'
         pdf = self._run_pdf_func_tests(key, GEN_TEST_DATA[key])
-        assert hasattr(pdf.dist, 'splx')
-        assert hasattr(pdf.dist, 'sply')
-        assert hasattr(pdf.dist, 'spln')
 
-    def test_kde(self):
-        key = 'kde'
-        pdf = self._run_pdf_func_tests(key, GEN_TEST_DATA[key])
-        assert hasattr(pdf.dist, 'kdes')
+    def test_spline_xy(self):
+        key = 'spline_xy'
+        pdf = self._run_pdf_func_tests(key, GEN_TEST_DATA[key], check_props=False)
+
+    def test_spline_kde(self):
+        key = 'spline_kde'
+        pdf = self._run_pdf_func_tests(key, GEN_TEST_DATA[key], check_props=False)
 
     def test_hist(self):
         key = 'hist'
@@ -103,7 +106,7 @@ class PDFTestCase(unittest.TestCase):
 
     def test_flex(self):
         key = 'flex'
-        pdf = self._run_pdf_func_tests(key, GEN_TEST_DATA[key])
+        pdf = self._run_pdf_func_tests(key, GEN_TEST_DATA[key], short=True)
 
 
         

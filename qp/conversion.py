@@ -38,22 +38,8 @@ class ConversionDict:
         to_from_dict = get_val_or_default(to_dict, class_from)
         if to_from_dict is None: #pragma : no cover
             raise KeyError("No conversions defined for %s -> %s" % (class_to, class_from))
-        func = get_val_or_default(to_from_dict, method)
-        return func
-
-
-    def _convert_ensemble(self, ensemble_from, class_to, method=None, **kwargs):
-
-        class_from = ensemble_from.gen_class
-        convert = self._get_convertor(class_to, class_from, method)
-        return convert(ensemble_from, class_to, **kwargs)
-
-
-    def _convert_frozen(self, frozen_from, class_to, method=None, **kwargs):
-
-        class_from = frozen_from.dist
-        convert = self._get_convertor(class_to, class_from, method)
-        return convert(frozen_from, class_to, **kwargs)
+        func_pair = get_val_or_default(to_from_dict, method)
+        return func_pair
 
 
     def convert(self, obj_from, class_to, method=None, **kwargs):
@@ -78,10 +64,14 @@ class ConversionDict:
         of type class_to.
         """
         if isinstance(obj_from, Ensemble):
-            return self._convert_ensemble(obj_from, class_to, method, **kwargs)
-        if isinstance(obj_from, rv_frozen):
-            return self._convert_frozen(obj_from, class_to, method, **kwargs)
-        raise TypeError("Tried to convert object of type %s" % type(obj_from)) #pragma : no cover
+            frozen = obj_from.frozen
+        elif isinstance(obj_from, rv_frozen):
+            frozen = obj_from
+        else:
+            raise TypeError("Tried to convert object of type %s" % type(obj_from)) #pragma : no cover
+        class_from = frozen.dist
+        ctor, convert = self._get_convertor(class_to, class_from, method)
+        return convert(frozen, ctor, **kwargs)
 
 
     def add_mapping(self, func, class_to, class_from, method=None):
@@ -140,14 +130,14 @@ def qp_convert(obj_from, class_to, method=None, **kwargs):
     return CONVERSIONS.convert(obj_from, class_to, method, **kwargs)
 
 
-def set_default_conversion(func):
+def set_default_conversion(func_pair):
     """
     Parameters
     ----------
     func : `function`
         The function to use as the default for conversions
     """
-    CONVERSIONS.add_mapping(func, None, None)
+    CONVERSIONS.add_mapping(func_pair, None, None)
 
 
 
@@ -158,9 +148,4 @@ def register_class_conversions(cls):
     cls : `class`
         The class whose conversions we want go register
     """
-    for class_from, func in cls.conversion_map.items():
-        if isinstance(func, dict): #pragma: no cover
-            for method, func2 in func.items():
-                CONVERSIONS.add_mapping(func2, cls, class_from, method)
-            continue
-        CONVERSIONS.add_mapping(func, cls, class_from, None)
+    cls.add_conversion_mappings(CONVERSIONS)

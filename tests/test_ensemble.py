@@ -37,7 +37,11 @@ class EnsembleTestCase(unittest.TestCase):
         binw = xpts[1:] - xpts[0:-1]
         check_cdf = ((pdfs[:,0:-1] + pdfs[:,1:]) * binw /2).cumsum(axis=1) - cdfs[:,1:]
         assert np.allclose(check_cdf, 0, atol=5e-2)
-        
+
+        hist = ens.histogramize(xpts)[1]
+        hist_check = ens.frozen.histogramize(xpts)[1]
+        assert np.allclose(hist, hist_check, atol=1e-5)
+
         ppfs = ens.ppf(QUANTS)
         check_ppf = ens.cdf(ppfs) - QUANTS
         assert np.allclose(check_ppf, 0, atol=1e-9)
@@ -73,6 +77,7 @@ class EnsembleTestCase(unittest.TestCase):
         key = 'norm'
         test_data = GEN_TEST_DATA[key]
         self.ens_n = build_ensemble(test_data)
+        assert hasattr(self.ens_n, 'gen_func')
         assert isinstance(self.ens_n.gen_obj, qp.norm_gen)
         assert 'loc' in self.ens_n.frozen.kwds
         self._run_ensemble_funcs(self.ens_n, test_data['test_xvals'])

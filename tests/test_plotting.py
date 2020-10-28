@@ -23,7 +23,7 @@ class PlottingTestCase(unittest.TestCase):
         pass
 
 
-    def _run_plotting_func_tests(self, test_data):
+    def _run_plotting_func_tests(self, test_data, do_samples=False):
         """Run the test for a practicular class"""
         ens = build_ensemble(test_data)
         pdf = ens[0]
@@ -33,11 +33,14 @@ class PlottingTestCase(unittest.TestCase):
         fig, axes = qp.qp_plot(pdf, axes=axes)
         assert fig is not None
         assert axes is not None
-        
+        if do_samples:
+            samples = pdf.rvs(size=(1, 1000))
+            qp.plot_pdf_samples_on_axes(axes, pdf, samples)
+
         
     def test_norm(self):
         key = 'norm'
-        self._run_plotting_func_tests(GEN_TEST_DATA[key])
+        self._run_plotting_func_tests(GEN_TEST_DATA[key], do_samples=True)
 
     def test_interp(self):
         key = 'interp'
@@ -55,10 +58,6 @@ class PlottingTestCase(unittest.TestCase):
         key = 'quant'
         self._run_plotting_func_tests(GEN_TEST_DATA[key])
 
-    def test_kde(self):
-        key = 'kde'
-        self._run_plotting_func_tests(GEN_TEST_DATA[key])
-
     def test_mixmod(self):
         key = 'mixmod'
         self._run_plotting_func_tests(GEN_TEST_DATA[key])
@@ -67,7 +66,7 @@ class PlottingTestCase(unittest.TestCase):
         key = 'flex'
         self._run_plotting_func_tests(GEN_TEST_DATA[key])
 
-
+                            
                                            
 
 if __name__ == '__main__':

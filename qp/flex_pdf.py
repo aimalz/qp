@@ -108,7 +108,6 @@ class flex_rows_gen(Pdf_rows_gen):
 
     _support_mask = rv_continuous._support_mask
 
-    conversion_map = {None:convert_to_flex}
 
     def __init__(self, coefs, basis_system, z_min, z_max, *args, **kwargs):
         """
@@ -142,7 +141,7 @@ class flex_rows_gen(Pdf_rows_gen):
     def z_max(self):
         """Return the max of the basis range"""
         return self.b
-        
+
     @property
     def coefs(self):
         """Return the histogram bin edges"""
@@ -157,7 +156,7 @@ class flex_rows_gen(Pdf_rows_gen):
         # pylint: disable=arguments-differ
         x_trans = box_transform(x, self.a, self.b)
         basis = evaluate_basis(np.expand_dims(x_trans, -1), self.coefs.shape[1], self.basis_system)
-        return np.matmul(self.coefs[row], basis.T)
+        return np.sum(self._coefs[row]*basis, axis=1)
 
 
     def _updated_ctor_param(self):
@@ -172,7 +171,12 @@ class flex_rows_gen(Pdf_rows_gen):
 
         return dct
 
-
+    @classmethod
+    def add_conversion_mappings(cls, conv_dict):
+        """
+        Add this classes mappings to the conversion dictionary
+        """
+        conv_dict.add_mapping((cls.create, convert_to_flex), cls, None, None)
 
 
 flex = flex_rows_gen.create

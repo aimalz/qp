@@ -55,14 +55,13 @@ class PersistTestCase(unittest.TestCase):
         key = 'quant'
         self._run_persist_func_tests(GEN_TEST_DATA[key])
 
-    def test_kde(self):
-        key = 'kde'
-        self._run_persist_func_tests(GEN_TEST_DATA[key])
-
     def test_mixmod(self):
         key = 'mixmod'
         self._run_persist_func_tests(GEN_TEST_DATA[key])
 
+    def test_flex(self):
+        key = 'flex'
+        self._run_persist_func_tests(GEN_TEST_DATA[key])
 
 if __name__ == '__main__':
     unittest.main()

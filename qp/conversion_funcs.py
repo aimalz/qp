@@ -5,7 +5,6 @@ That will allow the automated conversion mechanisms to work.
 
 import numpy as np
 from sklearn import mixture
-from scipy.stats._distn_infrastructure import rv_frozen
 
 from .ensemble import Ensemble
 from .conversion import set_default_conversion
@@ -41,10 +40,7 @@ def convert_using_samples(in_dist, class_to, **kwargs):
     -------
     dist : An distrubtion object of type class_to, instantiated using the x and y values
     """
-    if isinstance(in_dist, Ensemble):
-        samples = in_dist.rvs(size=kwargs.pop('size', 1000))
-    else: #pragma: no cover
-        samples = in_dist.rvs(size=(in_dist.npdf, kwargs.pop('size', 1000)))
+    samples = in_dist.rvs(size=(in_dist.npdf, kwargs.pop('size', 1000)))
     xvals = kwargs.pop('xvals')
     return Ensemble(class_to, data=dict(samples=samples, xvals=xvals, yvals=None), **kwargs)
 
@@ -66,8 +62,8 @@ def convert_using_hist_values(in_dist, class_to, **kwargs):
     bins = kwargs.pop('bins', None)
     if bins is None: # pragma: no cover
         raise ValueError("To convert to class %s using convert_using_hist_samples you must specify bins" % class_to)
-    hist = in_dist.histogramize(bins=bins)
-    return Ensemble(class_to, data=dict(bins=hist[0], pdfs=hist[1]), **kwargs)
+    bins, pdfs = in_dist.histogramize(bins)
+    return Ensemble(class_to, data=dict(bins=bins, pdfs=pdfs), **kwargs)
 
 
 def convert_using_hist_samples(in_dist, class_to, **kwargs):
@@ -88,16 +84,7 @@ def convert_using_hist_samples(in_dist, class_to, **kwargs):
     size = kwargs.pop('size', 1000)
     if bins is None: # pragma: no cover
         raise ValueError("To convert to class %s using convert_using_hist_samples you must specify xvals" % class_to)
-    if isinstance(in_dist, Ensemble):
-        try:
-            samples = in_dist.gen_obj.samples
-        except AttributeError: #pragma: no cover
-            samples = in_dist.rvs(size)
-    elif isinstance(in_dist, rv_frozen): #pragma: no cover
-        try:
-            samples = in_dist.dist.samples
-        except AttributeError:
-            samples = in_dist.rvs(size)
+    samples = in_dist.rvs(size=size)
 
     def hist_helper(sample):
         return np.histogram(sample, bins=bins)[0]
@@ -158,7 +145,7 @@ def convert_using_mixmod_fit_samples(in_dist, class_to, **kwargs):
     """
     n_comps = kwargs.pop('ncomps', 3)
     n_sample = kwargs.pop('nsamples', 1000)
-    samples = in_dist.rvs(size=n_sample)
+    samples = in_dist.rvs(size=(in_dist.npdf, n_sample))
     def mixmod_helper(samps):
         estimator = mixture.GaussianMixture(n_components=n_comps)
         estimator.fit(samps.reshape(-1, 1))

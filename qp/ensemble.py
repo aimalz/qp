@@ -17,21 +17,22 @@ from .persistence import get_qp_reader
 
 class Ensemble:
     """An object comprised of many qp.PDF objects to efficiently perform operations on all of them"""
-    def __init__(self, gen_class, data):
+    def __init__(self, gen_func, data):
         """Class constructor
 
         Parameters
         ----------
-        gen : `class`
-            Generic distribution object
+        gen_func : `function`
+            Function that creates generic distribution object
         data : `dict`
             Dictionary with data used to construct the ensemble
 
         """
         #start_time = timeit.default_timer()
-        self._gen_class = gen_class
-        self._gen_obj, self._freeze_data = gen_class.create_gen(**data)
-        self._frozen = self._gen_obj(**self._freeze_data)
+        self._gen_func = gen_func
+        self._frozen = self._gen_func(**data)
+        self._gen_obj = self._frozen.dist
+        self._gen_class = type(self._gen_obj)
 
         self._gridded = None
         self._samples = None
@@ -50,9 +51,15 @@ class Ensemble:
         pdf : `scipy.rv_frozen`
             The distribution for the requeseted element or slide
         """
-        red_data = slice_dict(self._freeze_data, key)
+        #red_data = slice_dict(self._freeze_data, key)
+        red_data = {}
         red_data.update(slice_dict(self._frozen.kwds, key))
         return self._gen_obj(**red_data)
+
+    @property
+    def gen_func(self):
+        """Return the function used to create the distribution object for this ensemble"""
+        return self._gen_func
 
     @property
     def gen_class(self):
@@ -220,9 +227,15 @@ class Ensemble:
         for col in md_table.columns:
             col_data = md_table[col].data
             if len(col_data.shape) > 1:
-                data_dict[col] = np.squeeze(col_data)
-            else:
-                data_dict[col] = col_data
+                col_data = np.squeeze(col_data)
+
+            if col_data.size == 1:
+                col_data = col_data[0]
+
+            if isinstance(col_data, bytes):
+                col_data = col_data.decode()
+            data_dict[col] = col_data
+
 
         for col in data_table.columns:
             col_data = data_table[col].data
@@ -231,10 +244,10 @@ class Ensemble:
             else:
                 data_dict[col] = col_data
 
-        pdf_name = data_dict.pop('pdf_name')[0].decode()
-        pdf_version = data_dict.pop('pdf_version')[0]
+        pdf_name = data_dict.pop('pdf_name')
+        pdf_version = data_dict.pop('pdf_version')
         class_to = get_qp_reader(pdf_name, pdf_version)
-        return cls(class_to, data=data_dict)
+        return cls(class_to.create, data=data_dict)
 
 
     def pdf(self, x):
@@ -418,10 +431,7 @@ class Ensemble:
             Array of pairs of arrays of lengths (N+1, N) containing endpoints
             of bins and values in bins
         """
-        cdf_vals = self.cdf(bins)
-        bin_vals = cdf_vals[:,1:] - cdf_vals[:,0:-1]
-        return (bins, bin_vals)
-
+        return self._frozen.histogramize(bins)
 
     def integrate(self, limits):
         """
