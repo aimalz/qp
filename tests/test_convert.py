@@ -32,12 +32,14 @@ class ConvertTestCase(unittest.TestCase):
             raise ValueError("Failed to make %s %s" % (test_data['convert_data'], msg))
         xpts = test_data['test_xvals']
 
+        binw = np.mean(xpts[1:] - xpts[0:-1])
+        
         diffs = self.ens_n.pdf(xpts) - ensemble.pdf(xpts)
-        assert_all_small(diffs, atol=kwargs.get('atol_diff', 1e-1))
+        assert_all_small(diffs, atol=kwargs.get('atol_diff', 1e-1)/binw)
 
         ens2 = qp.qp_convert(self.ens_n.frozen, gen_class, **test_data['convert_data'])
         diffs2 = ensemble.pdf(xpts) - ens2.pdf(xpts)
-        assert_all_small(diffs2, atol=kwargs.get('atol_diff2', 1e-5))
+        assert_all_small(diffs2, atol=kwargs.get('atol_diff2', 1e-5)/binw)
 
         
     def test_convert_to_interp(self):
@@ -58,7 +60,7 @@ class ConvertTestCase(unittest.TestCase):
 
     def test_convert_tohist_samples(self):
         key = 'hist_samples'
-        self._run_convert(qp.hist_rows_gen, GEN_TEST_DATA[key], atol_diff=HIST_TOL)
+        self._run_convert(qp.hist_rows_gen, GEN_TEST_DATA[key], atol_diff=HIST_TOL, atol_diff2=1e-1)
         
     def test_convert_toquant(self):
         key = 'quant'
@@ -66,7 +68,7 @@ class ConvertTestCase(unittest.TestCase):
         
     def test_convert_tomixmod(self):
         key = 'mixmod'
-        self._run_convert(qp.mixmod_rows_gen, GEN_TEST_DATA[key])
+        self._run_convert(qp.mixmod_rows_gen, GEN_TEST_DATA[key], atol_diff2=1e-1)
 
     def test_convert_toflex(self):
         key = 'flex'
