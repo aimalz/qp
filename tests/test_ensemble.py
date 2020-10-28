@@ -54,6 +54,11 @@ class EnsembleTestCase(unittest.TestCase):
         check_isf = ens.cdf(ppfs) + QUANTS[::-1]
         assert np.allclose(check_isf, 1, atol=1e-5)
 
+
+        samples = ens.rvs(size=1000)
+        assert samples.shape[0] == ens.frozen.npdf
+        assert samples.shape[1] == 1000
+        
         median = ens.median()
         mean = ens.mean()
         var = ens.var()
