@@ -189,3 +189,99 @@ def evaluate_kdes(xvals, kdes):
         The kdes evaluated at the xvamls
     """
     return np.vstack([kde(xvals) for kde in kdes])
+
+
+
+
+def interpolate_multi_x_multi_y(x, xvals, yvals):
+    """
+    Interpolate a set of values
+
+    Parameters
+    ----------
+    x : array_line (n)
+        X values to interpolate at:
+    xvals : array_like (M, N)  
+        X-values used for the interpolation
+    yvals : array_like (M, N)
+        Y-avlues used for the inteolation
+
+    Returns
+    -------
+    vals : array_like (M, n)
+        The interpoalted values
+    """
+    xy_vals = np.hstack([xvals, yvals])
+    nx = xvals.shape[-1]
+    def single_row(xy_vals_):
+        xrow = xy_vals_[0:nx]
+        yrow = xy_vals_[nx:]
+        mask_lo = x <= xrow[0]
+        mask_hi = x >= xrow[-1]
+        idx = np.searchsorted(xrow, x, side='left').clip(0, xrow.size-2)
+        x0 = xrow[idx]
+        x1 = xrow[idx+1]
+        f = (x - x0)/(x1 - x0)
+        y0 = yrow[idx]
+        y1 = yrow[idx+1]
+        return np.where(mask_hi, yrow[-1], np.where(mask_lo, yrow[0], f*y1 + (1 - f)*y0))
+    vv = np.vectorize(single_row, signature="(%i)->(%i)" % (xvals.shape[-1]+yvals.shape[-1], x.size))
+    return vv(xy_vals)
+
+
+def interpolate_x_multi_y(x, xvals, yvals):
+    """
+    Interpolate a set of values
+
+    Parameters
+    ----------
+    x : array_line (n)
+        X values to interpolate at:
+    xvals : array_like (N)  
+        X-values used for the interpolation
+    yvals : array_like (M, N)
+        Y-avlues used for the inteolation
+
+    Returns
+    -------
+    vals : array_like (M, n)
+        The interpoalted values
+    """
+    idx = np.searchsorted(xvals, x, side='left').clip(0, xvals.size-2)
+    x0 = xvals[idx]
+    x1 = xvals[idx+1]
+    f = (x - x0)/(x1 - x0)
+    y0 = yvals[:,idx]
+    y1 = yvals[:,idx+1]
+    return f*y1 + (1 - f)*y0
+
+
+
+def interpolate_multi_x_y(x, xvals, yvals):
+    """
+    Interpolate a set of values
+
+    Parameters
+    ----------
+    x : array_line (n)
+        X values to interpolate at:
+    xvals : array_like (M, N)  
+        X-values used for the interpolation
+    yvals : array_like (N)
+        Y-avlues used for the inteolation
+
+    Returns
+    -------
+    vals : array_like (M, n)
+        The interpoalted values
+    """
+    def single_row(xrow):
+        idx = np.searchsorted(xrow, x, side='left').clip(0, xrow.size-2)
+        x0 = xrow[idx]
+        x1 = xrow[idx+1]
+        f = (x - x0)/(x1 - x0)
+        y0 = yvals[idx]
+        y1 = yvals[idx+1]
+        return f*y1 + (1 - f)*y0
+    vv = np.vectorize(single_row, signature="(%i)->(%i)" % (yvals.size, x.size))
+    return vv(xvals)

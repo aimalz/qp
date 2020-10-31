@@ -154,9 +154,10 @@ class flex_rows_gen(Pdf_rows_gen):
 
     def _pdf(self, x, row):
         # pylint: disable=arguments-differ
-        x_trans = box_transform(x, self.a, self.b)
+        xr, rr, _ = self._sliceargs(x, row)        
+        x_trans = box_transform(xr, self.a, self.b)
         basis = evaluate_basis(np.expand_dims(x_trans, -1), self.coefs.shape[1], self.basis_system)
-        return np.sum(self._coefs[row]*basis, axis=1)
+        return np.matmul(self._coefs[rr], basis.T).flat
 
 
     def _updated_ctor_param(self):

@@ -34,7 +34,8 @@ from .conversion_funcs import convert_using_xy_vals,\
      convert_using_mixmod_fit_samples, convert_using_hist_samples
 from .plotting import get_axes_and_xlims, plot_pdf_on_axes, plot_dist_pdf,\
      plot_pdf_histogram_on_axes, plot_pdf_quantiles_on_axes
-from .utils import normalize_interp1d, normalize_spline, build_splines, build_kdes, evaluate_kdes
+from .utils import normalize_interp1d, normalize_spline, build_splines, build_kdes, evaluate_kdes,\
+     interpolate_multi_x_multi_y, interpolate_multi_x_y, interpolate_x_multi_y
 
 
 
@@ -355,7 +356,12 @@ class Pdf_rows_gen(rv_continuous, Pdf_gen):
         """Return the number of PDFs this object represents"""
         return self._npdf
 
-
+    def _sliceargs(self, x, row, *args):
+        nrow = 1 + row[-1] - row[0]
+        nvals = int(x.size/nrow)
+        outargs = [arg[0:nvals] for arg in args]
+        return x[0:nvals], row[::nvals], outargs
+    
     def _argcheck(self, *args):
         """Default check for correct values on args and keywords.
         Returns condition array of 1's where arguments are correct and
@@ -367,7 +373,7 @@ class Pdf_rows_gen(rv_continuous, Pdf_gen):
         return np.atleast_1d(cond)
 
     def freeze(self, *args, **kwds):
-        """Freeze the distribution for the given arguments.
+        """Freeze the distribution for the given arguments.9999999
 
         Parameters
         ----------
@@ -460,24 +466,19 @@ class hist_rows_gen(Pdf_rows_gen):
 
     def _pdf(self, x, row):
         # pylint: disable=arguments-differ
-        def pdf_row(irow, xv):
-            return self._hpdfs[irow,np.searchsorted(self._hbins, xv, side='left').clip(0, self._nbins-1)]
-        vv = np.vectorize(pdf_row)
-        return vv(row, x)
+        xr, rr, _ = self._sliceargs(x, row)
+        idx = np.searchsorted(self._hbins, xr, side='left').clip(0, self._hbins.size-2)
+        return self._hpdfs[:,idx][rr].flat
 
     def _cdf(self, x, row):
         # pylint: disable=arguments-differ
-        def cdf_row(irow, xv):
-            return interp1d(self._hbins, self._hcdfs[irow], bounds_error=False,  fill_value=(0,1.))(xv)
-        vv = np.vectorize(cdf_row)
-        return vv(row, x)
+        xr, rr, _ = self._sliceargs(x, row)
+        return interpolate_x_multi_y(xr, self._hbins, self._hcdfs[rr]).flat
 
     def _ppf(self, x, row):
         # pylint: disable=arguments-differ
-        def ppf_row(irow, xv):
-            return interp1d(self._hcdfs[irow], self._hbins, bounds_error=False,  fill_value=(self.a, self.b))(xv)
-        vv = np.vectorize(ppf_row)
-        return vv(row, x)
+        xr, rr, _ = self._sliceargs(x, row)
+        return interpolate_multi_x_y(xr, self._hcdfs[rr], self._hbins).flat
 
     def _updated_ctor_param(self):
         """
@@ -571,25 +572,19 @@ class interp_rows_gen(Pdf_rows_gen):
 
     def _pdf(self, x, row):
         # pylint: disable=arguments-differ
-        def pdf_row(irow, xv):
-            return interp1d(self._xvals[irow], self._yvals[irow])(xv)
-
-        vv = np.vectorize(pdf_row)
-        return vv(row, x)
+        xr, rr, _ = self._sliceargs(x, row)
+        return interpolate_multi_x_multi_y(xr, self._xvals[rr], self._yvals[rr]).flat
 
     def _cdf(self, x, row):
         # pylint: disable=arguments-differ
-        def cdf_row(irow, xv):
-            return interp1d(self._xvals[irow], self._ycumul[irow])(xv)
-        vv = np.vectorize(cdf_row)
-        return vv(row, x)
+        xr, rr, _ = self._sliceargs(x, row)        
+        return interpolate_multi_x_multi_y(xr, self._xvals[rr], self._ycumul[rr]).flat
 
     def _ppf(self, x, row):
-        # pylint: disable=arguments-differ
-        def ppf_row(irow, xv):
-            return interp1d(self._ycumul[irow], self._xvals[irow])(xv)
-        vv = np.vectorize(ppf_row)
-        return vv(row, x)
+        # pylint: disable=arguments-differ        
+        xr, rr, _ = self._sliceargs(x, row)
+        return interpolate_multi_x_multi_y(xr, self._ycumul[rr], self._xvals[rr]).flat
+
 
     def _updated_ctor_param(self):
         """
@@ -763,19 +758,24 @@ class spline_rows_gen(Pdf_rows_gen):
 
     def _pdf(self, x, row):
         # pylint: disable=arguments-differ
-        def pdf_row(irow, xv):
-            return splev(xv, (self._splx[irow], self._sply[irow], self._spln[irow]))
+        xr, rr, _ = self._sliceargs(x, row)
+        ns = self._splx.shape[-1]
+        def pdf_row(spl_):
+            return splev(xr, (spl_[0:ns], spl_[ns:2*ns], spl_[-1].astype(int)))
 
-        vv = np.vectorize(pdf_row)
-        return vv(row, x)
+        vv = np.vectorize(pdf_row, signature="(%i)->(%i)" % (2*ns+1, xr.size))
+        spl = np.hstack([self._splx[rr], self._sply[rr], self._spln[rr]])
+        return vv(spl).flat
 
     def _cdf(self, x, row):
         # pylint: disable=arguments-differ
-        def cdf_row(irow, xv):
+        ns = self._splx.shape[-1]
+        def cdf_row(xv, irow):
             return splint(self.a, xv, (self._splx[irow], self._sply[irow], self._spln[irow]))
 
         vv = np.vectorize(cdf_row)
-        return vv(row, x)
+        spl = np.hstack([self._splx[row], self._sply[row], self._spln[row]])
+        return vv(x, row)
 
     def _updated_ctor_param(self):
         """
@@ -863,14 +863,12 @@ class quant_rows_gen(Pdf_rows_gen):
 
     def _cdf(self, x, row):
         # pylint: disable=arguments-differ
-        def cdf_row(irow, xv):
-            return interp1d(self._locs[irow], self._quants, bounds_error=False,  fill_value=(0,1.))(xv)
-        vv = np.vectorize(cdf_row)
-        return vv(row, x)
+        xr, rr, _ = self._sliceargs(x, row)
+        return interpolate_multi_x_y(xr, self._locs[rr], self._quants).flat
 
     def _updated_ctor_param(self):
         """
-        Set the bins as additional constructor argument
+        Set the bins as additional construstor argument
         """
         dct = super(quant_rows_gen, self)._updated_ctor_param()
         dct['quants'] = self._quants
@@ -958,11 +956,17 @@ class mixmod_rows_gen(Pdf_rows_gen):
 
     def _pdf(self, x, row):
         # pylint: disable=arguments-differ
-        return self._weights[row].T * sps.norm(loc=self._means[row].T, scale=self._stds[row].T).pdf(x).sum(axis=0)
-
+        xr, rr, _ = self._sliceargs(x, row)       
+        return (np.expand_dims(self.weights[rr], -1) *\
+                    sps.norm(loc=np.expand_dims(self._means[rr], -1),\
+                                 scale=np.expand_dims(self._stds[rr], -1)).pdf(np.expand_dims(xr, 0))).sum(axis=1).flat
+                                 
     def _cdf(self, x, row):
         # pylint: disable=arguments-differ
-        return self._weights[row].T * sps.norm(loc=self._means[row].T, scale=self._stds[row].T).cdf(x).sum(axis=0)
+        xr, rr, _ = self._sliceargs(x, row)
+        return (np.expand_dims(self.weights[rr], -1) *\
+                    sps.norm(loc=np.expand_dims(self._means[rr], -1),\
+                                 scale=np.expand_dims(self._stds[rr], -1)).cdf(np.expand_dims(xr, 0))).sum(axis=1).flat
 
     def _updated_ctor_param(self):
         """
