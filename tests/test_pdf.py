@@ -61,7 +61,7 @@ class PDFTestCase(unittest.TestCase):
     
         ppfs = pdf.ppf(quants)
         check_ppf = pdf.cdf(ppfs) - quants
-        assert_all_small(check_ppf, atol=1e-9)
+        assert_all_small(check_ppf, atol=1e-2)
 
         sfs = pdf.sf(xpts)
         check_sf = sfs + cdfs
@@ -69,7 +69,7 @@ class PDFTestCase(unittest.TestCase):
         
         isfs = pdf.isf(quants)
         check_isf = pdf.cdf(ppfs) + quants[::-1]
-        assert_all_small(check_isf - 1, atol=1e-5)
+        assert_all_small(check_isf - 1, atol=1e-2)
         return pdf
 
     def test_norm(self):
