@@ -76,6 +76,10 @@ class PDFTestCase(unittest.TestCase):
         key = 'norm'
         pdf = self._run_pdf_func_tests(key, GEN_TEST_DATA[key])
 
+    def test_interp_fixed(self):
+        key = 'interp_fixed'
+        pdf = self._run_pdf_func_tests(key, GEN_TEST_DATA[key])
+
     def test_interp(self):
         key = 'interp'
         pdf = self._run_pdf_func_tests(key, GEN_TEST_DATA[key])

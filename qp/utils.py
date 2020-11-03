@@ -201,7 +201,7 @@ def interpolate_multi_x_multi_y(x, xvals, yvals):
     ----------
     x : array_line (n)
         X values to interpolate at:
-    xvals : array_like (M, N)  
+    xvals : array_like (M, N)
         X-values used for the interpolation
     yvals : array_like (M, N)
         Y-avlues used for the inteolation
@@ -237,7 +237,7 @@ def interpolate_x_multi_y(x, xvals, yvals):
     ----------
     x : array_line (n)
         X values to interpolate at:
-    xvals : array_like (N)  
+    xvals : array_like (N)
         X-values used for the interpolation
     yvals : array_like (M, N)
         Y-avlues used for the inteolation
@@ -265,7 +265,7 @@ def interpolate_multi_x_y(x, xvals, yvals):
     ----------
     x : array_line (n)
         X values to interpolate at:
-    xvals : array_like (M, N)  
+    xvals : array_like (M, N)
         X-values used for the interpolation
     yvals : array_like (N)
         Y-avlues used for the inteolation

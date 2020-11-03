@@ -25,11 +25,11 @@ from scipy.stats import _continuous_distns as scipy_dist
 from scipy.special import comb
 from scipy import stats as sps
 
-from scipy.interpolate import interp1d, splev, splint
+from scipy.interpolate import splev, splint
 
 from .persistence import register_pdf_class
 from .conversion import register_class_conversions, qp_convert
-from .conversion_funcs import convert_using_xy_vals,\
+from .conversion_funcs import convert_using_vals_at_x, convert_using_xy_vals,\
      convert_using_quantiles, convert_using_samples, convert_using_hist_values,\
      convert_using_mixmod_fit_samples, convert_using_hist_samples
 from .plotting import get_axes_and_xlims, plot_pdf_on_axes, plot_dist_pdf,\
@@ -356,12 +356,13 @@ class Pdf_rows_gen(rv_continuous, Pdf_gen):
         """Return the number of PDFs this object represents"""
         return self._npdf
 
-    def _sliceargs(self, x, row, *args):
+    @staticmethod
+    def _sliceargs(x, row, *args):
         nrow = 1 + row[-1] - row[0]
         nvals = int(x.size/nrow)
         outargs = [arg[0:nvals] for arg in args]
         return x[0:nvals], row[::nvals], outargs
-    
+
     def _argcheck(self, *args):
         """Default check for correct values on args and keywords.
         Returns condition array of 1's where arguments are correct and
@@ -513,6 +514,111 @@ class hist_rows_gen(Pdf_rows_gen):
 hist = hist_rows_gen.create
 
 
+
+class interp_fixed_grid_rows_gen(Pdf_rows_gen):
+    """Interpolator based distribution
+
+    Notes
+    -----
+    This implements a PDF using a set of interpolated values.
+
+    It simply takes a set of x and y values and uses `scipy.interpolate.interp1d` to
+    build the PDF.
+    """
+    # pylint: disable=protected-access
+
+    name = 'interp_fixed_dist'
+    version = 0
+
+    _support_mask = rv_continuous._support_mask
+
+    def __init__(self, xvals, yvals, *args, **kwargs):
+        """
+        Create a new distribution by interpolating the given values
+
+        Parameters
+        ----------
+        xvals : array_like
+          The x-values used to do the interpolation
+        yvals : array_like
+          The y-values used to do the interpolation
+        """
+        if xvals.size != np.sum(yvals.shape[1:]): # pragma: no cover
+            raise ValueError("Shape of xbins in xvals (%s) != shape of xbins in yvals (%s)" % (xvals.size, np.sum(yvals.shape[1:])))
+        self._xvals = xvals
+
+        # Set support
+        kwargs['a'] = self.a = np.min(self._xvals)
+        kwargs['b'] = self.b = np.max(self._xvals)
+        kwargs['npdf'] = yvals.shape[0]
+
+        #self._yvals = normalize_interp1d(xvals, yvals)
+        self._yvals = yvals
+        copy_shape = np.array(self._yvals.shape)
+        self._ycumul = np.ndarray(copy_shape)
+        self._ycumul[:,0] = 0.
+        self._ycumul[:,1:] = np.cumsum(self._xvals[1:]*self._yvals[:,1:] - self._xvals[0:-1]*self._yvals[:,0:-1], axis=1)
+
+        super(interp_fixed_grid_rows_gen, self).__init__(*args, **kwargs)
+        self._addmetadata('xvals', self._xvals)
+        self._addobjdata('yvals', self._yvals)
+
+    @property
+    def xvals(self):
+        """Return the x-values used to do the interpolation"""
+        return self._xvals
+
+    @property
+    def yvals(self):
+        """Return the y-valus used to do the interpolation"""
+        return self._yvals
+
+    def _pdf(self, x, row):
+        # pylint: disable=arguments-differ
+        xr, rr, _ = self._sliceargs(x, row)
+        return interpolate_x_multi_y(xr, self._xvals, self._yvals[rr]).flat
+
+    def _cdf(self, x, row):
+        # pylint: disable=arguments-differ
+        xr, rr, _ = self._sliceargs(x, row)
+        return interpolate_x_multi_y(xr, self._xvals, self._ycumul[rr]).flat
+
+    def _ppf(self, x, row):
+        # pylint: disable=arguments-differ
+        xr, rr, _ = self._sliceargs(x, row)
+        return interpolate_multi_x_y(xr, self._ycumul[rr], self._xvals).flat
+
+
+    def _updated_ctor_param(self):
+        """
+        Set the bins as additional constructor argument
+        """
+        dct = super(interp_fixed_grid_rows_gen, self)._updated_ctor_param()
+        dct['xvals'] = self._xvals
+        dct['yvals'] = self._yvals
+        return dct
+
+    @classmethod
+    def plot_native(cls, pdf, **kwargs):
+        """Plot the PDF in a way that is particular to this type of distibution
+
+        For a interpolated PDF this uses the interpolation points
+        """
+        axes, _, kw = get_axes_and_xlims(**kwargs)
+        xvals_row = pdf.dist.xvals[pdf.kwds['row']]
+        return plot_pdf_on_axes(axes, pdf, xvals_row, **kw)
+
+    @classmethod
+    def add_conversion_mappings(cls, conv_dict):
+        """
+        Add this classes mappings to the conversion dictionary
+        """
+        conv_dict.add_mapping((cls.create, convert_using_vals_at_x), cls, None, None)
+
+
+interp_fixed = interp_fixed_grid_rows_gen.create
+
+
 class interp_rows_gen(Pdf_rows_gen):
     """Interpolator based distribution
 
@@ -577,11 +683,11 @@ class interp_rows_gen(Pdf_rows_gen):
 
     def _cdf(self, x, row):
         # pylint: disable=arguments-differ
-        xr, rr, _ = self._sliceargs(x, row)        
+        xr, rr, _ = self._sliceargs(x, row)
         return interpolate_multi_x_multi_y(xr, self._xvals[rr], self._ycumul[rr]).flat
 
     def _ppf(self, x, row):
-        # pylint: disable=arguments-differ        
+        # pylint: disable=arguments-differ
         xr, rr, _ = self._sliceargs(x, row)
         return interpolate_multi_x_multi_y(xr, self._ycumul[rr], self._xvals[rr]).flat
 
@@ -602,7 +708,7 @@ class interp_rows_gen(Pdf_rows_gen):
         For a interpolated PDF this uses the interpolation points
         """
         axes, _, kw = get_axes_and_xlims(**kwargs)
-        xvals_row = pdf.dist.xvals[pdf.kwds['row']]
+        xvals_row = pdf.dist.xvals
         return plot_pdf_on_axes(axes, pdf, xvals_row, **kw)
 
     @classmethod
@@ -769,12 +875,10 @@ class spline_rows_gen(Pdf_rows_gen):
 
     def _cdf(self, x, row):
         # pylint: disable=arguments-differ
-        ns = self._splx.shape[-1]
         def cdf_row(xv, irow):
             return splint(self.a, xv, (self._splx[irow], self._sply[irow], self._spln[irow]))
 
         vv = np.vectorize(cdf_row)
-        spl = np.hstack([self._splx[row], self._sply[row], self._spln[row]])
         return vv(x, row)
 
     def _updated_ctor_param(self):
@@ -956,11 +1060,11 @@ class mixmod_rows_gen(Pdf_rows_gen):
 
     def _pdf(self, x, row):
         # pylint: disable=arguments-differ
-        xr, rr, _ = self._sliceargs(x, row)       
+        xr, rr, _ = self._sliceargs(x, row)
         return (np.expand_dims(self.weights[rr], -1) *\
                     sps.norm(loc=np.expand_dims(self._means[rr], -1),\
                                  scale=np.expand_dims(self._stds[rr], -1)).pdf(np.expand_dims(xr, 0))).sum(axis=1).flat
-                                 
+
     def _cdf(self, x, row):
         # pylint: disable=arguments-differ
         xr, rr, _ = self._sliceargs(x, row)
@@ -990,6 +1094,7 @@ mixmod = mixmod_rows_gen.create
 
 
 register_class_conversions(interp_rows_gen)
+register_class_conversions(interp_fixed_grid_rows_gen)
 register_class_conversions(spline_rows_gen)
 register_class_conversions(quant_rows_gen)
 register_class_conversions(hist_rows_gen)
@@ -998,6 +1103,7 @@ register_class_conversions(mixmod_rows_gen)
 register_pdf_class(norm_gen)
 register_pdf_class(hist_rows_gen)
 register_pdf_class(interp_rows_gen)
+register_pdf_class(interp_fixed_grid_rows_gen)
 register_pdf_class(spline_rows_gen)
 register_pdf_class(quant_rows_gen)
 register_pdf_class(mixmod_rows_gen)

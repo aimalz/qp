@@ -9,6 +9,25 @@ from sklearn import mixture
 from .ensemble import Ensemble
 from .conversion import set_default_conversion
 
+def convert_using_vals_at_x(in_dist, class_to, **kwargs):
+    """Convert using a set of x and y values.
+    Keywords
+    --------
+    xvals : `np.array`
+        Locations at which the pdf is evaluated
+    Remaining keywords are passed to class constructor.
+    Returns
+    -------
+    dist : An distrubtion object of type class_to, instantiated using the x and y values
+    """
+
+    xvals = kwargs.pop('xvals', None)
+    if xvals is None: # pragma: no cover
+        raise ValueError("To convert to class %s using convert_using_xy_vals you must specify xvals" % class_to)
+    yvals = in_dist.pdf(xvals)
+    return Ensemble(class_to, data=dict(xvals=xvals, yvals=yvals), **kwargs)
+
+
 def convert_using_xy_vals(in_dist, class_to, **kwargs):
     """Convert using a set of x and y values.
     Keywords

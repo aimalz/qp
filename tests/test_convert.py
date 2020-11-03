@@ -45,7 +45,11 @@ class ConvertTestCase(unittest.TestCase):
     def test_convert_to_interp(self):
         key = 'interp'
         self._run_convert(qp.interp_rows_gen, GEN_TEST_DATA[key])
-        
+
+    def test_convert_to_interp_fixed(self):
+        key = 'interp_fixed'
+        self._run_convert(qp.interp_fixed_grid_rows_gen, GEN_TEST_DATA[key])
+
     def test_convert_tospline(self):
         key = 'spline'
         self._run_convert(qp.spline_rows_gen, GEN_TEST_DATA[key])

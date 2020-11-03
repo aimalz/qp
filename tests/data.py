@@ -36,6 +36,8 @@ GEN_TEST_DATA = dict(
                           convert_data=dict(), test_xvals=TEST_XVALS),
     interp=dict(gen_func=qp.interp, ctor_data=dict(xvals=XARRAY, yvals=YARRAY),\
                     convert_data=dict(xvals=XBINS), test_xvals=TEST_XVALS),
+    interp_fixed=dict(gen_func=qp.interp_fixed, ctor_data=dict(xvals=XBINS, yvals=YARRAY),\
+                        convert_data=dict(xvals=XBINS), test_xvals=TEST_XVALS),                    
     spline=dict(gen_func=qp.spline, ctor_data=dict(splx=SPLX, sply=SPLY, spln=SPLN),\
                     convert_data=dict(xvals=XBINS), test_xvals=TEST_XVALS[::10]),
     hist=dict(gen_func=qp.hist, ctor_data=dict(bins=XBINS, pdfs=HIST_DATA),\

@@ -45,7 +45,11 @@ class PlottingTestCase(unittest.TestCase):
     def test_interp(self):
         key = 'interp'
         self._run_plotting_func_tests(GEN_TEST_DATA[key])
-        
+
+    def test_interp_fixed(self):
+        key = 'interp_fixed'
+        self._run_plotting_func_tests(GEN_TEST_DATA[key])
+
     def test_spline(self):
         key = 'spline'
         self._run_plotting_func_tests(GEN_TEST_DATA[key])
