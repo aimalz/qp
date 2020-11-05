@@ -361,7 +361,7 @@ class Pdf_rows_gen(rv_continuous, Pdf_gen):
     def _sliceargs(x, row, *args):
         xx = np.unique(x)
         rr = np.unique(row)
-        
+
         if np.size(xx) * np.size(rr) != np.size(x):
             return False, x, row, args
         outargs = [arg[0:np.size(xx)] for arg in args]
@@ -1121,8 +1121,8 @@ class mixmod_rows_gen(Pdf_rows_gen):
                         sps.norm(loc=np.expand_dims(self._means[rr], -1),\
                                      scale=np.expand_dims(self._stds[rr], -1)).pdf(np.expand_dims(xr, 0))).sum(axis=1).reshape(x.shape)
         return (self.weights[rr].T * sps.norm(loc=self._means[rr].T, scale=self._stds[rr].T).pdf(xr)).sum(axis=0)
-                                     
-                                    
+
+
     def _cdf(self, x, row):
         # pylint: disable=arguments-differ
         factored, xr, rr, _ = self._sliceargs(x, row)
@@ -1132,7 +1132,7 @@ class mixmod_rows_gen(Pdf_rows_gen):
                                     scale=np.expand_dims(self._stds[rr], -1)).cdf(np.expand_dims(xr, 0))).sum(axis=1).reshape(x.shape)
         return (self.weights[rr].T * sps.norm(loc=self._means[rr].T, scale=self._stds[rr].T).cdf(xr)).sum(axis=0)
 
-                                    
+
     def _updated_ctor_param(self):
         """
         Set the bins as additional constructor argument

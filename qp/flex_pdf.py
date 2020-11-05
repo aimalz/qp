@@ -163,7 +163,7 @@ class flex_rows_gen(Pdf_rows_gen):
         basis = evaluate_basis(x_trans, self.coefs.shape[1], self.basis_system)
         return np.sum(self._coefs[rr]*basis, axis=1).flat
 
-        
+
 
     def _updated_ctor_param(self):
         """
