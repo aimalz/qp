@@ -3,7 +3,7 @@
 import numpy as np
 
 from scipy import stats as sps
-from scipy.interpolate import splev, splrep
+from scipy.interpolate import splev, splrep, interp1d
 from scipy.integrate import quad
 import sys
 
@@ -192,7 +192,7 @@ def evaluate_kdes(xvals, kdes):
 
 
 
-def interpolate_unfactored_x_multi_y(x, row, xvals, yvals):
+def interpolate_unfactored_x_multi_y(x, row, xvals, yvals, **kwargs):
     """
     Interpolate a set of values
 
@@ -212,23 +212,10 @@ def interpolate_unfactored_x_multi_y(x, row, xvals, yvals):
     vals : array_like (M, n)
         The interpoalted values
     """
-    def single_row(xv, idxv, rv):
-        yrow = yvals[rv]
-        x0 = xvals[idxv]
-        x1 = xvals[idxv+1]
-        f = (xv - x0)/(x1 - x0)
-        y0 = yrow[idxv]
-        y1 = yrow[idxv+1]
-        return f*y1 + (1 - f)*y0
-
-    idx = np.searchsorted(xvals, x, side='left').clip(0, xvals.size-2)
-    mask_lo = x < xvals[0]
-    mask_hi = x > xvals[-1]
-    vv = np.vectorize(single_row)
-    return np.where(mask_lo, yvals[row,0], np.where(mask_hi, yvals[row,-1], vv(x, idx, row)))
+    return interp1d(xvals, yvals[row], **kwargs)(x)
 
 
-def interpolate_unfactored_multi_x_y(x, row, xvals, yvals):
+def interpolate_unfactored_multi_x_y(x, row, xvals, yvals, **kwargs):
     """
     Interpolate a set of values
 
@@ -249,22 +236,13 @@ def interpolate_unfactored_multi_x_y(x, row, xvals, yvals):
         The interpoalted values
     """
     def single_row(xv, rv):
-        xrow = xvals[rv]
-        idx = np.searchsorted(xrow, xv, side='left').clip(0, xrow.size-2)
-        x0 = xrow[idx]
-        x1 = xrow[idx+1]
-        f = (xv - x0)/(x1 - x0)
-        y0 = yvals[idx]
-        y1 = yvals[idx+1]
-        return f*y1 + (1 - f)*y0
+        return interp1d(xvals[rv], yvals, **kwargs)(xv)
 
-    mask_lo = x < xvals[row, 0]
-    mask_hi = x > xvals[row, -1]
     vv = np.vectorize(single_row)
-    return np.where(mask_lo, yvals[0], np.where(mask_hi, yvals[-1], vv(x, row)))
+    return vv(x, row)
 
 
-def interpolate_unfactored_multi_x_multi_y(x, row, xvals, yvals):
+def interpolate_unfactored_multi_x_multi_y(x, row, xvals, yvals, **kwargs):
     """
     Interpolate a set of values
 
@@ -285,24 +263,14 @@ def interpolate_unfactored_multi_x_multi_y(x, row, xvals, yvals):
         The interpoalted values
     """
     def single_row(xv, rv):
-        xrow = xvals[rv]
-        yrow = yvals[rv]
-        idx = np.searchsorted(xrow, xv, side='left').clip(0, xrow.size-2)
-        x0 = xrow[idx]
-        x1 = xrow[idx+1]
-        f = (xv - x0)/(x1 - x0)
-        y0 = yrow[idx]
-        y1 = yrow[idx+1]
-        return f*y1 + (1 - f)*y0
+        return interp1d(xvals[rv], yvals[rv], **kwargs)(xv)
 
-    mask_lo = x < xvals[row, 0]
-    mask_hi = x > xvals[row, -1]
     vv = np.vectorize(single_row)
-    return np.where(mask_lo, yvals[row,0], np.where(mask_hi, yvals[row,-1], vv(x, row)))
+    return vv(x, row)
 
 
 
-def interpolate_multi_x_multi_y(x, xvals, yvals):
+def interpolate_multi_x_multi_y(x, xvals, yvals, **kwargs):
     """
     Interpolate a set of values
 
@@ -323,22 +291,12 @@ def interpolate_multi_x_multi_y(x, xvals, yvals):
     xy_vals = np.hstack([xvals, yvals])
     nx = xvals.shape[-1]
     def single_row(xy_vals_):
-        xrow = xy_vals_[0:nx]
-        yrow = xy_vals_[nx:]
-        mask_lo = x <= xrow[0]
-        mask_hi = x >= xrow[-1]
-        idx = np.searchsorted(xrow, x, side='left').clip(0, xrow.size-2)
-        x0 = xrow[idx]
-        x1 = xrow[idx+1]
-        f = (x - x0)/(x1 - x0)
-        y0 = yrow[idx]
-        y1 = yrow[idx+1]
-        return np.where(mask_hi, yrow[-1], np.where(mask_lo, yrow[0], f*y1 + (1 - f)*y0))
+        return interp1d(xy_vals_[0:nx], xy_vals_[nx:], **kwargs)(x)
     vv = np.vectorize(single_row, signature="(%i)->(%i)" % (xvals.shape[-1]+yvals.shape[-1], x.size))
     return vv(xy_vals)
 
 
-def interpolate_x_multi_y(x, xvals, yvals):
+def interpolate_x_multi_y(x, xvals, yvals, **kwargs):
     """
     Interpolate a set of values
 
@@ -356,17 +314,11 @@ def interpolate_x_multi_y(x, xvals, yvals):
     vals : array_like (M, n)
         The interpoalted values
     """
-    idx = np.searchsorted(xvals, x, side='left').clip(0, xvals.size-2)
-    x0 = xvals[idx]
-    x1 = xvals[idx+1]
-    f = (x - x0)/(x1 - x0)
-    y0 = yvals[:,idx]
-    y1 = yvals[:,idx+1]
-    return f*y1 + (1 - f)*y0
+    return interp1d(xvals, yvals, **kwargs)(x)
 
 
 
-def interpolate_multi_x_y(x, xvals, yvals):
+def interpolate_multi_x_y(x, xvals, yvals, **kwargs):
     """
     Interpolate a set of values
 
@@ -384,13 +336,15 @@ def interpolate_multi_x_y(x, xvals, yvals):
     vals : array_like (M, n)
         The interpoalted values
     """
+    #def single_row(xrow):
+    #    idx = np.searchsorted(xrow, x, side='left').clip(1, xrow.size-1)
+    #    x0 = xrow[idx-1]
+    #    x1 = xrow[idx]
+    #    f = (x1 - x)/(x1 - x0)
+    #    y0 = yvals[idx-1]
+    #    y1 = yvals[idx]
+    #    return f*y1 + (1 - f)*y0
     def single_row(xrow):
-        idx = np.searchsorted(xrow, x, side='left').clip(0, xrow.size-2)
-        x0 = xrow[idx]
-        x1 = xrow[idx+1]
-        f = (x - x0)/(x1 - x0)
-        y0 = yvals[idx]
-        y1 = yvals[idx+1]
-        return f*y1 + (1 - f)*y0
+        return interp1d(xrow, yvals, **kwargs)(x)
     vv = np.vectorize(single_row, signature="(%i)->(%i)" % (yvals.size, x.size))
     return vv(xvals)

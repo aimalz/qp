@@ -357,7 +357,8 @@ class Pdf_rows_gen(rv_continuous, Pdf_gen):
         """Return the number of PDFs this object represents"""
         return self._npdf
 
-    def _sliceargs(self, x, row, *args):
+    @staticmethod
+    def _sliceargs(x, row, *args):
         xx = np.unique(x)
         rr = np.unique(row)
         if xx.size * rr.size != x.size:
@@ -487,14 +488,14 @@ class hist_rows_gen(Pdf_rows_gen):
         factored, xr, rr, _ = self._sliceargs(x, row)
         if factored:
             return interpolate_x_multi_y(xr, self._hbins, self._hcdfs[rr]).reshape(x.shape)
-        return interpolate_unfactored_x_multi_y(xr, rr, self._hbins, self._hcdfs).reshape(x.shape)
+        return interpolate_unfactored_x_multi_y(xr, rr, self._hbins, self._hcdfs)
 
     def _ppf(self, x, row):
         # pylint: disable=arguments-differ
         factored, xr, rr, _ = self._sliceargs(x, row)
         if factored:
             return interpolate_multi_x_y(xr, self._hcdfs[rr], self._hbins).reshape(x.shape)
-        return interpolate_unfactored_multi_x_y(xr, rr, self._hbins, self._hcdfs).reshape(x.shape)
+        return interpolate_unfactored_multi_x_y(xr, rr, self._hbins, self._hcdfs)
 
     def _updated_ctor_param(self):
         """
@@ -572,7 +573,10 @@ class interp_fixed_grid_rows_gen(Pdf_rows_gen):
         copy_shape = np.array(self._yvals.shape)
         self._ycumul = np.ndarray(copy_shape)
         self._ycumul[:,0] = 0.
-        self._ycumul[:,1:] = np.cumsum(self._xvals[1:]*self._yvals[:,1:] - self._xvals[0:-1]*self._yvals[:,0:-1], axis=1)
+        self._ycumul[:,1:] = np.cumsum((self._xvals[1:]-self._xvals[0:-1])*self._yvals[:,1:], axis=1)
+
+        self._yvals = (self._yvals.T / self._ycumul[:,-1]).T
+        self._ycumul = (self._ycumul.T / self._ycumul[:,-1]).T
 
         super(interp_fixed_grid_rows_gen, self).__init__(*args, **kwargs)
         self._addmetadata('xvals', self._xvals)
@@ -592,22 +596,22 @@ class interp_fixed_grid_rows_gen(Pdf_rows_gen):
         # pylint: disable=arguments-differ
         factored, xr, rr, _ = self._sliceargs(x, row)
         if factored:
-            return interpolate_x_multi_y(xr, self._xvals, self._yvals[rr]).reshape(x.shape)
-        return interpolate_unfactored_x_multi_y(xr, rr, self._xvals, self._yvals).reshape(x.shape)
+            return interpolate_x_multi_y(xr, self._xvals, self._yvals[rr], ).reshape(x.shape)
+        return interpolate_unfactored_x_multi_y(xr, rr, self._xvals, self._yvals)
 
     def _cdf(self, x, row):
         # pylint: disable=arguments-differ
         factored, xr, rr, _ = self._sliceargs(x, row)
         if factored:
             return interpolate_x_multi_y(xr, self._xvals, self._ycumul[rr]).reshape(x.shape)
-        return interpolate_unfactored_x_multi_y(xr, rr, self._xvals, self._ycumul).reshape(x.shape)
+        return interpolate_unfactored_x_multi_y(xr, rr, self._xvals, self._ycumul)
 
     def _ppf(self, x, row):
         # pylint: disable=arguments-differ
         factored, xr, rr, _ = self._sliceargs(x, row)
         if factored:
             return interpolate_multi_x_y(xr, self._ycumul[rr], self._xvals).reshape(x.shape)
-        return interpolate_unfactored_multi_x_y(xr, rr, self._ycumul, self._xvals).reshape(x.shape)
+        return interpolate_unfactored_multi_x_y(xr, rr, self._ycumul, self._xvals)
 
     def _updated_ctor_param(self):
         """
@@ -699,23 +703,26 @@ class interp_rows_gen(Pdf_rows_gen):
         # pylint: disable=arguments-differ
         factored, xr, rr, _ = self._sliceargs(x, row)
         if factored:
-            return interpolate_multi_x_multi_y(xr, self._xvals[rr], self._yvals[rr]).reshape(x.shape)
-        return interpolate_unfactored_multi_x_multi_y(xr, rr, self._xvals, self._yvals).reshape(x.shape)
+            return interpolate_multi_x_multi_y(xr, self._xvals[rr], self._yvals[rr], bounds_error=False, fill_value=0.).reshape(x.shape)
+        return interpolate_unfactored_multi_x_multi_y(xr, rr, self._xvals, self._yvals, bounds_error=False, fill_value=0.)
 
     def _cdf(self, x, row):
         # pylint: disable=arguments-differ
         factored, xr, rr, _ = self._sliceargs(x, row)
         if factored:
-            return interpolate_multi_x_multi_y(xr, self._xvals[rr], self._ycumul[rr]).reshape(x.shape)
-        return interpolate_unfactored_multi_x_multi_y(xr, rr, self._xvals, self._ycumul).reshape(x.shape)
+            return interpolate_multi_x_multi_y(xr, self._xvals[rr], self._ycumul[rr], bounds_error=False, fill_value=(0., 1.)).reshape(x.shape)
+        return interpolate_unfactored_multi_x_multi_y(xr, rr, self._xvals, self._ycumul, bounds_error=False, fill_value=(0., 1.))
 
 
     def _ppf(self, x, row):
         # pylint: disable=arguments-differ
         factored, xr, rr, _ = self._sliceargs(x, row)
         if factored:
-            return interpolate_multi_x_multi_y(xr, self._ycumul[rr], self._xvals[rr]).reshape(x.shape)
-        return interpolate_unfactored_multi_x_multi_y(xr, rr, self._xvals, self._yvals).reshape(x.shape)
+            return interpolate_multi_x_multi_y(xr, self._ycumul[rr], self._xvals[rr], bounds_error=False,
+                                                   fill_value=(self.a, self.b)).reshape(x.shape)
+        return interpolate_unfactored_multi_x_multi_y(xr, rr, self._xvals, self._yvals, bounds_error=False,
+                                                   fill_value=(self.a, self.b))
+
 
 
     def _updated_ctor_param(self):
@@ -892,12 +899,20 @@ class spline_rows_gen(Pdf_rows_gen):
         # pylint: disable=arguments-differ
         factored, xr, rr, _ = self._sliceargs(x, row)
         ns = self._splx.shape[-1]
-        def pdf_row(spl_):
-            return splev(xr, (spl_[0:ns], spl_[ns:2*ns], spl_[-1].astype(int)))
+        if factored:
+            def pdf_row_fact(spl_):
+                return splev(xr, (spl_[0:ns], spl_[ns:2*ns], spl_[-1].astype(int)))
 
-        vv = np.vectorize(pdf_row, signature="(%i)->(%i)" % (2*ns+1, xr.size))
-        spl = np.hstack([self._splx[rr], self._sply[rr], self._spln[rr]])
-        return vv(spl).flat
+            vv = np.vectorize(pdf_row_fact, signature="(%i)->(%i)" % (2*ns+1, xr.size))
+            spl = np.hstack([self._splx[rr], self._sply[rr], self._spln[rr]])
+            return vv(spl).flat
+
+        def pdf_row(xv, irow):
+            return splev(xv, (self._splx[irow], self._sply[irow], self._spln[irow]))
+
+        vv = np.vectorize(pdf_row)
+        return vv(xr, rr)
+
 
     def _cdf(self, x, row):
         # pylint: disable=arguments-differ
@@ -999,15 +1014,15 @@ class quant_rows_gen(Pdf_rows_gen):
         # pylint: disable=arguments-differ
         factored, xr, rr, _ = self._sliceargs(x, row)
         if factored:
-            return interpolate_multi_x_y(xr, self._locs[rr], self._quants).flat
-        return interpolate_unfactored_multi_x_y(xr, rr, self._locs, self._quants).flat
+            return interpolate_multi_x_y(xr, self._locs[rr], self._quants, bounds_error=False, fill_value=(0., 1)).reshape(x.shape)
+        return interpolate_unfactored_multi_x_y(xr, rr, self._locs, self._quants, bounds_error=False, fill_value=(0., 1))
 
     def _ppf(self, x, row):
         # pylint: disable=arguments-differ
         factored, xr, rr, _ = self._sliceargs(x, row)
         if factored:
-            return interpolate_x_multi_y(xr, self._quants, self._locs[rr]).flat
-        return interpolate_unfactored_x_multi_y(xr, rr, self._quants, self._locs).flat
+            return interpolate_x_multi_y(xr, self._quants, self._locs[rr], bounds_error=False, fill_value=(0., 1)).reshape(x.shape)
+        return interpolate_unfactored_x_multi_y(xr, rr, self._quants, self._locs, bounds_error=False, fill_value=(0., 1))
 
     def _updated_ctor_param(self):
         """
