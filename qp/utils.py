@@ -212,7 +212,9 @@ def interpolate_unfactored_x_multi_y(x, row, xvals, yvals, **kwargs):
     vals : array_like (M, n)
         The interpoalted values
     """
-    return interp1d(xvals, yvals[row], **kwargs)(x)
+    # This is kinda stupid, computes a lot of extra values, but it is vectorized
+    return interp1d(xvals, yvals[row], **kwargs)(x).diagonal()
+
 
 
 def interpolate_unfactored_multi_x_y(x, row, xvals, yvals, **kwargs):
@@ -237,9 +239,9 @@ def interpolate_unfactored_multi_x_y(x, row, xvals, yvals, **kwargs):
     """
     def single_row(xv, rv):
         return interp1d(xvals[rv], yvals, **kwargs)(xv)
-
     vv = np.vectorize(single_row)
     return vv(x, row)
+
 
 
 def interpolate_unfactored_multi_x_multi_y(x, row, xvals, yvals, **kwargs):

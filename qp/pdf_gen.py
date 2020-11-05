@@ -281,7 +281,7 @@ class norm_gen(scipy_dist.norm_gen, Pdf_gen_simple):
         return np.atleast_1d(scipy_dist.norm_gen._argcheck(self, *args))
 
     def moment(self, n, *args, **kwds):
-        """Returns the moments request moments for all the PDFs.
+        """Returns the requested moments for all the PDFs.
         This calls a hacked version `Pdf_gen._moment_fix` which can handle cases of multiple PDFs.
 
         Parameters
@@ -361,9 +361,10 @@ class Pdf_rows_gen(rv_continuous, Pdf_gen):
     def _sliceargs(x, row, *args):
         xx = np.unique(x)
         rr = np.unique(row)
-        if xx.size * rr.size != x.size:
+        
+        if np.size(xx) * np.size(rr) != np.size(x):
             return False, x, row, args
-        outargs = [arg[0:xx.size] for arg in args]
+        outargs = [arg[0:np.size(xx)] for arg in args]
         return True, xx, rr, outargs
 
 
@@ -495,7 +496,7 @@ class hist_rows_gen(Pdf_rows_gen):
         factored, xr, rr, _ = self._sliceargs(x, row)
         if factored:
             return interpolate_multi_x_y(xr, self._hcdfs[rr], self._hbins).reshape(x.shape)
-        return interpolate_unfactored_multi_x_y(xr, rr, self._hbins, self._hcdfs)
+        return interpolate_unfactored_multi_x_y(xr, rr, self._hcdfs, self._hbins)
 
     def _updated_ctor_param(self):
         """
@@ -596,7 +597,7 @@ class interp_fixed_grid_rows_gen(Pdf_rows_gen):
         # pylint: disable=arguments-differ
         factored, xr, rr, _ = self._sliceargs(x, row)
         if factored:
-            return interpolate_x_multi_y(xr, self._xvals, self._yvals[rr], ).reshape(x.shape)
+            return interpolate_x_multi_y(xr, self._xvals, self._yvals[rr]).reshape(x.shape)
         return interpolate_unfactored_x_multi_y(xr, rr, self._xvals, self._yvals)
 
     def _cdf(self, x, row):
@@ -720,7 +721,7 @@ class interp_rows_gen(Pdf_rows_gen):
         if factored:
             return interpolate_multi_x_multi_y(xr, self._ycumul[rr], self._xvals[rr], bounds_error=False,
                                                    fill_value=(self.a, self.b)).reshape(x.shape)
-        return interpolate_unfactored_multi_x_multi_y(xr, rr, self._xvals, self._yvals, bounds_error=False,
+        return interpolate_unfactored_multi_x_multi_y(xr, rr, self._ycumul, self._xvals, bounds_error=False,
                                                    fill_value=(self.a, self.b))
 
 
@@ -1021,8 +1022,8 @@ class quant_rows_gen(Pdf_rows_gen):
         # pylint: disable=arguments-differ
         factored, xr, rr, _ = self._sliceargs(x, row)
         if factored:
-            return interpolate_x_multi_y(xr, self._quants, self._locs[rr], bounds_error=False, fill_value=(0., 1)).reshape(x.shape)
-        return interpolate_unfactored_x_multi_y(xr, rr, self._quants, self._locs, bounds_error=False, fill_value=(0., 1))
+            return interpolate_x_multi_y(xr, self._quants, self._locs[rr], bounds_error=False, fill_value=(self.a, self.b)).reshape(x.shape)
+        return interpolate_unfactored_x_multi_y(xr, rr, self._quants, self._locs, bounds_error=False, fill_value=(self.a, self.b))
 
     def _updated_ctor_param(self):
         """
@@ -1115,17 +1116,23 @@ class mixmod_rows_gen(Pdf_rows_gen):
     def _pdf(self, x, row):
         # pylint: disable=arguments-differ
         factored, xr, rr, _ = self._sliceargs(x, row)
-        return (np.expand_dims(self.weights[rr], -1) *\
-                    sps.norm(loc=np.expand_dims(self._means[rr], -1),\
-                                 scale=np.expand_dims(self._stds[rr], -1)).pdf(np.expand_dims(xr, 0))).sum(axis=1).flat
-
+        if factored:
+            return (np.expand_dims(self.weights[rr], -1) *\
+                        sps.norm(loc=np.expand_dims(self._means[rr], -1),\
+                                     scale=np.expand_dims(self._stds[rr], -1)).pdf(np.expand_dims(xr, 0))).sum(axis=1).reshape(x.shape)
+        return (self.weights[rr].T * sps.norm(loc=self._means[rr].T, scale=self._stds[rr].T).pdf(xr)).sum(axis=0)
+                                     
+                                    
     def _cdf(self, x, row):
         # pylint: disable=arguments-differ
         factored, xr, rr, _ = self._sliceargs(x, row)
-        return (np.expand_dims(self.weights[rr], -1) *\
-                    sps.norm(loc=np.expand_dims(self._means[rr], -1),\
-                                 scale=np.expand_dims(self._stds[rr], -1)).cdf(np.expand_dims(xr, 0))).sum(axis=1).flat
+        if factored:
+            return (np.expand_dims(self.weights[rr], -1) *\
+                        sps.norm(loc=np.expand_dims(self._means[rr], -1),\
+                                    scale=np.expand_dims(self._stds[rr], -1)).cdf(np.expand_dims(xr, 0))).sum(axis=1).reshape(x.shape)
+        return (self.weights[rr].T * sps.norm(loc=self._means[rr].T, scale=self._stds[rr].T).cdf(xr)).sum(axis=0)
 
+                                    
     def _updated_ctor_param(self):
         """
         Set the bins as additional constructor argument

@@ -36,11 +36,11 @@ class PDFTestCase(unittest.TestCase):
         
         if check_props:
             # if we used the c'tor, make sure the class keeps the data used in the c'tor
-            for key, val in test_data['ctor_data'].items():
-                test_val = pdf.kwds.get(key, None)
+            for kv, vv in test_data['ctor_data'].items():
+                test_val = pdf.kwds.get(kv, None)
                 if test_val is None:
-                    if not hasattr(pdf.dist, key):
-                        raise ValueError("%s %s" % (pdf.dist, key))
+                    if not hasattr(pdf.dist, kv):
+                        raise ValueError("%s %s" % (pdf.dist, kv))
             
         #FIXME
         if pdf.dist.npdf is not None:
@@ -48,7 +48,12 @@ class PDFTestCase(unittest.TestCase):
         assert pdf.npdf == NPDF
         
         pdfs = pdf.pdf(xpts)
-
+        
+        xslice = np.ones((pdf.npdf)) * np.expand_dims(xpts[5], 0)
+        pdfs_slice = pdf.pdf(xslice)
+        check_pdf = pdfs[:,5] - pdfs_slice
+        assert_all_small(check_pdf, atol=2e-2)
+        
         if short:
             return pdf
         
@@ -57,19 +62,27 @@ class PDFTestCase(unittest.TestCase):
         
         binw = xpts[1:] - xpts[0:-1]
         check_cdf = ((pdfs[:,0:-1] + pdfs[:,1:]) * binw /2).cumsum(axis=1) - cdfs[:,1:]
-        assert_all_small(check_cdf, atol=1e-1)
+        assert_all_small(check_cdf, atol=2e-1)
     
         ppfs = pdf.ppf(quants)
         check_ppf = pdf.cdf(ppfs) - quants
-        assert_all_small(check_ppf, atol=1e-2)
+        assert_all_small(check_ppf, atol=2e-2)
 
+        quants_slice = np.expand_dims(quants[np.arange(pdf.npdf)], -1)
+        ppfs_slice = pdf.ppf(quants_slice)
+        ppf_check = np.array([ppfs[i,i] for i in range(pdf.npdf)])
+        if key == 'quant':
+            print(ppfs_slice, quants_slice, pdf.cdf(ppfs_slice), ppf_check)
+        check_ppfs_slice = pdf.cdf(ppfs_slice) - quants_slice
+        assert_all_small(check_ppfs_slice, atol=2e-2)
+                 
         sfs = pdf.sf(xpts)
         check_sf = sfs + cdfs
         assert_all_small(check_sf - 1, atol=1e-5)
         
         isfs = pdf.isf(quants)
         check_isf = pdf.cdf(ppfs) + quants[::-1]
-        assert_all_small(check_isf - 1, atol=1e-2)
+        assert_all_small(check_isf - 1, atol=5e-2)
         return pdf
 
     def test_norm(self):

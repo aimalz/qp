@@ -31,29 +31,28 @@ class EnsembleTestCase(unittest.TestCase):
         logpdfs = ens.logpdf(xpts)
         logcdfs = ens.logcdf(xpts)
 
-        assert np.allclose(np.log(pdfs), logpdfs)
-        assert np.allclose(np.log(cdfs), logcdfs)
+        assert np.allclose(np.log(pdfs), logpdfs, atol=1e-9)
+        assert np.allclose(np.log(cdfs), logcdfs, atol=1e-9)
                 
         binw = xpts[1:] - xpts[0:-1]
         check_cdf = ((pdfs[:,0:-1] + pdfs[:,1:]) * binw /2).cumsum(axis=1) - cdfs[:,1:]
-        assert np.allclose(check_cdf, 0, atol=5e-2)
+        assert_all_small(check_cdf, atol=5e-2)
 
         hist = ens.histogramize(xpts)[1]
         hist_check = ens.frozen.histogramize(xpts)[1]
-        assert np.allclose(hist, hist_check, atol=1e-5)
+        assert_all_small(hist-hist_check, atol=1e-5)
 
         ppfs = ens.ppf(QUANTS)
         check_ppf = ens.cdf(ppfs) - QUANTS
-        assert np.allclose(check_ppf, 0, atol=1e-9)
+        assert_all_small(check_ppf, atol=2e-2)
 
         sfs = ens.sf(xpts)
         check_sf = sfs + cdfs
-        assert np.allclose(check_sf, 1, atol=1e-5)
+        assert_all_small(check_sf-1, atol=2e-2)
         
         isfs = ens.isf(QUANTS)
         check_isf = ens.cdf(ppfs) + QUANTS[::-1]
-        assert np.allclose(check_isf, 1, atol=1e-5)
-
+        assert_all_small(check_isf-1, atol=2e-2)
 
         samples = ens.rvs(size=1000)
         assert samples.shape[0] == ens.frozen.npdf
@@ -71,7 +70,7 @@ class EnsembleTestCase(unittest.TestCase):
 
         for N in range(4):
             check_moment = ens.moment_partial(N, limits=(-5, 5)) - qp.calculate_moment(ens, N, limits=(-5.,5))
-            assert np.allclose(check_moment, 0, atol=1e-2)
+            assert_all_small(check_moment, atol=1e-2)
 
             sps_moment = ens.moment(N)
             #pmf = ens.pmf(N)
