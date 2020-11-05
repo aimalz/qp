@@ -71,8 +71,7 @@ class PDFTestCase(unittest.TestCase):
         quants_slice = np.expand_dims(quants[np.arange(pdf.npdf)], -1)
         ppfs_slice = pdf.ppf(quants_slice)
         ppf_check = np.array([ppfs[i,i] for i in range(pdf.npdf)])
-        if key == 'quant':
-            print(ppfs_slice, quants_slice, pdf.cdf(ppfs_slice), ppf_check)
+
         check_ppfs_slice = pdf.cdf(ppfs_slice) - quants_slice
         assert_all_small(check_ppfs_slice, atol=2e-2)
                  
