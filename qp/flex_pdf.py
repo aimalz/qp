@@ -158,10 +158,10 @@ class flex_rows_gen(Pdf_rows_gen):
         if factored:
             x_trans = box_transform(xr, self.a, self.b)
             basis = evaluate_basis(np.expand_dims(x_trans, -1), self.coefs.shape[1], self.basis_system)
-            return np.matmul(self._coefs[rr], basis.T).flat
+            return np.matmul(self._coefs[rr], basis.T).flatten()
         x_trans = box_transform(xr, self.a, self.b)
         basis = evaluate_basis(x_trans, self.coefs.shape[1], self.basis_system)
-        return np.sum(self._coefs[rr]*basis, axis=1).flat
+        return np.sum(self._coefs[rr]*basis, axis=1).flatten()
 
 
 
