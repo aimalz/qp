@@ -29,17 +29,55 @@ The package also contains some `utils` for quantifying the quality of
 these approximations.
 
 
-The PDF Class
--------------
+qp package
+----------
 
-.. automodule:: pdf
+.. automodule:: ensemble
+    :members:
+    :undoc-members:
+       
+.. automodule:: pdf_gen
     :members:
     :undoc-members:
 
 
+Distribution types
+------------------
+      
+.. automodule:: hist_pdf
+    :members:
+    :undoc-members:
+
+.. automodule:: interp_pdf
+    :members:
+    :undoc-members:
+
+.. automodule:: spline_pdf
+    :members:
+    :undoc-members:
+   
+.. automodule:: quant_pdf
+    :members:
+    :undoc-members:
+
+.. automodule:: mixmod_pdf
+    :members:
+    :undoc-members:
+
+.. automodule:: flex_pdf
+    :members:
+    :undoc-members:
+
+
+       
+       
 Quantification Utilities
 ------------------------
 
 .. automodule:: utils
+    :members:
+    :undoc-members:
+
+.. automodule:: metrics
     :members:
     :undoc-members:
