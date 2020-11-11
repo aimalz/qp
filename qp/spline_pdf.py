@@ -7,12 +7,12 @@ from scipy.stats import rv_continuous
 
 from scipy.interpolate import splev, splint
 
-from .pdf_gen import Pdf_rows_gen
-from .persistence import register_pdf_class
-from .conversion import register_class_conversions
-from .conversion_funcs import convert_using_xy_vals, convert_using_samples
-from .plotting import get_axes_and_xlims, plot_pdf_on_axes
-from .utils import normalize_spline, build_splines, build_kdes, evaluate_kdes
+from qp.pdf_gen import Pdf_rows_gen
+from qp.persistence import register_pdf_class
+from qp.conversion import register_class_conversions
+from qp.conversion_funcs import convert_using_xy_vals, convert_using_samples
+from qp.plotting import get_axes_and_xlims, plot_pdf_on_axes
+from qp.utils import normalize_spline, build_splines, build_kdes, evaluate_kdes
 
 class spline_rows_gen(Pdf_rows_gen):
     """Spline based distribution

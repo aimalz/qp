@@ -1,7 +1,7 @@
 """This module implements tools to persist and read back ensembles"""
 
 import sys
-from .dict_utils import get_val_or_default, set_val_or_default, pretty_print
+from qp.dict_utils import get_val_or_default, set_val_or_default, pretty_print
 
 
 READER_PREFIXS = ["Class ", "  Version "]

@@ -21,13 +21,13 @@ from scipy.linalg import norm as sla_norm
 from flexcode.basis_functions import evaluate_basis
 from flexcode.helpers import box_transform
 
-from .pdf_gen import Pdf_rows_gen
-from .ensemble import Ensemble
-from .persistence import register_pdf_class
-from .conversion import register_class_conversions
+from qp.pdf_gen import Pdf_rows_gen
+from qp.ensemble import Ensemble
+from qp.persistence import register_pdf_class
+from qp.conversion import register_class_conversions
 
 
-def fit_flex_basis_funcs(basis, values):
+def fit_flex_basis_funcs(basis, values): #pragma: no cover
     """Convert to a mixture model using a set of values sample from the pdf
 
     Parameters
@@ -90,7 +90,7 @@ def decompose_to_sparse_basis(basis, values, n_basis, tolerance=None):
     for n_active in range(n_basis):
         lam = np.argmax(np.abs(np.dot(basis.T, res)))
         #if lam < n_active or alpha[lam] ** 2 < machine_eps:
-        if alpha[lam] ** 2 < machine_eps:
+        if alpha[lam] ** 2 < machine_eps:  #pragma: no cover
             n_active -= 1
             break
         if n_active > 0:
@@ -98,7 +98,7 @@ def decompose_to_sparse_basis(basis, values, n_basis, tolerance=None):
             L[n_active, :n_active] = np.dot(basis[:, :n_active].T, basis[:, lam])
             solve_triangular(L[:n_active, :n_active], L[n_active, :n_active], lower=True, overwrite_b=True)
             v = sla_norm(L[n_active, :n_active]) ** 2
-            if 1 - v <= machine_eps:
+            if 1 - v <= machine_eps:  #pragma: no cover
                 print("Selected basis are dependent or normed are not unity %.2f" % (1-v))
                 break
             L[n_active, n_active] = np.sqrt(1 - v)
@@ -109,7 +109,7 @@ def decompose_to_sparse_basis(basis, values, n_basis, tolerance=None):
         gamma = cho_solve((L[:n_active + 1, :n_active + 1], True), alpha[:n_active + 1], overwrite_b=False)
         res = values - np.dot(basis[:, :n_active + 1], gamma)
         gamma_full[:n_active + 1] = gamma
-        if tolerance is not None and sla_norm(res) ** 2 <= tolerance:
+        if tolerance is not None and sla_norm(res) ** 2 <= tolerance: #pragam: no cover
             break
     a_n[idxs[:n_active + 1]] = gamma
     return a_n

@@ -8,11 +8,11 @@ import numpy as np
 from astropy.table import Table
 
 
-from .dict_utils import slice_dict, print_dict_shape
+from qp.dict_utils import slice_dict, print_dict_shape
 
-from .metrics import quick_kld, quick_rmse, quick_moment
+from qp.metrics import quick_kld, quick_rmse, quick_moment
 
-from .persistence import get_qp_reader
+from qp.persistence import get_qp_reader
 
 
 class Ensemble:

@@ -23,8 +23,8 @@ from scipy.stats import rv_continuous
 from scipy.stats._distn_infrastructure import rv_frozen, _moment_from_stats
 from scipy.special import comb
 
-from .plotting import plot_dist_pdf
-from .conversion import qp_convert
+from qp.plotting import plot_dist_pdf
+from qp.conversion import qp_convert
 
 
 

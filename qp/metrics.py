@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from .utils import safelog, epsilon
+from qp.utils import safelog, epsilon
 
 def calculate_moment(p, N, limits, dx=0.01):
     """

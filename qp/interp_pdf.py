@@ -5,12 +5,12 @@ import numpy as np
 
 from scipy.stats import rv_continuous
 
-from .pdf_gen import Pdf_rows_gen
-from .persistence import register_pdf_class
-from .conversion import register_class_conversions
-from .conversion_funcs import convert_using_vals_at_x, convert_using_xy_vals
-from .plotting import get_axes_and_xlims, plot_pdf_on_axes
-from .utils import normalize_interp1d,\
+from qp.pdf_gen import Pdf_rows_gen
+from qp.persistence import register_pdf_class
+from qp.conversion import register_class_conversions
+from qp.conversion_funcs import convert_using_vals_at_x, convert_using_xy_vals
+from qp.plotting import get_axes_and_xlims, plot_pdf_on_axes
+from qp.utils import normalize_interp1d,\
      interpolate_unfactored_multi_x_multi_y, interpolate_unfactored_multi_x_y, interpolate_unfactored_x_multi_y,\
      interpolate_multi_x_multi_y, interpolate_multi_x_y, interpolate_x_multi_y
 
@@ -55,17 +55,24 @@ class interp_fixed_grid_rows_gen(Pdf_rows_gen):
 
         #self._yvals = normalize_interp1d(xvals, yvals)
         self._yvals = yvals
-        copy_shape = np.array(self._yvals.shape)
-        self._ycumul = np.ndarray(copy_shape)
-        self._ycumul[:,0] = 0.
-        self._ycumul[:,1:] = np.cumsum((self._xvals[1:]-self._xvals[0:-1])*self._yvals[:,1:], axis=1)
 
-        self._yvals = (self._yvals.T / self._ycumul[:,-1]).T
-        self._ycumul = (self._ycumul.T / self._ycumul[:,-1]).T
+        check_input = kwargs.pop('check_input', True)
+        if check_input:
+            self._compute_ycumul()
+            self._yvals = (self._yvals.T / self._ycumul[:,-1]).T
+            self._ycumul = (self._ycumul.T / self._ycumul[:,-1]).T
+        else:  # pragma: no cover
+            self._ycumul = None
 
         super(interp_fixed_grid_rows_gen, self).__init__(*args, **kwargs)
         self._addmetadata('xvals', self._xvals)
         self._addobjdata('yvals', self._yvals)
+
+    def _compute_ycumul(self):
+        copy_shape = np.array(self._yvals.shape)
+        self._ycumul = np.ndarray(copy_shape)
+        self._ycumul[:,0] = 0.
+        self._ycumul[:,1:] = np.cumsum((self._xvals[1:]-self._xvals[0:-1])*self._yvals[:,1:], axis=1)
 
     @property
     def xvals(self):
@@ -86,6 +93,8 @@ class interp_fixed_grid_rows_gen(Pdf_rows_gen):
 
     def _cdf(self, x, row):
         # pylint: disable=arguments-differ
+        if self._ycumul is None:  # pragma: no cover
+            self._compute_ycumul()
         factored, xr, rr, _ = self._sliceargs(x, row)
         if factored:
             return interpolate_x_multi_y(xr, self._xvals, self._ycumul[rr]).reshape(x.shape)
@@ -94,6 +103,8 @@ class interp_fixed_grid_rows_gen(Pdf_rows_gen):
     def _ppf(self, x, row):
         # pylint: disable=arguments-differ
         factored, xr, rr, _ = self._sliceargs(x, row)
+        if self._ycumul is None:  # pragma: no cover
+            self._compute_ycumul()
         if factored:
             return interpolate_multi_x_y(xr, self._ycumul[rr], self._xvals).reshape(x.shape)
         return interpolate_unfactored_multi_x_y(xr, rr, self._ycumul, self._xvals)
@@ -164,15 +175,20 @@ class interp_rows_gen(Pdf_rows_gen):
         kwargs['b'] = self.b = np.max(self._xvals)
         kwargs['npdf'] = xvals.shape[0]
 
-        self._yvals = normalize_interp1d(xvals, yvals)
+        check_input = kwargs.pop('check_input', True)
+        if check_input:
+            self._yvals = normalize_interp1d(xvals, yvals)
+        self._ycumul = None
+        super(interp_rows_gen, self).__init__(*args, **kwargs)
+        self._addobjdata('xvals', self._xvals)
+        self._addobjdata('yvals', self._yvals)
+
+    def _compute_ycumul(self):
         copy_shape = np.array(self._yvals.shape)
         self._ycumul = np.ndarray(copy_shape)
         self._ycumul[:,0] = 0.
         self._ycumul[:,1:] = np.cumsum(self._xvals[:,1:]*self._yvals[:,1:] - self._xvals[:,:-1]*self._yvals[:,1:], axis=1)
 
-        super(interp_rows_gen, self).__init__(*args, **kwargs)
-        self._addobjdata('xvals', self._xvals)
-        self._addobjdata('yvals', self._yvals)
 
     @property
     def xvals(self):
@@ -193,6 +209,8 @@ class interp_rows_gen(Pdf_rows_gen):
 
     def _cdf(self, x, row):
         # pylint: disable=arguments-differ
+        if self._ycumul is None:  # pragma: no cover
+            self._compute_ycumul()
         factored, xr, rr, _ = self._sliceargs(x, row)
         if factored:
             return interpolate_multi_x_multi_y(xr, self._xvals[rr], self._ycumul[rr], bounds_error=False, fill_value=(0., 1.)).reshape(x.shape)
@@ -201,6 +219,8 @@ class interp_rows_gen(Pdf_rows_gen):
 
     def _ppf(self, x, row):
         # pylint: disable=arguments-differ
+        if self._ycumul is None:  # pragma: no cover
+            self._compute_ycumul()
         factored, xr, rr, _ = self._sliceargs(x, row)
         if factored:
             return interpolate_multi_x_multi_y(xr, self._ycumul[rr], self._xvals[rr], bounds_error=False,

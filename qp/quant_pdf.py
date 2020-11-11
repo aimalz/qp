@@ -6,13 +6,13 @@ import numpy as np
 
 from scipy.stats import rv_continuous
 
-from .pdf_gen import Pdf_rows_gen
+from qp.pdf_gen import Pdf_rows_gen
 
-from .persistence import register_pdf_class
-from .conversion import register_class_conversions
-from .conversion_funcs import convert_using_quantiles
-from .plotting import get_axes_and_xlims, plot_pdf_quantiles_on_axes
-from .utils import interpolate_unfactored_multi_x_y, interpolate_unfactored_x_multi_y, interpolate_multi_x_y, interpolate_x_multi_y
+from qp.persistence import register_pdf_class
+from qp.conversion import register_class_conversions
+from qp.conversion_funcs import convert_using_quantiles
+from qp.plotting import get_axes_and_xlims, plot_pdf_quantiles_on_axes
+from qp.utils import interpolate_unfactored_multi_x_y, interpolate_unfactored_x_multi_y, interpolate_multi_x_y, interpolate_x_multi_y
 
 
 class quant_rows_gen(Pdf_rows_gen):

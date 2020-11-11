@@ -7,10 +7,10 @@ from scipy.stats import rv_continuous
 from scipy import stats as sps
 
 
-from .pdf_gen import Pdf_rows_gen
-from .persistence import register_pdf_class
-from .conversion import register_class_conversions
-from .conversion_funcs import convert_using_mixmod_fit_samples
+from qp.pdf_gen import Pdf_rows_gen
+from qp.persistence import register_pdf_class
+from qp.conversion import register_class_conversions
+from qp.conversion_funcs import convert_using_mixmod_fit_samples
 
 
 
