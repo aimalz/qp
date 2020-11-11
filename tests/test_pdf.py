@@ -49,10 +49,17 @@ class PDFTestCase(unittest.TestCase):
         
         pdfs = pdf.pdf(xpts)
         
-        #xslice = xpts[5]
-        #pdfs_slice = pdf.pdf(xslice)
-        #check_pdf = pdfs[:,5] - pdfs_slice
-        #assert_all_small(check_pdf, atol=2e-2)
+        xslice = xpts[5]
+        pdfs_slice = pdf.pdf(xslice)
+        check_pdf = pdfs[:,5] - pdfs_slice
+        assert_all_small(check_pdf, atol=2e-2)
+
+        xslice = np.expand_dims(xpts[np.arange(pdf.npdf)], -1)
+        pdfs_slice = pdf.pdf(xslice)
+        pdf_check = np.array([pdfs[i,i] for i in range(pdf.npdf)])
+        check_pdfs_slice = pdf_check - pdfs_slice 
+        assert_all_small(check_pdfs_slice, atol=2e-2)
+
         
         if short:
             return pdf
