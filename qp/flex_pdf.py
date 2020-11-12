@@ -183,13 +183,13 @@ def convert_to_flex(in_dist, class_to, **kwargs):
     pdf_vals = in_dist.pdf(grid)
 
     basis = evaluate_basis(box_transform(np.expand_dims(grid, -1), xmin, xmax), nbasis, basis_system)
-    #basis /= sla_norm(basis)
-    #coefs = fit_flex_basis_funcs(basis, pdf_vals)
+    basis /= sla_norm(basis)
+    coefs = fit_flex_basis_funcs(basis, pdf_vals)
 
-    norm = sla_norm(basis)
-    basis /= norm
-    pdf_vals /= norm
-    coefs = decompose_flex_basis_funcs(basis, pdf_vals, nbasis=nbasis)
+    #norm = sla_norm(basis)
+    #basis /= norm
+    #pdf_vals /= norm
+    #coefs = decompose_flex_basis_funcs(basis, pdf_vals, nbasis=nbasis)
     return Ensemble(class_to, data=dict(coefs=coefs, basis_system=basis_system, z_min=xmin, z_max=xmax))
 
 
