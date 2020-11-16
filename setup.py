@@ -1,8 +1,10 @@
 from setuptools import setup
 
+import qp
+
 setup(
     name="qp",
-    version="0.1",
+    version=qp.__version__
     author="Alex Malz, Phil Marshall",
     author_email="aimalz@nyu.edu, pjm@slac.stanford.edu",
     url = "https://github.com/aimalz/qp",
@@ -19,5 +21,5 @@ setup(
         "Operating System :: OS Independent",
         "Programming Language :: Python",
         ],
-    install_requires=["matplotlib", "numpy", "pathos", "scipy", "sklearn", "astropy", "h5py", "flexcode"]
+    install_requires=["matplotlib", "numpy", "scipy", "sklearn", "astropy", "h5py"]
 )

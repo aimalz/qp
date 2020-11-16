@@ -8,7 +8,6 @@ try:
 except Exception as message: #pragma: no cover
     print(message)
 
-from .flex_pdf import *
 from .spline_pdf import *
 from .hist_pdf import *
 from .interp_pdf import *

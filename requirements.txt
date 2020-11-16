@@ -1,6 +1,6 @@
 matplotlib
 numpy
-pathos
 scipy
+astropy
 sklearn
-Flexcode
+h5py
