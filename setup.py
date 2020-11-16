@@ -4,7 +4,7 @@ import qp
 
 setup(
     name="qp",
-    version=qp.__version__
+    version=qp.__version__,
     author="Alex Malz, Phil Marshall",
     author_email="aimalz@nyu.edu, pjm@slac.stanford.edu",
     url = "https://github.com/aimalz/qp",
