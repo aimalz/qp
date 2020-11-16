@@ -145,10 +145,10 @@ class hist_gen(Pdf_rows_gen):
 hist = hist_gen.create
 
 hist_gen.test_data = dict(hist=dict(gen_func=hist, ctor_data=dict(bins=XBINS, pdfs=HIST_DATA),\
-                                             convert_data=dict(bins=XBINS), test_xvals=TEST_XVALS),
+                                             convert_data=dict(bins=XBINS), atol_diff=1e-1, atol_diff2=1e-1, test_xvals=TEST_XVALS),
                                hist_samples=dict(gen_func=hist, ctor_data=dict(bins=XBINS, pdfs=HIST_DATA),\
                                                      convert_data=dict(bins=XBINS, method='samples',\
                                                                            size=NSAMPLES),\
-                                                     atol_diff2=1,\
+                                                     atol_diff=1e-1, atol_diff2=1e-1,\
                                                      test_xvals=TEST_XVALS, do_samples=True))
 add_class(hist_gen)

@@ -40,7 +40,7 @@ class PDFTestCase(unittest.TestCase):
             if 'convert_data' not in val:
                 test_convert = False
             if test_convert:
-                kw_test_convert = dict(atol_diff2=val.pop('atol_diff2', 1e-2))
+                kw_test_convert = dict(atol_diff=val.pop('atol_diff', 1e-2), atol_diff2=val.pop('atol_diff2', 1e-2))
                 the_convert_func = partial(test_funcs.run_convert_tests, ens_orig=ens_orig, gen_class=test_class, test_data=val, **kw_test_convert)
                 setattr(cls, 'test_convert_%s' % key, the_convert_func)
             test_plot = val.pop('test_plot', True)
