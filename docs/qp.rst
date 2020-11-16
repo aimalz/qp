@@ -86,15 +86,6 @@ Gaussian mixture model based
     :exclude-members: test_data
 
 		      
-`Flexcode` based
-----------------
-
-.. autoclass :: qp.flex_gen
-    :members:
-    :show-inheritance:
-    :undoc-members:
-    :exclude-members: test_data
-
 		      
 `scipy` distributions
 ---------------------
