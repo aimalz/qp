@@ -8,14 +8,11 @@ from scipy import stats as sps
 
 
 from qp.pdf_gen import Pdf_rows_gen
-from qp.persistence import register_pdf_class
-from qp.conversion import register_class_conversions
 from qp.conversion_funcs import convert_using_mixmod_fit_samples
+from qp.test_data import WEIGHT_MIXMOD, MEAN_MIXMOD, STD_MIXMOD, TEST_XVALS
+from qp.factory import add_class
 
-
-
-
-class mixmod_rows_gen(Pdf_rows_gen):
+class mixmod_gen(Pdf_rows_gen):
     """Mixture model based distribution
 
     Notes
@@ -24,7 +21,7 @@ class mixmod_rows_gen(Pdf_rows_gen):
     """
     # pylint: disable=protected-access
 
-    name = 'mixmod_dist'
+    name = 'mixmod'
     version = 0
 
     _support_mask = rv_continuous._support_mask
@@ -47,7 +44,7 @@ class mixmod_rows_gen(Pdf_rows_gen):
         self._weights = weights
         kwargs['npdf'] = means.shape[0]
         self._ncomps = means.shape[1]
-        super(mixmod_rows_gen, self).__init__(*args, **kwargs)
+        super(mixmod_gen, self).__init__(*args, **kwargs)
         self._addobjdata('weights', self._weights)
         self._addobjdata('stds', self._stds)
         self._addobjdata('means', self._means)
@@ -91,23 +88,27 @@ class mixmod_rows_gen(Pdf_rows_gen):
         """
         Set the bins as additional constructor argument
         """
-        dct = super(mixmod_rows_gen, self)._updated_ctor_param()
+        dct = super(mixmod_gen, self)._updated_ctor_param()
         dct['means'] = self._means
         dct['stds'] = self._stds
         dct['weights'] = self._weights
         return dct
 
     @classmethod
-    def add_conversion_mappings(cls, conv_dict):
+    def add_mappings(cls):
         """
         Add this classes mappings to the conversion dictionary
         """
-        conv_dict.add_mapping((cls.create, convert_using_mixmod_fit_samples), cls, None, None)
+        cls._add_creation_method(cls.create, None)
+        cls._add_extraction_method(convert_using_mixmod_fit_samples, None)
 
 
-mixmod = mixmod_rows_gen.create
+mixmod = mixmod_gen.create
 
-
-register_class_conversions(mixmod_rows_gen)
-
-register_pdf_class(mixmod_rows_gen)
+mixmod_gen.test_data = dict(mixmod=dict(gen_func=mixmod,\
+                                                 ctor_data=dict(weights=WEIGHT_MIXMOD,\
+                                                                    means=MEAN_MIXMOD,\
+                                                                    stds=STD_MIXMOD),\
+                                                 convert_data=dict(), test_xvals=TEST_XVALS,
+                                                 atol_diff2=1.))
+add_class(mixmod_gen)

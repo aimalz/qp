@@ -105,7 +105,7 @@ def calculate_kld(p, q, limits, dx=0.01):
     # logq = safelog(qn)
     # Calculate the KLD from q to p
     Dpq = quick_kld(pn, qn, dx=dx)# np.dot(pn * logquotient, np.ones(len(grid)) * dx)
-    if Dpq < 0.: #pragma : no cover
+    if Dpq < 0.: #pragma: no cover
         print('broken KLD: '+str((Dpq, pn, qn, dx)))
         Dpq = epsilon
     return Dpq

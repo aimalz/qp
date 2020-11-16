@@ -1,1 +1,1 @@
-nosetests --with-coverage --cover-erase --cover-package=qp --cover-html
+py.test --cov=qp --cov-report=html

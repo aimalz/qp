@@ -8,13 +8,13 @@ from scipy.stats import rv_continuous
 from scipy.interpolate import splev, splint
 
 from qp.pdf_gen import Pdf_rows_gen
-from qp.persistence import register_pdf_class
-from qp.conversion import register_class_conversions
 from qp.conversion_funcs import convert_using_xy_vals, convert_using_samples
 from qp.plotting import get_axes_and_xlims, plot_pdf_on_axes
 from qp.utils import normalize_spline, build_splines, build_kdes, evaluate_kdes
+from qp.test_data import SAMPLES, XARRAY, YARRAY, TEST_XVALS
+from qp.factory import add_class
 
-class spline_rows_gen(Pdf_rows_gen):
+class spline_gen(Pdf_rows_gen):
     """Spline based distribution
 
     Notes
@@ -23,7 +23,7 @@ class spline_rows_gen(Pdf_rows_gen):
     """
     # pylint: disable=protected-access
 
-    name = 'spline_dist'
+    name = 'spline'
     version = 0
 
     _support_mask = rv_continuous._support_mask
@@ -59,7 +59,7 @@ class spline_rows_gen(Pdf_rows_gen):
         self._splx = splx
         self._sply = sply
         self._spln = spln
-        super(spline_rows_gen, self).__init__(*args, **kwargs)
+        super(spline_gen, self).__init__(*args, **kwargs)
         self._addobjdata('splx', self._splx)
         self._addobjdata('sply', self._sply)
         self._addobjdata('spln', self._spln)
@@ -108,10 +108,10 @@ class spline_rows_gen(Pdf_rows_gen):
 
         Returns
         -------
-        pdf_obj : `spline_rows_gen`
+        pdf_obj : `spline_gen`
             The requested PDF
         """
-        splx, sply, spln = spline_rows_gen.build_normed_splines(xvals, yvals, **kwargs)
+        splx, sply, spln = spline_gen.build_normed_splines(xvals, yvals, **kwargs)
         gen_obj = cls(splx=splx, sply=sply, spln=spln)
         return gen_obj(**kwargs)
 
@@ -129,7 +129,7 @@ class spline_rows_gen(Pdf_rows_gen):
 
         Returns
         -------
-        pdf_obj : `spline_rows_gen`
+        pdf_obj : `spline_gen`
             The requested PDF
         """
         kdes = build_kdes(samples)
@@ -185,7 +185,7 @@ class spline_rows_gen(Pdf_rows_gen):
         """
         Set the bins as additional constructor argument
         """
-        dct = super(spline_rows_gen, self)._updated_ctor_param()
+        dct = super(spline_gen, self)._updated_ctor_param()
         dct['splx'] = self._splx
         dct['sply'] = self._sply
         dct['spln'] = self._spln
@@ -202,18 +202,35 @@ class spline_rows_gen(Pdf_rows_gen):
         return plot_pdf_on_axes(axes, pdf, xvals, **kw)
 
     @classmethod
-    def add_conversion_mappings(cls, conv_dict):
+    def add_mappings(cls):
         """
         Add this classes mappings to the conversion dictionary
         """
-        conv_dict.add_mapping((cls.create_from_xy_vals, convert_using_xy_vals), cls, None, None)
-        conv_dict.add_mapping((cls.create_from_samples, convert_using_samples), cls, None, "samples")
+        cls._add_creation_method(cls.create, None)
+        cls._add_creation_method(cls.create_from_xy_vals, "xy")
+        cls._add_creation_method(cls.create_from_samples, "samples")
+        cls._add_extraction_method(convert_using_xy_vals, "xy")
+        cls._add_extraction_method(convert_using_samples, "samples")
 
 
-spline = spline_rows_gen.create
-spline_from_xy = spline_rows_gen.create_from_xy_vals
-spline_from_samples = spline_rows_gen.create_from_samples
+spline = spline_gen.create
+spline_from_xy = spline_gen.create_from_xy_vals
+spline_from_samples = spline_gen.create_from_samples
 
-register_class_conversions(spline_rows_gen)
+try:
+    SPLX, SPLY, SPLN = spline_gen.build_normed_splines(XARRAY, YARRAY)
+except: #pragma: no cover # pylint: disable=bare-except
+    SPLX, SPLY, SPN = (None, None, None)
 
-register_pdf_class(spline_rows_gen)
+add_class(spline_gen)
+
+spline_gen.test_data = dict(spline=dict(gen_func=spline, ctor_data=dict(splx=SPLX, sply=SPLY, spln=SPLN),\
+                                            test_xvals=TEST_XVALS[::10]),
+                                spline_kde=dict(gen_func=spline_from_samples,\
+                                                    ctor_data=dict(samples=SAMPLES, xvals=np.linspace(0, 5, 51)),\
+                                                    convert_data=dict(xvals=np.linspace(0, 5, 51), method='samples'),\
+                                                    test_xvals=TEST_XVALS, atol_diff2=1., test_pdf=False),\
+                                spline_xy=dict(gen_func=spline_from_xy,\
+                                                   ctor_data=dict(xvals=XARRAY, yvals=YARRAY),\
+                                                   convert_data=dict(xvals=np.linspace(0, 5, 51), method='xy'),\
+                                                   test_xvals=TEST_XVALS, test_pdf=False))

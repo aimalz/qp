@@ -11,6 +11,7 @@ _logpdf, _cdf, _logcdf, _ppf, _rvs, _isf, _sf, _logsf could speed the code up a 
 
 """
 
+import os
 import numpy as np
 
 from scipy.stats import rv_continuous
@@ -22,9 +23,9 @@ from flexcode.basis_functions import evaluate_basis
 from flexcode.helpers import box_transform
 
 from qp.pdf_gen import Pdf_rows_gen
-from qp.ensemble import Ensemble
-from qp.persistence import register_pdf_class
-from qp.conversion import register_class_conversions
+
+from qp.test_data import TEST_XVALS, QP_TOPDIR
+from qp.factory import add_class
 
 
 def fit_flex_basis_funcs(basis, values): #pragma: no cover
@@ -54,7 +55,7 @@ def fit_flex_basis_funcs(basis, values): #pragma: no cover
     return vv(values)
 
 
-def decompose_to_sparse_basis(basis, values, n_basis, tolerance=None):
+def decompose_to_sparse_basis(basis, values, n_basis, tolerance=None): #pragma: no cover
     """Decompose a function into the basis using Cholesky decomposition
 
     Note
@@ -109,7 +110,7 @@ def decompose_to_sparse_basis(basis, values, n_basis, tolerance=None):
         gamma = cho_solve((L[:n_active + 1, :n_active + 1], True), alpha[:n_active + 1], overwrite_b=False)
         res = values - np.dot(basis[:, :n_active + 1], gamma)
         gamma_full[:n_active + 1] = gamma
-        if tolerance is not None and sla_norm(res) ** 2 <= tolerance: #pragam: no cover
+        if tolerance is not None and sla_norm(res) ** 2 <= tolerance: #pragma: no cover
             break
     a_n[idxs[:n_active + 1]] = gamma
     return a_n
@@ -119,7 +120,7 @@ def decompose_to_sparse_basis(basis, values, n_basis, tolerance=None):
 
 
 
-def decompose_flex_basis_funcs(basis, values, nbasis, **kwargs):
+def decompose_flex_basis_funcs(basis, values, nbasis, **kwargs): #pragma: no cover
     """Convert to a mixture model using a set of values sample from the pdf
 
     Parameters
@@ -148,15 +149,13 @@ def decompose_flex_basis_funcs(basis, values, nbasis, **kwargs):
 
 
 
-def convert_to_flex(in_dist, class_to, **kwargs):
+def convert_to_flex(in_dist, **kwargs):
     """Convert to a mixture model using a set of values sample from the pdf
 
     Parameters
     ----------
     in_dist : `qp.Ensemble`
         Input ensemble
-    class_to : `class`
-        Class to convert to
 
     Keywords
     --------
@@ -164,11 +163,11 @@ def convert_to_flex(in_dist, class_to, **kwargs):
         Number of components in mixture model to use
     nsamples : `int`
         Number of samples to generate
-    Remaining keywords are passed to class constructor.
 
     Returns
     -------
-    dist : An distrubtion object of type class_to, instantiated by fitting to the samples.
+    data : `dict`
+        Data used to do the conversion
     """
     grid = kwargs.pop('grid', None)
     xmin = kwargs.pop('xmin', grid[0])
@@ -176,9 +175,9 @@ def convert_to_flex(in_dist, class_to, **kwargs):
     nbasis = kwargs.pop('nbasis', 32)
     basis_system = kwargs.pop('basis_system', None)
 
-    if grid is None: #pragma : no cover
+    if grid is None: #pragma: no cover
         raise ValueError("You need to provide a grid to convert to flex basis")
-    if basis_system is None: #pragma : no cover
+    if basis_system is None: #pragma: no cover
         raise ValueError("You need to provide a basis_system to convert to flex basis")
     pdf_vals = in_dist.pdf(grid)
 
@@ -190,10 +189,10 @@ def convert_to_flex(in_dist, class_to, **kwargs):
     #basis /= norm
     #pdf_vals /= norm
     #coefs = decompose_flex_basis_funcs(basis, pdf_vals, nbasis=nbasis)
-    return Ensemble(class_to, data=dict(coefs=coefs, basis_system=basis_system, z_min=xmin, z_max=xmax))
+    return dict(coefs=coefs, basis_system=basis_system, z_min=xmin, z_max=xmax)
 
 
-class flex_rows_gen(Pdf_rows_gen):
+class flex_gen(Pdf_rows_gen):
     """Flexcode based distribution
 
     Notes
@@ -203,7 +202,7 @@ class flex_rows_gen(Pdf_rows_gen):
     """
     # pylint: disable=protected-access
 
-    name = 'flex_dist'
+    name = 'flex'
     version = 0
 
     _support_mask = rv_continuous._support_mask
@@ -225,7 +224,7 @@ class flex_rows_gen(Pdf_rows_gen):
         kwargs['b'] = self.b = z_max
         kwargs['npdf'] = coefs.shape[0]
 
-        super(flex_rows_gen, self).__init__(*args, **kwargs)
+        super(flex_gen, self).__init__(*args, **kwargs)
         self._addmetadata('basis_system', self._basis_system)
         self._addmetadata('z_min', self.a)
         self._addmetadata('z_max', self.b)
@@ -267,7 +266,7 @@ class flex_rows_gen(Pdf_rows_gen):
         """
         Set the bins as additional constructor argument
         """
-        dct = super(flex_rows_gen, self)._updated_ctor_param()
+        dct = super(flex_gen, self)._updated_ctor_param()
         dct['coefs'] = self._coefs
         dct['basis_system'] = self._basis_system
         dct['z_min'] = self.a
@@ -276,14 +275,20 @@ class flex_rows_gen(Pdf_rows_gen):
         return dct
 
     @classmethod
-    def add_conversion_mappings(cls, conv_dict):
+    def add_mappings(cls):
         """
         Add this classes mappings to the conversion dictionary
         """
-        conv_dict.add_mapping((cls.create, convert_to_flex), cls, None, None)
+        cls._add_creation_method(cls.create, None)
+        cls._add_extraction_method(convert_to_flex, None)
 
 
-flex = flex_rows_gen.create
+flex = flex_gen.create
 
-register_class_conversions(flex_rows_gen)
-register_pdf_class(flex_rows_gen)
+FLEX_BASIS_SYST = 'cosine'
+FLEX_COEFS = np.load(os.path.join(QP_TOPDIR, 'tests', 'test_flex_coefs.npy'), allow_pickle=True)
+
+flex_gen.test_data = dict(flex=dict(gen_func=flex, ctor_data=dict(coefs=FLEX_COEFS, basis_system=FLEX_BASIS_SYST, z_min=0., z_max=5),
+                                             convert_data=dict(grid=TEST_XVALS, basis_system=FLEX_BASIS_SYST), test_xvals=TEST_XVALS, short=True))
+
+add_class(flex_gen)

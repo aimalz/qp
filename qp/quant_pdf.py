@@ -8,14 +8,13 @@ from scipy.stats import rv_continuous
 
 from qp.pdf_gen import Pdf_rows_gen
 
-from qp.persistence import register_pdf_class
-from qp.conversion import register_class_conversions
 from qp.conversion_funcs import convert_using_quantiles
 from qp.plotting import get_axes_and_xlims, plot_pdf_quantiles_on_axes
 from qp.utils import interpolate_unfactored_multi_x_y, interpolate_unfactored_x_multi_y, interpolate_multi_x_y, interpolate_x_multi_y
+from qp.test_data import QUANTS, QLOCS, TEST_XVALS
+from qp.factory import add_class
 
-
-class quant_rows_gen(Pdf_rows_gen):
+class quant_gen(Pdf_rows_gen):
     """Spline based distribution
 
     Notes
@@ -27,7 +26,7 @@ class quant_rows_gen(Pdf_rows_gen):
     """
     # pylint: disable=protected-access
 
-    name = 'quant_dist'
+    name = 'quant'
     version = 0
 
     _support_mask = rv_continuous._support_mask
@@ -48,7 +47,7 @@ class quant_rows_gen(Pdf_rows_gen):
         #kwargs['a'] = self.a = np.min(locs)
         #kwargs['b'] = self.b = np.max(locs)
 
-        super(quant_rows_gen, self).__init__(*args, **kwargs)
+        super(quant_gen, self).__init__(*args, **kwargs)
 
         self._quants = np.asarray(quants)
         self._nquants = self._quants.size
@@ -87,7 +86,7 @@ class quant_rows_gen(Pdf_rows_gen):
         """
         Set the bins as additional construstor argument
         """
-        dct = super(quant_rows_gen, self)._updated_ctor_param()
+        dct = super(quant_gen, self)._updated_ctor_param()
         dct['quants'] = self._quants
         dct['locs'] = self._locs
         return dct
@@ -106,19 +105,18 @@ class quant_rows_gen(Pdf_rows_gen):
         return plot_pdf_quantiles_on_axes(axes, xvals, yvals, quantiles=(quants, locs), **kw)
 
     @classmethod
-    def add_conversion_mappings(cls, conv_dict):
+    def add_mappings(cls):
         """
         Add this classes mappings to the conversion dictionary
         """
-        conv_dict.add_mapping((cls.create, convert_using_quantiles), cls, None, None)
+        cls._add_creation_method(cls.create, None)
+        cls._add_extraction_method(convert_using_quantiles, None)
 
 
-quant = quant_rows_gen.create
+quant = quant_gen.create
 
 
+quant_gen.test_data = dict(quant=dict(gen_func=quant, ctor_data=dict(quants=QUANTS, locs=QLOCS),\
+                                               convert_data=dict(quants=QUANTS), test_xvals=TEST_XVALS))
 
-
-
-register_class_conversions(quant_rows_gen)
-
-register_pdf_class(quant_rows_gen)
+add_class(quant_gen)

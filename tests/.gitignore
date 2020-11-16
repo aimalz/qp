@@ -44,6 +44,8 @@ nosetests.xml
 coverage.xml
 *,cover
 .hypothesis/
+qp_test_ensemble.hdf5
+qp_test_ensemble_meta.hdf5
 
 # Translations
 *.mo

@@ -31,7 +31,7 @@ def safelog(arr, threshold=epsilon):
     return np.log(np.array(arr).clip(threshold, np.inf))
 
 
-"""
+_ = """
 def normalize_quantiles(in_data, threshold=epsilon, vb=False):
     Evaluates PDF from quantiles including endpoints from linear extrapolation
 
@@ -163,8 +163,7 @@ def build_kdes(samples, **kwargs):
     --------
     Passed to the `scipy.stats.gaussian_kde` constructor
 
-
-    Retruns
+    Returns
     -------
     kdes : list of `scipy.stats.gaussian_kde` objects
     """

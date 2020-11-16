@@ -6,17 +6,16 @@ import numpy as np
 from scipy.stats import rv_continuous
 
 from qp.pdf_gen import Pdf_rows_gen
-from qp.persistence import register_pdf_class
-from qp.conversion import register_class_conversions
 from qp.conversion_funcs import convert_using_vals_at_x, convert_using_xy_vals
 from qp.plotting import get_axes_and_xlims, plot_pdf_on_axes
 from qp.utils import normalize_interp1d,\
      interpolate_unfactored_multi_x_multi_y, interpolate_unfactored_multi_x_y, interpolate_unfactored_x_multi_y,\
      interpolate_multi_x_multi_y, interpolate_multi_x_y, interpolate_x_multi_y
+from qp.test_data import XBINS, XARRAY, YARRAY, TEST_XVALS
+from qp.factory import add_class
 
 
-
-class interp_fixed_grid_rows_gen(Pdf_rows_gen):
+class interp_gen(Pdf_rows_gen):
     """Interpolator based distribution
 
     Notes
@@ -28,7 +27,7 @@ class interp_fixed_grid_rows_gen(Pdf_rows_gen):
     """
     # pylint: disable=protected-access
 
-    name = 'interp_fixed_dist'
+    name = 'interp'
     version = 0
 
     _support_mask = rv_continuous._support_mask
@@ -64,7 +63,7 @@ class interp_fixed_grid_rows_gen(Pdf_rows_gen):
         else:  # pragma: no cover
             self._ycumul = None
 
-        super(interp_fixed_grid_rows_gen, self).__init__(*args, **kwargs)
+        super(interp_gen, self).__init__(*args, **kwargs)
         self._addmetadata('xvals', self._xvals)
         self._addobjdata('yvals', self._yvals)
 
@@ -113,7 +112,7 @@ class interp_fixed_grid_rows_gen(Pdf_rows_gen):
         """
         Set the bins as additional constructor argument
         """
-        dct = super(interp_fixed_grid_rows_gen, self)._updated_ctor_param()
+        dct = super(interp_gen, self)._updated_ctor_param()
         dct['xvals'] = self._xvals
         dct['yvals'] = self._yvals
         return dct
@@ -128,17 +127,18 @@ class interp_fixed_grid_rows_gen(Pdf_rows_gen):
         return plot_pdf_on_axes(axes, pdf, pdf.dist.xvals, **kw)
 
     @classmethod
-    def add_conversion_mappings(cls, conv_dict):
+    def add_mappings(cls):
         """
         Add this classes mappings to the conversion dictionary
         """
-        conv_dict.add_mapping((cls.create, convert_using_vals_at_x), cls, None, None)
+        cls._add_creation_method(cls.create, None)
+        cls._add_extraction_method(convert_using_vals_at_x, None)
 
 
-interp_fixed = interp_fixed_grid_rows_gen.create
+interp = interp_gen.create
 
 
-class interp_rows_gen(Pdf_rows_gen):
+class interp_irregular_gen(Pdf_rows_gen):
     """Interpolator based distribution
 
     Notes
@@ -150,7 +150,7 @@ class interp_rows_gen(Pdf_rows_gen):
     """
     # pylint: disable=protected-access
 
-    name = 'interp_dist'
+    name = 'interp_irregular'
     version = 0
 
     _support_mask = rv_continuous._support_mask
@@ -179,7 +179,7 @@ class interp_rows_gen(Pdf_rows_gen):
         if check_input:
             self._yvals = normalize_interp1d(xvals, yvals)
         self._ycumul = None
-        super(interp_rows_gen, self).__init__(*args, **kwargs)
+        super(interp_irregular_gen, self).__init__(*args, **kwargs)
         self._addobjdata('xvals', self._xvals)
         self._addobjdata('yvals', self._yvals)
 
@@ -234,7 +234,7 @@ class interp_rows_gen(Pdf_rows_gen):
         """
         Set the bins as additional constructor argument
         """
-        dct = super(interp_rows_gen, self)._updated_ctor_param()
+        dct = super(interp_irregular_gen, self)._updated_ctor_param()
         dct['xvals'] = self._xvals
         dct['yvals'] = self._yvals
         return dct
@@ -250,18 +250,21 @@ class interp_rows_gen(Pdf_rows_gen):
         return plot_pdf_on_axes(axes, pdf, xvals_row, **kw)
 
     @classmethod
-    def add_conversion_mappings(cls, conv_dict):
+    def add_mappings(cls):
         """
         Add this classes mappings to the conversion dictionary
         """
-        conv_dict.add_mapping((cls.create, convert_using_xy_vals), cls, None, None)
+        cls._add_creation_method(cls.create, None)
+        cls._add_extraction_method(convert_using_xy_vals, None)
 
 
-interp = interp_rows_gen.create
+interp_irregular = interp_irregular_gen.create
 
+interp_irregular_gen.test_data = dict(interp_irregular=dict(gen_func=interp_irregular, ctor_data=dict(xvals=XARRAY, yvals=YARRAY),\
+                                            convert_data=dict(xvals=XBINS), test_xvals=TEST_XVALS))
 
-register_class_conversions(interp_rows_gen)
-register_class_conversions(interp_fixed_grid_rows_gen)
+interp_gen.test_data = dict(interp=dict(gen_func=interp, ctor_data=dict(xvals=XBINS, yvals=YARRAY),\
+                                            convert_data=dict(xvals=XBINS), test_xvals=TEST_XVALS))
 
-register_pdf_class(interp_rows_gen)
-register_pdf_class(interp_fixed_grid_rows_gen)
+add_class(interp_gen)
+add_class(interp_irregular_gen)

@@ -15,6 +15,7 @@ is required to inherit from `scipy.stats.rv_continuous`; however, providing impl
 _logpdf, _cdf, _logcdf, _ppf, _rvs, _isf, _sf, _logsf could speed the code up a lot is some cases.
 
 """
+import sys
 
 import numpy as np
 from numpy import asarray
@@ -23,10 +24,8 @@ from scipy.stats import rv_continuous
 from scipy.stats._distn_infrastructure import rv_frozen, _moment_from_stats
 from scipy.special import comb
 
+from qp.dict_utils import get_val_or_default, set_val_or_default, pretty_print
 from qp.plotting import plot_dist_pdf
-from qp.conversion import qp_convert
-
-
 
 
 class Pdf_gen:
@@ -41,6 +40,10 @@ class Pdf_gen:
 
     Object data are elements that differ for each PDFs
     """
+
+    _reader_map = {}
+    _creation_map = {}
+    _extraction_map = {}
 
     def __init__(self, *args, **kwargs):
         """C'tor"""
@@ -70,6 +73,51 @@ class Pdf_gen:
         return self._objdata
 
     @classmethod
+    def creation_method(cls, method=None):
+        """Return the method used to create a PDF of this type"""
+        return get_val_or_default(cls._creation_map, method)
+
+    @classmethod
+    def extraction_method(cls, method=None):
+        """Return the method used to extract data to create a PDF of this type"""
+        return get_val_or_default(cls._extraction_map, method)
+
+    @classmethod
+    def reader_method(cls, version=None):
+        """Return the method used to convert data read from a file PDF of this type"""
+        return get_val_or_default(cls._reader_map, version)
+
+    @classmethod
+    def add_method_dicts(cls):
+        """Add empty method dicts"""
+        cls._reader_map = {}
+        cls._creation_map = {}
+        cls._extraction_map = {}
+
+    @classmethod
+    def _add_creation_method(cls, the_func, method):
+        """Add a method used to create a PDF of this type"""
+        set_val_or_default(cls._creation_map, method, the_func)
+
+    @classmethod
+    def _add_extraction_method(cls, the_func, method):
+        """Add a method used to extract data to create a PDF of this type"""
+        set_val_or_default(cls._extraction_map, method, the_func)
+
+    @classmethod
+    def _add_reader_method(cls, the_func, version): #pragma: no cover
+        """Add a method used to convert data read from a file PDF of this type"""
+        set_val_or_default(cls._reader_map, version, the_func)
+
+    @classmethod
+    def print_method_maps(cls, stream=sys.stdout):
+        """Print the maps showing the methods"""
+        pretty_print(cls._creation_map, ["Create  "], stream=stream)
+        pretty_print(cls._extraction_map, ["Extract "], stream=stream)
+        pretty_print(cls._reader_map, ["Reader  "], stream=stream)
+
+
+    @classmethod
     def create_gen(cls, **kwds):
         """Create and return a `scipy.stats.rv_continuous` object using the
         keyword arguemntets provided"""
@@ -97,26 +145,6 @@ class Pdf_gen:
         This defaults to plotting it as a curve, but this can be overwritten
         """
         return plot_dist_pdf(pdf, **kwargs)
-
-    @classmethod
-    def convert_from(cls, obj_from, method=None, **kwargs):
-        """Convert a distribution or ensemble
-
-        Parameters
-        ----------
-        obj_from :  `scipy.stats.rv_continuous or qp.ensemble`
-            Input object
-        method : `str`
-            Optional argument to specify a non-default conversion algorithm
-        kwargs : keyword arguments are passed to the output class constructor
-
-        Returns
-        -------
-        ens : `qp.Ensemble`
-            Ensemble of pdfs of this type using the data from obj_from
-        """
-        return qp_convert(obj_from, cls, method, **kwargs)
-
 
     def _moment_fix(self, n, *args, **kwds):
         """Hack fix for the moments calculation in scipy.stats, which can't handle
@@ -205,49 +233,6 @@ class rv_frozen_func(rv_frozen):
         cdf_vals = self.cdf(bins)
         bin_vals = cdf_vals[:,1:] - cdf_vals[:,0:-1]
         return (bins, bin_vals)
-
-
-
-class Pdf_gen_simple(Pdf_gen):
-    """Mixing class to extend `scipy.stats.rv_continuous` with
-    information needed for `qp` for simple distributions.
-
-    """
-    def __init__(self, *args, **kwargs):
-        """C'tor"""
-        self._npdf = kwargs.get('npdf', 0)
-        super(Pdf_gen_simple, self).__init__(*args, **kwargs)
-
-    @property
-    def npdf(self):
-        """Return the number of PDFs this object represents"""
-        return self._npdf
-
-    def my_freeze(self, *args, **kwds):
-        """Freeze the distribution for the given arguments.
-
-        Parameters
-        ----------
-        arg1, arg2, arg3,... : array_like
-            The shape parameter(s) for the distribution.  Should include all
-            the non-optional arguments, may include ``loc`` and ``scale``.
-
-        Returns
-        -------
-        rv_frozen : rv_frozen instance
-            The frozen distribution.
-        """
-        # pylint: disable=no-member
-        args, loc, scale = self._parse_args(*args, **kwds)
-        x, loc, scale = map(asarray, (1, loc, scale))
-        x = np.asarray((x - loc)/scale)
-        args = tuple(map(asarray, args))
-        cond0 = self._argcheck(*args) & (scale > 0)
-        cond1 = self._support_mask(x, *args) & (scale > 0)
-        cond = cond0 & cond1
-        self._npdf = cond.shape[0]
-        return rv_frozen_func(self, self._npdf, *args, **kwds)
-
 
 
 
@@ -367,3 +352,51 @@ class Pdf_rows_gen(rv_continuous, Pdf_gen):
             The requested moments
         """
         return Pdf_gen._moment_fix(self, n, *args, **kwds)
+
+
+class Pdf_gen_wrap(Pdf_gen):
+    """Mixing class to extend `scipy.stats.rv_continuous` with
+    information needed for `qp` for simple distributions.
+
+    """
+    def __init__(self, *args, **kwargs):
+        """C'tor"""
+        # pylint: disable=no-member,protected-access
+        super(Pdf_gen_wrap, self).__init__(*args, **kwargs)
+        self._other_init(*args, **kwargs)
+
+
+    def _my_freeze(self, *args, **kwds):
+        """Freeze the distribution for the given arguments.
+
+        Parameters
+        ----------
+        arg1, arg2, arg3,... : array_like
+            The shape parameter(s) for the distribution.  Should include all
+            the non-optional arguments, may include ``loc`` and ``scale``.
+
+        Returns
+        -------
+        rv_frozen : rv_frozen instance
+            The frozen distribution.
+        """
+        # pylint: disable=no-member,protected-access
+        args, loc, scale = self._parse_args(*args, **kwds)
+        x, loc, scale = map(asarray, (1, loc, scale))
+        x = np.asarray((x - loc)/scale)
+        args = tuple(map(asarray, args))
+        cond0 = np.atleast_1d(self._argcheck(*args)) & (scale > 0)
+        cond1 = self._support_mask(x, *args) & (scale > 0)
+        cond = cond0 & cond1
+        return rv_frozen_func(self, cond.shape[0], *args, **kwds)
+
+    def _my_argcheck(self, *args):
+        # pylint: disable=no-member,protected-access
+        return np.atleast_1d(self._other_argcheck(*args))
+
+    @classmethod
+    def add_mappings(cls):
+        """
+        Add this classes mappings to the conversion dictionary
+        """
+        cls._add_creation_method(cls.create, None)

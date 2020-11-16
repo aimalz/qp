@@ -73,11 +73,11 @@ def get_axes_and_xlims(**kwargs):
     axes = kwargs.pop('axes', None)
     xlim = kwargs.pop('xlim', None)
     if axes is None:
-        if xlim is None: #pragma : no cover
+        if xlim is None: #pragma: no cover
             raise ValueError("Either xlim or axes must be provided")
         _, axes = make_figure_axes(xlim, **kwargs)
     else:
-        if xlim is not None: #pragma : no cover
+        if xlim is not None: #pragma: no cover
             raise ValueError("Only one of xlim and axes should be provided")
         xlim = axes.get_xlim()
     return axes, xlim, kwargs
@@ -241,13 +241,13 @@ def plot_pdf_samples_on_axes(axes, pdf, samples, **kwargs):
     return axes
 
 
-def qp_plot_native(pdf, **kwargs):
+def plot_native(pdf, **kwargs):
     """Utility function to plot a pdf in a format that is specific to that type of pdf"""
     axes = pdf.dist.plot_native(pdf, **kwargs)
     return axes.figure, axes
 
 
-def qp_plot(pdf, **kwargs):
+def plot(pdf, **kwargs):
     """Utility function to plot a pdf in a format that is specific to that type of pdf"""
     axes = pdf.dist.plot(pdf, **kwargs)
     return axes.figure, axes

@@ -43,6 +43,7 @@ htmlcov/
 nosetests.xml
 coverage.xml
 *,cover
+cover/
 .hypothesis/
 
 # Translations
@@ -77,6 +78,9 @@ celerybeat-schedule
 
 # dotenv
 .env
+
+# macos .DS
+.DS_Store
 
 # virtualenv
 venv/

@@ -7,17 +7,16 @@ import numpy as np
 from scipy.stats import rv_continuous
 
 from qp.pdf_gen import Pdf_rows_gen
-from qp.persistence import register_pdf_class
-from qp.conversion import register_class_conversions
 from qp.conversion_funcs import convert_using_hist_values, convert_using_hist_samples
 from qp.plotting import get_axes_and_xlims, plot_pdf_histogram_on_axes
 from qp.utils import interpolate_unfactored_multi_x_y, interpolate_unfactored_x_multi_y,\
      interpolate_multi_x_y, interpolate_x_multi_y
+from qp.test_data import XBINS, HIST_DATA, TEST_XVALS, NSAMPLES
+from qp.factory import add_class
 
 
 
-
-class hist_rows_gen(Pdf_rows_gen):
+class hist_gen(Pdf_rows_gen):
     """Histogram based distribution
 
     Notes
@@ -27,7 +26,7 @@ class hist_rows_gen(Pdf_rows_gen):
     """
     # pylint: disable=protected-access
 
-    name = 'hist_dist'
+    name = 'hist'
     version = 0
 
     _support_mask = rv_continuous._support_mask
@@ -57,7 +56,7 @@ class hist_rows_gen(Pdf_rows_gen):
         kwargs['a'] = self.a = self._hbins[0]
         kwargs['b'] = self.b = self._hbins[-1]
         kwargs['npdf'] = pdfs.shape[0]
-        super(hist_rows_gen, self).__init__(*args, **kwargs)
+        super(hist_gen, self).__init__(*args, **kwargs)
         self._addmetadata('bins', self._hbins)
         self._addobjdata('pdfs', self._hpdfs)
 
@@ -117,7 +116,7 @@ class hist_rows_gen(Pdf_rows_gen):
         """
         Set the bins as additional constructor argument
         """
-        dct = super(hist_rows_gen, self)._updated_ctor_param()
+        dct = super(hist_gen, self)._updated_ctor_param()
         dct['bins'] = self._hbins
         dct['pdfs'] = self._hpdfs
         return dct
@@ -134,15 +133,22 @@ class hist_rows_gen(Pdf_rows_gen):
 
 
     @classmethod
-    def add_conversion_mappings(cls, conv_dict):
+    def add_mappings(cls):
         """
         Add this classes mappings to the conversion dictionary
         """
-        conv_dict.add_mapping((cls.create, convert_using_hist_values), cls, None, None)
-        conv_dict.add_mapping((cls.create, convert_using_hist_samples), cls, None, 'samples')
+        cls._add_creation_method(cls.create, None)
+        cls._add_extraction_method(convert_using_hist_values, None)
+        cls._add_extraction_method(convert_using_hist_samples, "samples")
 
 
-hist = hist_rows_gen.create
+hist = hist_gen.create
 
-register_class_conversions(hist_rows_gen)
-register_pdf_class(hist_rows_gen)
+hist_gen.test_data = dict(hist=dict(gen_func=hist, ctor_data=dict(bins=XBINS, pdfs=HIST_DATA),\
+                                             convert_data=dict(bins=XBINS), test_xvals=TEST_XVALS),
+                               hist_samples=dict(gen_func=hist, ctor_data=dict(bins=XBINS, pdfs=HIST_DATA),\
+                                                     convert_data=dict(bins=XBINS, method='samples',\
+                                                                           size=NSAMPLES),\
+                                                     atol_diff2=1,\
+                                                     test_xvals=TEST_XVALS, do_samples=True))
+add_class(hist_gen)

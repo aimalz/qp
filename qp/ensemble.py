@@ -12,7 +12,6 @@ from qp.dict_utils import slice_dict, print_dict_shape
 
 from qp.metrics import quick_kld, quick_rmse, quick_moment
 
-from qp.persistence import get_qp_reader
 
 
 class Ensemble:
@@ -75,13 +74,21 @@ class Ensemble:
         """Return the `scipy.stats.rv_frozen` object that encapsultes the distributions for this ensemble"""
         return self._frozen
 
-    def convert_to(self, gen_class, method=None, **kwargs):
+    @property
+    def npdf(self):
+        """Return the number of PDFs in this ensemble"""
+        return self._frozen.npdf
+
+    def convert_to(self, to_class, **kwargs):
         """Convert a distribution or ensemble
 
         Parameters
         ----------
-        gen_class :  `scipy.stats.rv_continuous or qp.ensemble`
+        to_class :  `class`
             Class to convert to
+
+        Keywords
+        --------
         method : `str`
             Optional argument to specify a non-default conversion algorithm
         kwargs : keyword arguments are passed to the output class constructor
@@ -91,7 +98,18 @@ class Ensemble:
         ens : `qp.Ensemble`
             Ensemble of pdfs yype class_to using the data from this object
         """
-        return gen_class.convert_from(self, method, **kwargs)
+        kwds = kwargs.copy()
+        method = kwds.pop("method", None)
+        ctor_func = to_class.creation_method(method)
+        class_name = to_class.name
+        if ctor_func is None: #pragma: no cover
+            raise KeyError("Class named %s does not have a creation_method named %s" % (class_name, method))
+        extract_func = to_class.extraction_method(method)
+        if extract_func is None: #pragma: no cover
+            raise KeyError("Class named %s does not have a extraction_method named %s" % (class_name, method))
+        data = extract_func(self, **kwds)
+        return Ensemble(ctor_func, data=data)
+
 
     def metadata(self):
         """Return the metadata for this ensemble
@@ -143,12 +161,12 @@ class Ensemble:
         """
         try:
             meta = Table(self.metadata())
-        except ValueError as exep: #pragma : no cover
+        except ValueError as exep: #pragma: no cover
             print_dict_shape(self.metadata())
             raise ValueError from exep
         try:
             data = Table(self.objdata())
-        except ValueError as exep: #pragma : no cover
+        except ValueError as exep: #pragma: no cover
             print_dict_shape(self.objdata())
             raise ValueError from exep
         return dict(meta=meta, data=data)
@@ -195,58 +213,6 @@ class Ensemble:
         tables = self.build_tables()
         tables['meta'].write(meta_filename, overwrite=True)
         tables['data'].write(filename, overwrite=True)
-
-
-    @classmethod
-    def read_from(cls, filename):
-        """Read this ensemble from a file
-
-        Parameters
-        ----------
-        filename : `str`
-
-        Notes
-        -----
-        This will actually read two files, one for the metadata and one for the object data
-
-        This uses `astropy.Table` to write the data, so any filesuffix that works for
-        `astropy.Table.write` will work here.
-
-        This will use information in the meta data to figure out how to construct the data
-        need to build the ensemble.
-        """
-        basename, ext = os.path.splitext(filename)
-        meta_ext = "_meta%s" % ext
-        meta_filename = basename + meta_ext
-
-        md_table = Table.read(meta_filename)
-        data_table = Table.read(filename)
-
-        data_dict = {}
-        for col in md_table.columns:
-            col_data = md_table[col].data
-            if len(col_data.shape) > 1:
-                col_data = np.squeeze(col_data)
-
-            if col_data.size == 1:
-                col_data = col_data[0]
-
-            if isinstance(col_data, bytes):
-                col_data = col_data.decode()
-            data_dict[col] = col_data
-
-
-        for col in data_table.columns:
-            col_data = data_table[col].data
-            if len(col_data.shape) < 2:
-                data_dict[col] = np.expand_dims(data_table[col].data, -1)
-            else:
-                data_dict[col] = col_data
-
-        pdf_name = data_dict.pop('pdf_name')
-        pdf_version = data_dict.pop('pdf_version')
-        class_to = get_qp_reader(pdf_name, pdf_version)
-        return cls(class_to.create, data=data_dict)
 
 
     def pdf(self, x):

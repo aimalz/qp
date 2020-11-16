@@ -86,7 +86,7 @@ def pretty_print(in_dict, prefixes, idx=0, stream=sys.stdout):
             key_str = "default"
         else:
             key_str = key
-        if isinstance(val, dict):
+        if isinstance(val, dict): #pragma: no cover
             stream.write("%s%s:\n" % (prefix, key_str))
             pretty_print(val, prefixes, idx+1, stream)
         else:
