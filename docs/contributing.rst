@@ -18,7 +18,7 @@ Here is a checklist of things that you will need to include in a class that impl
       then use the `qp.factory._make_scipy_wrapped_class` class to
       extend it to qp pdf class.
    2. A "row-based" distribution i.e., distributions that are
-      configured by provided a variable sized set of paramters, where
+      configured by providing a variable sized set of paramters, where
       each row corresponds to one PDF, such as a histogram or grid.
       In that case you should inherit from the `qp.Pdf_rows_gen`
       class.
@@ -26,7 +26,7 @@ Here is a checklist of things that you will need to include in a class that impl
 2.  In the static block before the first class method you should
     define the name the class will go by, the version of the class
     (used to convert older version when reading them back from disk),
-    and the mask across with the distributions is supported.
+    and the mask across which the distribution is supported.
     
 .. code-block:: python
 		
@@ -63,6 +63,7 @@ Here is a checklist of things that you will need to include in a class that impl
     super(hist_rows_gen, self).__init__(*args, **kwargs)
 
 5.  In the constructor you should define which data members of the class are "data" and "metadata".   In this context, "data" means quantites that are defined for each PDF, and "metadata" means quantites that are shared between all the PDFs.   This should be the minimal set of data need to reconstruct the class instance. 
+    
 .. code-block:: python
 
     self._addmetadata('bins', self._hbins)
@@ -186,7 +187,7 @@ Here is a checklist of things that you will need to include in a class that impl
 Checks for new code
 -------------------
 
-There are a number of checks that will need to pass before a pull request adding new code will be accepted.  These should all be implemented in the travis automatted testing, but it can also be useful to run them yourself before you make the pull request.
+There are a number of checks that will need to pass before a pull request adding new code will be accepted.  These should all be implemented in the travis automated testing, but it can also be useful to run them yourself before you make the pull request.
 
 
 Running pylint
