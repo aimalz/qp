@@ -40,8 +40,8 @@ def normalize_spline(xvals, yvals, limits, **kwargs):
     """
 
     def row_integral(irow):
-        spline = lambda xv : splev(xv, splrep(xvals[irow], yvals[irow]))
-        return quad(spline, limits[0], limits[1], **kwargs)[0]
+        spl = lambda xv : splev(xv, splrep(xvals[irow], yvals[irow]))
+        return quad(spl, limits[0], limits[1], **kwargs)[0]
 
     vv = np.vectorize(row_integral)
     integrals = vv(np.arange(xvals.shape[0]))

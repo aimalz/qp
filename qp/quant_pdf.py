@@ -11,8 +11,8 @@ from qp.pdf_gen import Pdf_rows_gen
 from qp.conversion_funcs import extract_quantiles
 from qp.plotting import get_axes_and_xlims, plot_pdf_quantiles_on_axes
 from qp.utils import evaluate_hist_multi_x_multi_y, evaluate_unfactored_hist_multi_x_multi_y,\
-     interpolate_unfactored_multi_x_multi_y, interpolate_unfactored_multi_x_y, interpolate_unfactored_x_multi_y,\
-     interpolate_multi_x_y, interpolate_x_multi_y, interpolate_multi_x_multi_y
+     interpolate_unfactored_multi_x_y, interpolate_unfactored_x_multi_y,\
+     interpolate_multi_x_y, interpolate_x_multi_y
 from qp.test_data import QUANTS, QLOCS, TEST_XVALS
 from qp.factory import add_class
 
@@ -43,7 +43,7 @@ def pad_quantiles(quants, locs, xmin, xmax):
         n_out += 1
     else:
         offset_lo = 0
-        pad_lo = False    
+        pad_lo = False
     if quants[-1] < 1.:
         pad_hi = True
         n_out += 1
@@ -62,7 +62,7 @@ def pad_quantiles(quants, locs, xmin, xmax):
         quants_out[-1] = 1.
         locs_out[:,-1] = xmax * np.ones((locs.shape[0]))
     return quants_out, locs_out
-    
+
 
 class quant_gen(Pdf_rows_gen):
     """Spline based distribution
@@ -102,7 +102,7 @@ class quant_gen(Pdf_rows_gen):
         check_input = kwargs.pop('check_input', True)
         if check_input:
             quants, locs = pad_quantiles(quants, locs, self.a, self.b)
-        
+
         self._quants = np.asarray(quants)
         self._nquants = self._quants.size
         if locs.shape[-1] != self._nquants:  # pragma: no cover
@@ -119,7 +119,7 @@ class quant_gen(Pdf_rows_gen):
         self._valatloc[:,0] = 0.
         self._valatloc[:,1:] = (self._quants[1:] - self._quants[0:-1])/(self._locs[:,1:] - self._locs[:,0:-1])
 
- 
+
     @property
     def quants(self):
         """Return quantiles used to build the CDF"""
@@ -139,7 +139,7 @@ class quant_gen(Pdf_rows_gen):
             return evaluate_hist_multi_x_multi_y(xr, rr, self._locs, self._valatloc)
         return evaluate_unfactored_hist_multi_x_multi_y(xr, rr, self._locs, self._valatloc)
 
-    
+
     def _cdf(self, x, row):
         # pylint: disable=arguments-differ
         factored, xr, rr, _ = self._sliceargs(x, row)

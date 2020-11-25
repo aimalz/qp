@@ -67,7 +67,7 @@ def pdf_func_tests(pdf, test_data, short=False, check_props=True):
     assert_all_small(check_pdfs_slice, atol=2e-2, test_name="pdf_slice")
 
 
-    if short:
+    if short: #pragma: no cover
         return pdf
 
     cdfs = pdf.cdf(xpts)
