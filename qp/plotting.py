@@ -203,7 +203,7 @@ def plot_pdf_histogram_on_axes(axes, hist, **kwargs):
     axes.scatter(hist[0], np.zeros(np.shape(hist[0])), color=COLORS['histogram'], marker='|', s=100, label='Histogram Bin Ends', alpha=0.75)
     bin_centers = (hist[0][0:-1] + hist[0][1:])/2.
     kwargs.setdefault('label', 'Histogram Interpolated PDF')
-    axes.plot(bin_centers, np.squeeze(hist[1]), color=COLORS['histogram'], lw=2.0, alpha=1.0, linestyle=STYLES['histogram'], **kwargs)
+    axes.hist(bin_centers, bins=hist[0], weights=np.squeeze(hist[1]), color=COLORS['histogram'], lw=None, alpha=1.0, **kwargs)
     return axes
 
 
