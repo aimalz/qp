@@ -3,8 +3,7 @@
 import numpy as np
 
 from scipy import stats as sps
-from scipy.interpolate import splev, splrep, interp1d
-from scipy.integrate import quad
+from scipy.interpolate import interp1d
 import sys
 
 epsilon = sys.float_info.epsilon
@@ -87,69 +86,6 @@ def normalize_interp1d(xvals, yvals):
     return (yvals.T / integrals).T
 
 
-def normalize_spline(xvals, yvals, limits, **kwargs):
-    """
-    Normalize a set of 1D interpolators
-
-    Parameters
-    ----------
-    xvals : array-like
-        X-values used for the spline
-    yvals : array-like
-        Y-values used for the spline
-    limits : tuple (2)
-        Lower and Upper limits of integration
-
-    Keywords
-    --------
-    Passed to the `scipy.quad` intergation function
-
-    Returns
-    -------
-    ynorm: array-like
-        Normalized y-vals
-    """
-
-    def row_integral(irow):
-        spline = lambda xv : splev(xv, splrep(xvals[irow], yvals[irow]))
-        return quad(spline, limits[0], limits[1], **kwargs)[0]
-
-    vv = np.vectorize(row_integral)
-    integrals = vv(np.arange(xvals.shape[0]))
-    return (yvals.T / integrals).T
-
-
-def build_splines(xvals, yvals):
-    """
-    Build a set of 1D spline representations
-
-    Parameters
-    ----------
-    xvals : array-like
-        X-values used for the spline
-    yvals : array-like
-        Y-values used for the spline
-
-    Returns
-    -------
-    splx : array-like
-        Spline knot xvalues
-    sply : array-like
-        Spline knot yvalues
-    spln : array-like
-        Spline knot order paramters
-    """
-    l_x = []
-    l_y = []
-    l_n = []
-    for xrow, yrow in zip(xvals, yvals):
-        rep = splrep(xrow, yrow)
-        l_x.append(rep[0])
-        l_y.append(rep[1])
-        l_n.append(rep[2])
-    return np.vstack(l_x), np.vstack(l_y), np.vstack(l_n)
-
-
 def build_kdes(samples, **kwargs):
     """
     Build a set of Gaussian Kernal Density Estimates
@@ -189,6 +125,112 @@ def evaluate_kdes(xvals, kdes):
     """
     return np.vstack([kde(xvals) for kde in kdes])
 
+
+def evaluate_hist_x_multi_y(x, row, bins, vals):
+    """
+    Evaluate a set of values from histograms
+
+    Parameters
+    ----------
+    x : array_like (n)
+        X values to interpolate at
+    row : array_like (n)
+        Which rows to interpolate at
+    bins : array_like (N)
+        X-values used for the interpolation
+    vals : array_like (N, M)
+        Y-avlues used for the inteolation
+
+    Returns
+    -------
+    out : array_like (M, n)
+        The histogram values
+    """
+    idx = np.searchsorted(bins, x, side='left').clip(0, bins.size-2)
+    return vals[:,idx][row].flatten()
+
+
+def evaluate_unfactored_hist_x_multi_y(x, row, bins, vals):
+    """
+    Evaluate a set of values from histograms
+
+    Parameters
+    ----------
+    x : array_like (n)
+        X values to interpolate at
+    row : array_like (n)
+        Which rows to interpolate at
+    bins : array_like (N)
+        X-values used for the interpolation
+    vals : array_like (N, M)
+        Y-avlues used for the inteolation
+
+    Returns
+    -------
+    out : array_like (M, n)
+        The histogram values
+    """
+    idx = np.searchsorted(bins, x, side='left').clip(0, bins.size-2)
+    def evaluate_row(idxv, rv):
+        return vals[rv, idxv]
+    vv = np.vectorize(evaluate_row)
+    return vv(idx, row)
+
+
+def evaluate_hist_multi_x_multi_y(x, row, bins, vals):
+    """
+    Evaluate a set of values from histograms
+
+    Parameters
+    ----------
+    x : array_like (n)
+        X values to interpolate at
+    row : array_like (n)
+        Which rows to interpolate at
+    bins : array_like (N, M)
+        X-values used for the interpolation
+    vals : array_like (N, M)
+        Y-avlues used for the inteolation
+
+    Returns
+    -------
+    out : array_like (M, n)
+        The histogram values
+    """
+    n_vals = bins.shape[-1]
+    def evaluate_row(rv):
+        idx = np.searchsorted(np.squeeze(bins[rv]), x, side='left').clip(0, n_vals-1)
+        return np.squeeze(vals[rv])[idx].flatten()
+    vv = np.vectorize(evaluate_row, signature="(1)->(%i)" % (x.size))
+    return vv(np.expand_dims(row, -1)).flatten()
+
+
+def evaluate_unfactored_hist_multi_x_multi_y(x, row, bins, vals):
+    """
+    Evaluate a set of values from histograms
+
+    Parameters
+    ----------
+    x : array_like (n)
+        X values to interpolate at
+    row : array_like (n)
+        Which rows to interpolate at
+    bins : array_like (N, M)
+        X-values used for the interpolation
+    vals : array_like (N, M)
+        Y-avlues used for the inteolation
+
+    Returns
+    -------
+    out : array_like (M, n)
+        The histogram values
+    """
+    n_vals = bins.shape[-1]
+    def evaluate_row(xv, rv):
+        idx =  np.searchsorted(bins[rv], xv, side='left').clip(0, n_vals-1)
+        return vals[rv,idx]
+    vv = np.vectorize(evaluate_row)
+    return vv(x, row)
 
 
 def interpolate_unfactored_x_multi_y(x, row, xvals, yvals, **kwargs):
