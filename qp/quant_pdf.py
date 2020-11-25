@@ -1,18 +1,68 @@
 """This module implements a PDT distribution sub-class using interpolated quantiles
 """
 
-
+import sys
 import numpy as np
 
 from scipy.stats import rv_continuous
 
 from qp.pdf_gen import Pdf_rows_gen
 
-from qp.conversion_funcs import convert_using_quantiles
+from qp.conversion_funcs import extract_quantiles
 from qp.plotting import get_axes_and_xlims, plot_pdf_quantiles_on_axes
-from qp.utils import interpolate_unfactored_multi_x_y, interpolate_unfactored_x_multi_y, interpolate_multi_x_y, interpolate_x_multi_y
+from qp.utils import evaluate_hist_multi_x_multi_y, evaluate_unfactored_hist_multi_x_multi_y,\
+     interpolate_unfactored_multi_x_multi_y, interpolate_unfactored_multi_x_y, interpolate_unfactored_x_multi_y,\
+     interpolate_multi_x_y, interpolate_x_multi_y, interpolate_multi_x_multi_y
 from qp.test_data import QUANTS, QLOCS, TEST_XVALS
 from qp.factory import add_class
+
+
+epsilon = sys.float_info.epsilon
+
+def pad_quantiles(quants, locs, xmin, xmax):
+    """Pad the quantiles and locations used to build a quantile representation
+
+    Paramters
+    ---------
+    quants : array_like
+        The quantiles used to build the CDF
+    locs : array_like
+        The locations at which those quantiles are reached
+
+    Returns
+    -------
+    quants : array_like
+        The quantiles used to build the CDF
+    locs : array_like
+        The locations at which those quantiles are reached
+    """
+    n_out = n_vals = quants.size
+    if quants[0] > sys.float_info.epsilon:
+        offset_lo = 1
+        pad_lo = True
+        n_out += 1
+    else:
+        offset_lo = 0
+        pad_lo = False    
+    if quants[-1] < 1.:
+        pad_hi = True
+        n_out += 1
+    else:
+        pad_hi = False
+    if n_out == n_vals:
+        return quants, locs
+    quants_out = np.zeros((n_out), quants.dtype)
+    locs_out = np.zeros((locs.shape[0], n_out), quants.dtype)
+    quants_out[offset_lo:n_vals+offset_lo] = quants
+    locs_out[:,offset_lo:n_vals+offset_lo] = locs
+    if pad_lo:
+        locs_out[:, 0] = xmin * np.ones((locs.shape[0]))
+
+    if pad_hi:
+        quants_out[-1] = 1.
+        locs_out[:,-1] = xmax * np.ones((locs.shape[0]))
+    return quants_out, locs_out
+    
 
 class quant_gen(Pdf_rows_gen):
     """Spline based distribution
@@ -44,20 +94,32 @@ class quant_gen(Pdf_rows_gen):
         """
         kwargs['npdf'] = locs.shape[0]
 
-        #kwargs['a'] = self.a = np.min(locs)
-        #kwargs['b'] = self.b = np.max(locs)
+        kwargs['a'] = self.a = np.min(locs) - 0.1
+        kwargs['b'] = self.b = np.max(locs) + 0.1
 
         super(quant_gen, self).__init__(*args, **kwargs)
 
+        check_input = kwargs.pop('check_input', True)
+        if check_input:
+            quants, locs = pad_quantiles(quants, locs, self.a, self.b)
+        
         self._quants = np.asarray(quants)
         self._nquants = self._quants.size
         if locs.shape[-1] != self._nquants:  # pragma: no cover
             raise ValueError("Number of locations (%i) != number of quantile values (%i)" % (self._nquants, locs.shape[-1]))
         self._locs = locs
-
+        self._valatloc = None
         self._addmetadata('quants', self._quants)
         self._addobjdata('locs', self._locs)
 
+
+    def _compute_valatloc(self):
+        copy_shape = np.array(self._locs.shape)
+        self._valatloc = np.ndarray(copy_shape)
+        self._valatloc[:,0] = 0.
+        self._valatloc[:,1:] = (self._quants[1:] - self._quants[0:-1])/(self._locs[:,1:] - self._locs[:,0:-1])
+
+ 
     @property
     def quants(self):
         """Return quantiles used to build the CDF"""
@@ -68,6 +130,16 @@ class quant_gen(Pdf_rows_gen):
         """Return the locations at which those quantiles are reached"""
         return self._locs
 
+    def _pdf(self, x, row):
+        # pylint: disable=arguments-differ
+        if self._valatloc is None:  # pragma: no cover
+            self._compute_valatloc()
+        factored, xr, rr, _ = self._sliceargs(x, row)
+        if factored:
+            return evaluate_hist_multi_x_multi_y(xr, rr, self._locs, self._valatloc)
+        return evaluate_unfactored_hist_multi_x_multi_y(xr, rr, self._locs, self._valatloc)
+
+    
     def _cdf(self, x, row):
         # pylint: disable=arguments-differ
         factored, xr, rr, _ = self._sliceargs(x, row)
@@ -110,7 +182,7 @@ class quant_gen(Pdf_rows_gen):
         Add this classes mappings to the conversion dictionary
         """
         cls._add_creation_method(cls.create, None)
-        cls._add_extraction_method(convert_using_quantiles, None)
+        cls._add_extraction_method(extract_quantiles, None)
 
 
 quant = quant_gen.create

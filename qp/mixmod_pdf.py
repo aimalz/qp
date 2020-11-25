@@ -8,7 +8,7 @@ from scipy import stats as sps
 
 
 from qp.pdf_gen import Pdf_rows_gen
-from qp.conversion_funcs import convert_using_mixmod_fit_samples
+from qp.conversion_funcs import extract_mixmod_fit_samples
 from qp.test_data import WEIGHT_MIXMOD, MEAN_MIXMOD, STD_MIXMOD, TEST_XVALS
 from qp.factory import add_class
 
@@ -100,7 +100,7 @@ class mixmod_gen(Pdf_rows_gen):
         Add this classes mappings to the conversion dictionary
         """
         cls._add_creation_method(cls.create, None)
-        cls._add_extraction_method(convert_using_mixmod_fit_samples, None)
+        cls._add_extraction_method(extract_mixmod_fit_samples, None)
 
 
 mixmod = mixmod_gen.create

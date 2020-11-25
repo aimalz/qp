@@ -5,14 +5,82 @@ import numpy as np
 
 from scipy.stats import rv_continuous
 
-from scipy.interpolate import splev, splint
+from scipy.interpolate import splev, splrep, splint
+from scipy.integrate import quad
 
 from qp.pdf_gen import Pdf_rows_gen
-from qp.conversion_funcs import convert_using_xy_vals, convert_using_samples
+from qp.conversion_funcs import extract_xy_vals, extract_samples
 from qp.plotting import get_axes_and_xlims, plot_pdf_on_axes
-from qp.utils import normalize_spline, build_splines, build_kdes, evaluate_kdes
+from qp.utils import build_kdes, evaluate_kdes
 from qp.test_data import SAMPLES, XARRAY, YARRAY, TEST_XVALS
 from qp.factory import add_class
+
+
+def normalize_spline(xvals, yvals, limits, **kwargs):
+    """
+    Normalize a set of 1D interpolators
+
+    Parameters
+    ----------
+    xvals : array-like
+        X-values used for the spline
+    yvals : array-like
+        Y-values used for the spline
+    limits : tuple (2)
+        Lower and Upper limits of integration
+
+    Keywords
+    --------
+    Passed to the `scipy.quad` intergation function
+
+    Returns
+    -------
+    ynorm: array-like
+        Normalized y-vals
+    """
+
+    def row_integral(irow):
+        spline = lambda xv : splev(xv, splrep(xvals[irow], yvals[irow]))
+        return quad(spline, limits[0], limits[1], **kwargs)[0]
+
+    vv = np.vectorize(row_integral)
+    integrals = vv(np.arange(xvals.shape[0]))
+    return (yvals.T / integrals).T
+
+
+def build_splines(xvals, yvals):
+    """
+    Build a set of 1D spline representations
+
+    Parameters
+    ----------
+    xvals : array-like
+        X-values used for the spline
+    yvals : array-like
+        Y-values used for the spline
+
+    Returns
+    -------
+    splx : array-like
+        Spline knot xvalues
+    sply : array-like
+        Spline knot yvalues
+    spln : array-like
+        Spline knot order paramters
+    """
+    l_x = []
+    l_y = []
+    l_n = []
+    for xrow, yrow in zip(xvals, yvals):
+        rep = splrep(xrow, yrow)
+        l_x.append(rep[0])
+        l_y.append(rep[1])
+        l_n.append(rep[2])
+    return np.vstack(l_x), np.vstack(l_y), np.vstack(l_n)
+
+
+
+
 
 class spline_gen(Pdf_rows_gen):
     """Spline based distribution
@@ -43,7 +111,7 @@ class spline_gen(Pdf_rows_gen):
 
         Notes
         -----
-        Either (xvals and yvals) or (splx, sply and spln) must be provided.
+        Either (splx, sply and spln) must be provided.
         """
         splx = kwargs.pop('splx', None)
         sply = kwargs.pop('sply', None)
@@ -209,18 +277,19 @@ class spline_gen(Pdf_rows_gen):
         cls._add_creation_method(cls.create, None)
         cls._add_creation_method(cls.create_from_xy_vals, "xy")
         cls._add_creation_method(cls.create_from_samples, "samples")
-        cls._add_extraction_method(convert_using_xy_vals, "xy")
-        cls._add_extraction_method(convert_using_samples, "samples")
+        cls._add_extraction_method(extract_xy_vals, "xy")
+        cls._add_extraction_method(extract_samples, "samples")
 
 
 spline = spline_gen.create
 spline_from_xy = spline_gen.create_from_xy_vals
 spline_from_samples = spline_gen.create_from_samples
 
-try:
-    SPLX, SPLY, SPLN = spline_gen.build_normed_splines(XARRAY, YARRAY)
-except: #pragma: no cover # pylint: disable=bare-except
-    SPLX, SPLY, SPN = (None, None, None)
+SPLX, SPLY, SPLN = spline_gen.build_normed_splines(XARRAY, YARRAY)
+#try:
+#    SPLX, SPLY, SPLN = spline_gen.build_normed_splines(XARRAY, YARRAY)
+#except: #pragma: no cover # pylint: disable=bare-except
+#    SPLX, SPLY, SPN = (None, None, None)
 
 add_class(spline_gen)
 

@@ -7,9 +7,10 @@ import numpy as np
 from scipy.stats import rv_continuous
 
 from qp.pdf_gen import Pdf_rows_gen
-from qp.conversion_funcs import convert_using_hist_values, convert_using_hist_samples
+from qp.conversion_funcs import extract_hist_values, extract_hist_samples
 from qp.plotting import get_axes_and_xlims, plot_pdf_histogram_on_axes
-from qp.utils import interpolate_unfactored_multi_x_y, interpolate_unfactored_x_multi_y,\
+from qp.utils import evaluate_hist_x_multi_y, evaluate_unfactored_hist_x_multi_y,\
+     interpolate_unfactored_multi_x_y, interpolate_unfactored_x_multi_y,\
      interpolate_multi_x_y, interpolate_x_multi_y
 from qp.test_data import XBINS, HIST_DATA, TEST_XVALS, NSAMPLES
 from qp.factory import add_class
@@ -83,15 +84,10 @@ class hist_gen(Pdf_rows_gen):
     def _pdf(self, x, row):
         # pylint: disable=arguments-differ
         factored, xr, rr, _ = self._sliceargs(x, row)
-        idx = np.searchsorted(self._hbins, xr, side='left').clip(0, self._hbins.size-2)
         if factored:
             # x values and row values factorize
-            return self._hpdfs[:,idx][rr].flat
-        # x values and row values do not factorize, vectorize the call to histogram lookup
-        def pdf_row(idxv, rv):
-            return self._hpdfs[rv, idxv]
-        vv = np.vectorize(pdf_row)
-        return vv(idx, rr)
+            return evaluate_hist_x_multi_y(xr, rr, self._hbins, self._hpdfs)
+        return evaluate_unfactored_hist_x_multi_y(xr, rr, self._hbins, self._hpdfs)
 
 
     def _cdf(self, x, row):
@@ -138,8 +134,8 @@ class hist_gen(Pdf_rows_gen):
         Add this classes mappings to the conversion dictionary
         """
         cls._add_creation_method(cls.create, None)
-        cls._add_extraction_method(convert_using_hist_values, None)
-        cls._add_extraction_method(convert_using_hist_samples, "samples")
+        cls._add_extraction_method(extract_hist_values, None)
+        cls._add_extraction_method(extract_hist_samples, "samples")
 
 
 hist = hist_gen.create
