@@ -38,7 +38,7 @@ class Ensemble:
 
 
     def __getitem__(self, key):
-        """Build a `scipy.rv_frozen` object for a sub-set of the PDFs in this ensemble
+        """Build a `qp.Ensemble` object for a sub-set of the PDFs in this ensemble
 
         Parameter
         ---------
@@ -51,8 +51,18 @@ class Ensemble:
             The distribution for the requeseted element or slide
         """
         red_data = {}
-        red_data.update(slice_dict(self._frozen.kwds, key))
-        return self._gen_obj(**red_data)
+        md = self.metadata()
+        md.pop('pdf_name')
+        md.pop('pdf_version')
+        for k, v in md.items():
+            red_data[k] = np.squeeze(v)
+        dd = slice_dict(self.objdata(), key)
+        for k, v in dd.items():
+            if len(np.shape(v)) < 2:
+                red_data[k] = np.expand_dims(v, 0)
+            else:
+                red_data[k] = v
+        return Ensemble(self._gen_obj.create, data=red_data)
 
     @property
     def gen_func(self):
@@ -63,6 +73,16 @@ class Ensemble:
     def gen_class(self):
         """Return the class used to generate distributions for this ensemble"""
         return self._gen_class
+
+    @property
+    def dist(self):
+        """Return the `scipy.stats.rv_continuous` object that generates distributions for this ensemble"""
+        return self._gen_obj
+
+    @property
+    def kwds(self):
+        """Return the kwds associated to the frozen object"""
+        return self._frozen.kwds
 
     @property
     def gen_obj(self):
@@ -514,6 +534,27 @@ class Ensemble:
         vv = np.vectorize(rmse_helper)
         rmses = vv(P_eval, Q_eval)
         return rmses
+
+
+    def plot(self, key=0, **kwargs):
+        """Plot the pdf as a curve
+
+        Parameters
+        ----------
+        key : `int` or `slice`
+            Which PDF or PDFs from this ensemble to plot
+        """
+        return self._gen_class.plot(self[key], **kwargs)
+
+    def plot_native(self, key=0, **kwargs):
+        """Plot the pdf as a curve
+
+        Parameters
+        ----------
+        key : `int` or `slice`
+            Which PDF or PDFs from this ensemble to plot
+        """
+        return self._gen_class.plot_native(self[key], **kwargs)
 
 
     # def stack(self, loc, using, vb=True):

@@ -149,7 +149,7 @@ def plot_pdf_quantiles_on_axes(axes, xvals, yvals, quantiles, **kwargs):
     """
     Plot a PDF on a set of axes, by evaluating at the quantiles provided
 
-    Parameters
+`    Parameters
     ----------
     axes : The axes we want to plot the data on
 
@@ -243,11 +243,17 @@ def plot_pdf_samples_on_axes(axes, pdf, samples, **kwargs):
 
 def plot_native(pdf, **kwargs):
     """Utility function to plot a pdf in a format that is specific to that type of pdf"""
-    axes = pdf.dist.plot_native(pdf, **kwargs)
+    if hasattr(pdf, 'plot_native'):
+        axes = pdf.plot_native(**kwargs)
+    else:
+        axes = pdf.dist.plot_native(pdf, **kwargs)
     return axes.figure, axes
 
 
 def plot(pdf, **kwargs):
     """Utility function to plot a pdf in a format that is specific to that type of pdf"""
-    axes = pdf.dist.plot(pdf, **kwargs)
+    if hasattr(pdf, 'plot_native'):
+        axes = pdf.plot(**kwargs)
+    else:
+        axes = pdf.dist.plot(pdf, **kwargs)
     return axes.figure, axes

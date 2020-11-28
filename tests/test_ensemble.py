@@ -71,7 +71,7 @@ class EnsembleTestCase(unittest.TestCase):
         integral = ens.integrate(limits=(ens.gen_obj.a, ens.gen_obj.a))
         interval = ens.interval(0.05)
 
-        for N in range(4):
+        for N in range(3):
             moment_partial = ens.moment_partial(N, limits=(test_data.XMIN, test_data.XMAX))
             calc_moment = qp.metrics.calculate_moment(ens, N, limits=(test_data.XMIN, test_data.XMAX))
             assert_all_close(moment_partial, calc_moment, rtol=5e-2, test_name="moment_partial_%i" % N)
@@ -82,6 +82,17 @@ class EnsembleTestCase(unittest.TestCase):
             #logpmf = ens.logpmf(N)
 
 
+        axes = ens.plot(xlim=(xpts[0], xpts[-1]))
+        ens.plot_native(axes=axes)
+
+        red_ens = ens[np.arange(5)]
+        red_pdf = red_ens.pdf(xpts)
+
+        check_red = red_pdf - pdfs[0:5]
+        assert_all_small(check_red, atol=1e-5, test_name="red")
+        
+
+        
     def test_norm(self):
         key = 'norm'
         test_data = qp.stats.norm_gen.test_data[key]

@@ -146,8 +146,9 @@ def evaluate_hist_x_multi_y(x, row, bins, vals):
     out : array_like (M, n)
         The histogram values
     """
-    idx = np.searchsorted(bins, x, side='left').clip(0, bins.size-2)
-    return vals[:,idx][row].flatten()
+    idx = np.searchsorted(bins, x, side='left')-1
+    mask = np.ones((row.size, 1), dtype=bool) * ((idx >= 0)*(idx<bins.size))
+    return np.where(mask.flatten(), vals[:,idx][row].flatten(), 0)
 
 
 def evaluate_unfactored_hist_x_multi_y(x, row, bins, vals):
@@ -170,11 +171,12 @@ def evaluate_unfactored_hist_x_multi_y(x, row, bins, vals):
     out : array_like (M, n)
         The histogram values
     """
-    idx = np.searchsorted(bins, x, side='left').clip(0, bins.size-2)
-    def evaluate_row(idxv, rv):
-        return vals[rv, idxv]
+    idx = np.searchsorted(bins, x, side='left')-1
+    mask = (idx >= 0)*(idx<bins.size)
+    def evaluate_row(idxv, maskv, rv):
+        return np.where(maskv, vals[rv, idxv], 0)
     vv = np.vectorize(evaluate_row)
-    return vv(idx, row)
+    return vv(idx, mask, row)
 
 
 def evaluate_hist_multi_x_multi_y(x, row, bins, vals):
@@ -197,10 +199,11 @@ def evaluate_hist_multi_x_multi_y(x, row, bins, vals):
     out : array_like (M, n)
         The histogram values
     """
-    n_vals = bins.shape[-1]
+    n_vals = bins.shape[-1] - 1
     def evaluate_row(rv):
-        idx = np.searchsorted(np.squeeze(bins[rv]), x, side='left').clip(0, n_vals-1)
-        return np.squeeze(vals[rv])[idx].flatten()
+        idx = np.searchsorted(np.squeeze(bins[rv]), x, side='left')-1
+        mask = (idx >= 0)*(idx < n_vals)
+        return np.where(mask, np.squeeze(vals[rv])[idx.clip(0, n_vals-1)], 0).flatten()
     vv = np.vectorize(evaluate_row, signature="(1)->(%i)" % (x.size))
     return vv(np.expand_dims(row, -1)).flatten()
 
@@ -225,10 +228,11 @@ def evaluate_unfactored_hist_multi_x_multi_y(x, row, bins, vals):
     out : array_like (M, n)
         The histogram values
     """
-    n_vals = bins.shape[-1]
+    n_vals = bins.shape[-1] - 1
     def evaluate_row(xv, rv):
-        idx =  np.searchsorted(bins[rv], xv, side='left').clip(0, n_vals-1)
-        return vals[rv,idx]
+        idx = np.searchsorted(bins[rv], xv, side='left')-1
+        mask = (idx >= 0)*(idx < n_vals)
+        return np.where(mask, vals[rv,idx.clip(0, n_vals-1)], 0)
     vv = np.vectorize(evaluate_row)
     return vv(x, row)
 

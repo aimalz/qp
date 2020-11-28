@@ -159,8 +159,14 @@ def plotting_func_tests(ensemble, do_samples=False):
     fig, axes = plot(pdf, axes=axes)
     assert fig is not None
     assert axes is not None
+    fig, axes = plot_native(pdf.frozen,  xlim=(-5, 5))
+    assert fig is not None
+    assert axes is not None
+    fig, axes = plot(pdf.frozen,  xlim=(-5, 5))
+    assert fig is not None
+    assert axes is not None
     if do_samples:
-        samples = pdf.rvs(size=(1, 1000))
+        samples = pdf.rvs(size=1000)
         plot_pdf_samples_on_axes(axes, pdf, samples)
 
 

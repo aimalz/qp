@@ -53,7 +53,7 @@ def time_convert(ens, cls_to, **kwds):
 
 
 t0 = time.time()
-ens_orig = qp.Ensemble.read_from(testfile)
+ens_orig = qp.read(testfile)
 t1 = time.time()
 print("Read %.2f s" % (t1-t0))
 

@@ -19,7 +19,7 @@ from qp.factory import add_class
 
 epsilon = sys.float_info.epsilon
 
-def pad_quantiles(quants, locs, xmin, xmax):
+def pad_quantiles(quants, locs):
     """Pad the quantiles and locations used to build a quantile representation
 
     Paramters
@@ -56,11 +56,11 @@ def pad_quantiles(quants, locs, xmin, xmax):
     quants_out[offset_lo:n_vals+offset_lo] = quants
     locs_out[:,offset_lo:n_vals+offset_lo] = locs
     if pad_lo:
-        locs_out[:, 0] = xmin * np.ones((locs.shape[0]))
+        locs_out[:, 0] = locs[:, 0] - 0.1
 
     if pad_hi:
         quants_out[-1] = 1.
-        locs_out[:,-1] = xmax * np.ones((locs.shape[0]))
+        locs_out[:,-1] = locs[:, -1] + 0.1
     return quants_out, locs_out
 
 
@@ -94,14 +94,14 @@ class quant_gen(Pdf_rows_gen):
         """
         kwargs['npdf'] = locs.shape[0]
 
-        kwargs['a'] = self.a = np.min(locs) - 0.1
-        kwargs['b'] = self.b = np.max(locs) + 0.1
+        kwargs['a'] = self.a = np.min(locs)
+        kwargs['b'] = self.b = np.max(locs)
 
         super(quant_gen, self).__init__(*args, **kwargs)
 
         check_input = kwargs.pop('check_input', True)
         if check_input:
-            quants, locs = pad_quantiles(quants, locs, self.a, self.b)
+            quants, locs = pad_quantiles(quants, locs)
 
         self._quants = np.asarray(quants)
         self._nquants = self._quants.size
@@ -114,10 +114,7 @@ class quant_gen(Pdf_rows_gen):
 
 
     def _compute_valatloc(self):
-        copy_shape = np.array(self._locs.shape)
-        self._valatloc = np.ndarray(copy_shape)
-        self._valatloc[:,0] = 0.
-        self._valatloc[:,1:] = (self._quants[1:] - self._quants[0:-1])/(self._locs[:,1:] - self._locs[:,0:-1])
+        self._valatloc = (self._quants[1:] - self._quants[0:-1])/(self._locs[:,1:] - self._locs[:,0:-1])
 
 
     @property
