@@ -20,7 +20,6 @@ lib64/
 parts/
 sdist/
 var/
-_version.py
 *.egg-info/
 .installed.cfg
 *.egg
@@ -38,14 +37,15 @@ pip-delete-this-directory.txt
 # Unit test / coverage reports
 htmlcov/
 .tox/
+cover/
 .coverage
 .coverage.*
 .cache
 nosetests.xml
 coverage.xml
 *,cover
-cover/
 .hypothesis/
+sandbox/
 
 # Translations
 *.mo
@@ -80,9 +80,6 @@ celerybeat-schedule
 # dotenv
 .env
 
-# macos .DS
-.DS_Store
-
 # virtualenv
 venv/
 ENV/
@@ -99,6 +96,12 @@ demo.nbconvert.ipynb
 kld.html
 kld.nbconvert.ipynb
 plot.png
+tension.pdf
+tension.png
+precision.pdf
+precision.png
 
 # Data
 bpz_euclid_test_10_2.probs
+*.fits
+*.hdf5

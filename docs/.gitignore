@@ -20,7 +20,6 @@ lib64/
 parts/
 sdist/
 var/
-_version.py
 *.egg-info/
 .installed.cfg
 *.egg
@@ -44,7 +43,6 @@ htmlcov/
 nosetests.xml
 coverage.xml
 *,cover
-cover/
 .hypothesis/
 
 # Translations
@@ -81,7 +79,7 @@ celerybeat-schedule
 .env
 
 # macos .DS
-.DS_Store
+.DS_Store/
 
 # virtualenv
 venv/

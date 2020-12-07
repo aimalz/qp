@@ -3,9 +3,12 @@ import os
 
 # Provide path to the python modules we want to run autodoc on
 sys.path.insert(0, os.path.abspath('../qp'))
+
+import qp
+
 # Avoid imports that may be unsatisfied when running sphinx, see:
 # http://stackoverflow.com/questions/15889621/sphinx-how-to-exclude-imports-in-automodule#15912502
-autodoc_mock_imports = ["scipy","scipy.interpolate"]
+autodoc_mock_imports = ["scipy","scipy.interpolate", "sklearn"]
 
 extensions = [
     'sphinx.ext.autodoc',
@@ -30,11 +33,13 @@ master_doc = 'index'
 autosummary_generate = True
 autoclass_content = "class"
 autodoc_default_flags = ["members", "no-special-members"]
+autodoc_member_order = "bysource"
+
 
 html_sidebars = { '**': ['globaltoc.html', 'relations.html', 'sourcelink.html', 'searchbox.html'], }
 
 project = u'qp'
 author = u'Alex Malz and Phil Marshall'
 copyright = u'2016, ' + author
-version = "0.1"
-release = "0.1.0"
+version = qp.__version__
+release = qp.__version__

@@ -11,35 +11,16 @@ the PDF on a regular parameter grid. `qp` is a python package that
 supports these approximations, as well as the "quantile
 parameterization" from which the package gets its name.
 
-Tutorials
-=========
 
-See the following IPython Notebooks for some examples of using `qp`:
+Documentation Contents
+----------------------
 
-* `Basic Demo <http://htmlpreview.github.io/?https://github.com/aimalz/qp/blob/html/demo.html>`_
-* `KL Divergence Illustration <http://htmlpreview.github.io/?https://github.com/aimalz/qp/blob/html/kld.html>`_
+.. toctree::
+   :includehidden:
+   :maxdepth: 3
 
-
-API Documentation
-=================
-
-`qp` provides a `PDF` class object, that builds on the
-`scipy.stats` distributions to provide various approximate forms.
-The package also contains some `utils` for quantifying the quality of
-these approximations.
-
-
-The PDF Class
--------------
-
-.. automodule:: pdf
-    :members:
-    :undoc-members:
-
-
-Quantification Utilities
-------------------------
-
-.. automodule:: utils
-    :members:
-    :undoc-members:
+   install
+   tutorials
+   contributing
+   qp
+   

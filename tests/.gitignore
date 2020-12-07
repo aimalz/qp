@@ -20,7 +20,6 @@ lib64/
 parts/
 sdist/
 var/
-_version.py
 *.egg-info/
 .installed.cfg
 *.egg
@@ -44,8 +43,9 @@ htmlcov/
 nosetests.xml
 coverage.xml
 *,cover
-cover/
 .hypothesis/
+qp_test_ensemble.hdf5
+qp_test_ensemble_meta.hdf5
 
 # Translations
 *.mo
@@ -79,9 +79,6 @@ celerybeat-schedule
 
 # dotenv
 .env
-
-# macos .DS
-.DS_Store
 
 # virtualenv
 venv/

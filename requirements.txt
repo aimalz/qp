@@ -1,5 +1,6 @@
 matplotlib
 numpy
-pathos
-scipy
+scipy>=1.5.2
+astropy
 sklearn
+h5py
