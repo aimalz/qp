@@ -70,8 +70,10 @@ class interp_gen(Pdf_rows_gen):
     def _compute_ycumul(self):
         copy_shape = np.array(self._yvals.shape)
         self._ycumul = np.ndarray(copy_shape)
-        self._ycumul[:,0] = 0.
-        self._ycumul[:,1:] = np.cumsum((self._xvals[1:]-self._xvals[0:-1])*self._yvals[:,1:], axis=1)
+        self._ycumul[:, 0] = 0.5 * self._yvals[:, 0] * (self._xvals[1] - self._xvals[0])
+        self._ycumul[:, 1:] = np.cumsum((self._xvals[1:] - self._xvals[:-1]) *
+                                        0.5 * np.add(self._yvals[:,1:],
+                                                     self._yvals[:,:-1]), axis=1)
 
     @property
     def xvals(self):
