@@ -89,8 +89,10 @@ class interp_gen(Pdf_rows_gen):
         # pylint: disable=arguments-differ
         factored, xr, rr, _ = self._sliceargs(x, row)
         if factored:
-            return interpolate_x_multi_y(xr, self._xvals, self._yvals[rr]).reshape(x.shape)
-        return interpolate_unfactored_x_multi_y(xr, rr, self._xvals, self._yvals)
+            return interpolate_x_multi_y(xr, self._xvals, self._yvals[rr], bounds_error=False,
+                                         fill_value=0.).reshape(x.shape)
+        return interpolate_unfactored_x_multi_y(xr, rr, self._xvals, self._yvals,
+                                                bounds_error=False, fill_value=0.)
 
     def _cdf(self, x, row):
         # pylint: disable=arguments-differ
@@ -98,8 +100,10 @@ class interp_gen(Pdf_rows_gen):
             self._compute_ycumul()
         factored, xr, rr, _ = self._sliceargs(x, row)
         if factored:
-            return interpolate_x_multi_y(xr, self._xvals, self._ycumul[rr]).reshape(x.shape)
-        return interpolate_unfactored_x_multi_y(xr, rr, self._xvals, self._ycumul)
+            return interpolate_x_multi_y(xr, self._xvals, self._ycumul[rr],
+                                         bounds_error=False, fill_value=(0.,1.)).reshape(x.shape)
+        return interpolate_unfactored_x_multi_y(xr, rr, self._xvals, self._ycumul,
+                                                bounds_error=False, fill_value=(0.,1.))
 
     def _ppf(self, x, row):
         # pylint: disable=arguments-differ
@@ -107,8 +111,10 @@ class interp_gen(Pdf_rows_gen):
         if self._ycumul is None:  # pragma: no cover
             self._compute_ycumul()
         if factored:
-            return interpolate_multi_x_y(xr, self._ycumul[rr], self._xvals).reshape(x.shape)
-        return interpolate_unfactored_multi_x_y(xr, rr, self._ycumul, self._xvals)
+            return interpolate_multi_x_y(xr, self._ycumul[rr], self._xvals, bounds_error=False,
+                                         fill_value=(0.,1.)).reshape(x.shape)
+        return interpolate_unfactored_multi_x_y(xr, rr, self._ycumul, self._xvals,
+                                                bounds_error=False, fill_value=(0.,1.))
 
     def _updated_ctor_param(self):
         """
