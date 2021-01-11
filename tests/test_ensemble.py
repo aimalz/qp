@@ -3,6 +3,7 @@ Unit tests for PDF class
 """
 import sys
 import os
+import copy
 import numpy as np, scipy.stats as sps
 import unittest
 import qp
@@ -91,26 +92,27 @@ class EnsembleTestCase(unittest.TestCase):
         check_red = red_pdf - pdfs[0:5]
         assert_all_small(check_red, atol=1e-5, test_name="red")
         
-
         
     def test_norm(self):
         key = 'norm'
         test_data = qp.stats.norm_gen.test_data[key]
-        self.ens_n = build_ensemble(test_data)
-        assert hasattr(self.ens_n, 'gen_func')
-        assert isinstance(self.ens_n.gen_obj, qp.stats.norm_gen)
-        assert 'loc' in self.ens_n.frozen.kwds
-        self._run_ensemble_funcs(self.ens_n, test_data['test_xvals'])
+        self.ens_norm = build_ensemble(test_data)
+        assert hasattr(self.ens_norm, 'gen_func')
+        assert isinstance(self.ens_norm.gen_obj, qp.stats.norm_gen)
+        assert 'loc' in self.ens_norm.frozen.kwds
+        self._run_ensemble_funcs(self.ens_norm, test_data['test_xvals'])
 
     def test_hist(self):
         key = 'hist'
         test_data = qp.hist_gen.test_data[key]
-        self.ens_n = build_ensemble(test_data)
-        assert isinstance(self.ens_n.gen_obj, qp.hist_gen)
-        self._run_ensemble_funcs(self.ens_n, test_data['test_xvals'])
+        self.ens_h = build_ensemble(test_data)
+        assert isinstance(self.ens_h.gen_obj, qp.hist_gen)
+        self._run_ensemble_funcs(self.ens_h, test_data['test_xvals'])
 
-
-
+        pdfs_mod = copy.copy(self.ens_h.dist.pdfs)
+        pdfs_mod[:,7] = 0.5*pdfs_mod[:,7]
+        self.ens_h.update_objdata(dict(pdfs=pdfs_mod))
+        
 
 
 if __name__ == '__main__':
