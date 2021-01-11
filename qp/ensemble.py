@@ -128,7 +128,7 @@ class Ensemble:
             raise KeyError("Class named %s does not have a extraction_method named %s" % (class_name, method))
         data = extract_func(self, **kwds)
         return Ensemble(ctor_func, data=data)
-    
+
     def update(self, data):
         """Update the frozen object
 
@@ -156,8 +156,8 @@ class Ensemble:
                 continue
             new_data[k] = np.squeeze(v)
         new_data.update(self.objdata())
-        new_data.update(data)        
-        self.update(new_data)        
+        new_data.update(data)
+        self.update(new_data)
 
     def metadata(self):
         """Return the metadata for this ensemble
