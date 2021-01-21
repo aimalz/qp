@@ -36,7 +36,6 @@ class Ensemble:
         self._gridded = None
         self._samples = None
 
-
     def __getitem__(self, key):
         """Build a `qp.Ensemble` object for a sub-set of the PDFs in this ensemble
 
@@ -130,6 +129,35 @@ class Ensemble:
         data = extract_func(self, **kwds)
         return Ensemble(ctor_func, data=data)
 
+    def update(self, data):
+        """Update the frozen object
+
+        Parameters
+        ----------
+        data : `dict`
+            Dictionary with data used to construct the ensemble
+        """
+        self._frozen = self._gen_func(**data)
+        self._gen_obj = self._frozen.dist
+        self._gridded = None
+        self._samples = None
+
+    def update_objdata(self, data):
+        """Update the object data in the distribution
+
+        Parameters
+        ----------
+        data : `dict`
+            Dictionary with data used to construct the ensemble
+        """
+        new_data = {}
+        for k, v in self.metadata().items():
+            if k in ['pdf_name', 'pdf_version']:
+                continue
+            new_data[k] = np.squeeze(v)
+        new_data.update(self.objdata())
+        new_data.update(data)
+        self.update(new_data)
 
     def metadata(self):
         """Return the metadata for this ensemble
