@@ -235,7 +235,7 @@ class spline_gen(Pdf_rows_gen):
             return vv(spl).flat
 
         def pdf_row(xv, irow):
-            return splev(xv, (self._splx[irow], self._sply[irow], self._spln[irow]))
+            return splev(xv, (self._splx[irow], self._sply[irow], self._spln[irow].item()))
 
         vv = np.vectorize(pdf_row)
         return vv(xr, rr)
@@ -244,7 +244,7 @@ class spline_gen(Pdf_rows_gen):
     def _cdf(self, x, row):
         # pylint: disable=arguments-differ
         def cdf_row(xv, irow):
-            return splint(self.a, xv, (self._splx[irow], self._sply[irow], self._spln[irow]))
+            return splint(self.a, xv, (self._splx[irow], self._sply[irow], self._spln[irow].item()))
 
         vv = np.vectorize(cdf_row)
         return vv(x, row)
