@@ -38,7 +38,7 @@ jobs:
         pylint --exit-zero qp
     - name: Test with pytest
       run: |
-        python -m pytest --cov=./qp --cov-report=xml
+        python -m pytest --cov=./qp --cov-report=xml tests
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
       with:
