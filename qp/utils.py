@@ -449,7 +449,7 @@ def profile(x_data, y_data, x_bins, std=True):
     for i in range(x_bins.size-1):
         mask_col = mask * (idx == i)
         count[i] = mask_col.sum()
-        if mask_col.sum() == 0:
+        if mask_col.sum() == 0:  #pragma: no cover
             vals[i] = np.nan
             errs[i] = np.nan
             continue
