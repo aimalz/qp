@@ -296,9 +296,14 @@ class Pdf_rows_gen(rv_continuous, Pdf_gen):
 
     @staticmethod
     def _sliceargs(x, row, *args):
+        if np.size(x) == 1 or np.size(row) == 1:
+            return False, x, row, args
         xx = np.unique(x)
         rr = np.unique(row)
-
+        if np.size(xx) == np.size(x):
+            xx = x
+        if np.size(rr) == np.size(row):
+            rr = row
         if np.size(xx) * np.size(rr) != np.size(x):
             return False, x, row, args
         outargs = [arg[0:np.size(xx)] for arg in args]
