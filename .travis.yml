@@ -1,5 +1,21 @@
 language: python
 
+# Install latex, and the various packages used by the start_paper Makefile:
+before_install:
+  - sudo apt-get -qq update
+  - sudo apt-get install -y gsl-bin libgsl0-dev
+  - sudo apt-get install latexmk
+  - sudo apt-get install latex-xcolor
+addons:
+    apt:
+        packages:
+            - texlive-generic-recommended
+            - texlive-latex-recommended
+            - texlive-latex-extra
+            - texlive-fonts-recommended
+            - texlive-fonts-extra
+            - texlive-publishers
+
 install:
   - sudo apt-get update
   # Install the dependencies and the package:
@@ -24,7 +40,11 @@ script:
   - jupyter nbconvert --ExecutePreprocessor.kernel_name=python --ExecutePreprocessor.timeout=600 --to html --execute docs/notebooks/demo.ipynb ; cp docs/notebooks/demo.html .
   - jupyter nbconvert --ExecutePreprocessor.kernel_name=python --ExecutePreprocessor.timeout=600 --to html --execute docs/notebooks/kld.ipynb ; cp docs/notebooks/kld.html .
   # Build the docs, the same way readthedocs does it:
-  - cd docs ; sphinx-build -b html . _build/html ; cd -
+  - cd docs ; sphinx-build -b html . _build/html # ; cd -
+  # Now make the PDF, and move it to the top level, ready for deployment.
+  - make -C desc-0000-qp-photo-z_approximation
+  - cd -
+  - cp docs/desc-0000-qp-photo-z_approximation/main.pdf .
 
 # Finally, if it's the master branch being updated, force-push the
 # notebook html pages to an otherwise empty "html" branch:
@@ -36,4 +56,10 @@ after_success: |
         git add -f demo.html kld.html
         git -c user.name='travis' -c user.email='travis' commit -m init
         git push -q -f https://drphilmarshall:$GITHUB_API_KEY@github.com/aimalz/qp html
+     if [ -n "$GITHUB_API_KEY" ]; then
+        git checkout --orphan pdf
+        git rm -rf .
+        git add -f main.pdf
+        git -c user.name='travis' -c user.email='travis' commit -m init
+        git push -q -f https://aimalz:$GITHUB_API_KEY@github.com/aimalz/qp pdf
     fi
