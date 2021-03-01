@@ -11,7 +11,7 @@ from scipy.integrate import quad
 from qp.pdf_gen import Pdf_rows_gen
 from qp.conversion_funcs import extract_xy_vals, extract_samples
 from qp.plotting import get_axes_and_xlims, plot_pdf_on_axes
-from qp.utils import build_kdes, evaluate_kdes
+from qp.utils import build_kdes, evaluate_kdes, reshape_to_pdf_size
 from qp.test_data import SAMPLES, XARRAY, YARRAY, TEST_XVALS
 from qp.factory import add_class
 
@@ -123,10 +123,10 @@ class spline_gen(Pdf_rows_gen):
             raise ValueError("Shape of xvals (%s) != shape of yvals (%s)" % (splx.shape, sply.shape))
         kwargs['a'] = self.a = np.min(splx)
         kwargs['b'] = self.b = np.max(splx)
-        kwargs['npdf'] = splx.shape[0]
-        self._splx = splx
-        self._sply = sply
-        self._spln = spln
+        kwargs['shape'] = splx.shape[:-1]
+        self._splx = reshape_to_pdf_size(splx, -1)
+        self._sply = reshape_to_pdf_size(sply, -1)
+        self._spln = reshape_to_pdf_size(spln, -1)
         super(spline_gen, self).__init__(*args, **kwargs)
         self._addobjdata('splx', self._splx)
         self._addobjdata('sply', self._sply)

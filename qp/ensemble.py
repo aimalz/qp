@@ -94,6 +94,11 @@ class Ensemble:
         return self._frozen
 
     @property
+    def shape(self):
+        """Return the number of PDFs in this ensemble"""
+        return self._frozen.shape
+
+    @property
     def npdf(self):
         """Return the number of PDFs in this ensemble"""
         return self._frozen.npdf

@@ -12,7 +12,7 @@ from qp.conversion_funcs import extract_quantiles
 from qp.plotting import get_axes_and_xlims, plot_pdf_quantiles_on_axes
 from qp.utils import evaluate_hist_multi_x_multi_y, evaluate_unfactored_hist_multi_x_multi_y,\
      interpolate_unfactored_multi_x_y, interpolate_unfactored_x_multi_y,\
-     interpolate_multi_x_y, interpolate_x_multi_y
+     interpolate_multi_x_y, interpolate_x_multi_y, reshape_to_pdf_size
 from qp.test_data import QUANTS, QLOCS, TEST_XVALS
 from qp.factory import add_class
 
@@ -92,22 +92,23 @@ class quant_gen(Pdf_rows_gen):
         locs : array_like
            The locations at which those quantiles are reached
         """
-        kwargs['npdf'] = locs.shape[0]
+        kwargs['shape'] = locs.shape[:-1]
 
         kwargs['a'] = self.a = np.min(locs)
         kwargs['b'] = self.b = np.max(locs)
 
         super(quant_gen, self).__init__(*args, **kwargs)
 
+        locs_2d = reshape_to_pdf_size(locs, -1)
         check_input = kwargs.pop('check_input', True)
         if check_input:
-            quants, locs = pad_quantiles(quants, locs)
+            quants, locs_2d = pad_quantiles(quants, locs_2d)
 
         self._quants = np.asarray(quants)
         self._nquants = self._quants.size
-        if locs.shape[-1] != self._nquants:  # pragma: no cover
-            raise ValueError("Number of locations (%i) != number of quantile values (%i)" % (self._nquants, locs.shape[-1]))
-        self._locs = locs
+        if locs_2d.shape[-1] != self._nquants:  # pragma: no cover
+            raise ValueError("Number of locations (%i) != number of quantile values (%i)" % (self._nquants, locs_2d.shape[-1]))
+        self._locs = locs_2d
         self._valatloc = None
         self._addmetadata('quants', self._quants)
         self._addobjdata('locs', self._locs)
@@ -220,7 +221,7 @@ class quant_piecewise_gen(Pdf_rows_gen):
         locs : array_like
            The locations at which those quantiles are reached
         """
-        kwargs['npdf'] = locs.shape[0]
+        kwargs['shape'] = locs.shape[:-1]
 
         kwargs['a'] = self.a = np.min(locs)
         kwargs['b'] = self.b = np.max(locs)
@@ -228,14 +229,15 @@ class quant_piecewise_gen(Pdf_rows_gen):
         super(quant_piecewise_gen, self).__init__(*args, **kwargs)
 
         check_input = kwargs.pop('check_input', True)
+        locs_2d = reshape_to_pdf_size(locs, -1)
         if check_input:
-            quants, locs = pad_quantiles(quants, locs)
+            quants, locs_2d = pad_quantiles(quants, locs_2d)
 
         self._quants = np.asarray(quants)
         self._nquants = self._quants.size
-        if locs.shape[-1] != self._nquants:  # pragma: no cover
-            raise ValueError("Number of locations (%i) != number of quantile values (%i)" % (self._nquants, locs.shape[-1]))
-        self._locs = locs
+        if locs_2d.shape[-1] != self._nquants:  # pragma: no cover
+            raise ValueError("Number of locations (%i) != number of quantile values (%i)" % (self._nquants, locs_2d.shape[-1]))
+        self._locs = locs_2d
         self._valatloc = None
         self._addmetadata('quants', self._quants)
         self._addobjdata('locs', self._locs)

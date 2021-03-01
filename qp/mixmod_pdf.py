@@ -11,6 +11,7 @@ from qp.pdf_gen import Pdf_rows_gen
 from qp.conversion_funcs import extract_mixmod_fit_samples
 from qp.test_data import WEIGHT_MIXMOD, MEAN_MIXMOD, STD_MIXMOD, TEST_XVALS
 from qp.factory import add_class
+from qp.utils import reshape_to_pdf_size
 
 class mixmod_gen(Pdf_rows_gen):
     """Mixture model based distribution
@@ -39,11 +40,11 @@ class mixmod_gen(Pdf_rows_gen):
         weights : array_like
             The weights to attach to the Gaussians
         """
-        self._means = means
-        self._stds = stds
-        self._weights = weights
-        kwargs['npdf'] = means.shape[0]
-        self._ncomps = means.shape[1]
+        self._means = reshape_to_pdf_size(means, -1)
+        self._stds = reshape_to_pdf_size(stds, -1)
+        self._weights = reshape_to_pdf_size(weights, -1)
+        kwargs['shape'] = means.shape[:-1]
+        self._ncomps = means.shape[-1]
         super(mixmod_gen, self).__init__(*args, **kwargs)
         self._addobjdata('weights', self._weights)
         self._addobjdata('stds', self._stds)

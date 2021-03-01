@@ -10,7 +10,7 @@ from qp.conversion_funcs import extract_vals_at_x, extract_xy_vals
 from qp.plotting import get_axes_and_xlims, plot_pdf_on_axes
 from qp.utils import normalize_interp1d,\
      interpolate_unfactored_multi_x_multi_y, interpolate_unfactored_multi_x_y, interpolate_unfactored_x_multi_y,\
-     interpolate_multi_x_multi_y, interpolate_multi_x_y, interpolate_x_multi_y
+     interpolate_multi_x_multi_y, interpolate_multi_x_y, interpolate_x_multi_y, reshape_to_pdf_size
 from qp.test_data import XBINS, XARRAY, YARRAY, TEST_XVALS
 from qp.factory import add_class
 
@@ -50,10 +50,10 @@ class interp_gen(Pdf_rows_gen):
         # Set support
         kwargs['a'] = self.a = np.min(self._xvals)
         kwargs['b'] = self.b = np.max(self._xvals)
-        kwargs['npdf'] = yvals.shape[0]
+        kwargs['shape'] = yvals.shape[:-1]
 
         #self._yvals = normalize_interp1d(xvals, yvals)
-        self._yvals = yvals
+        self._yvals = reshape_to_pdf_size(yvals, -1)
 
         check_input = kwargs.pop('check_input', True)
         if check_input:
@@ -176,16 +176,17 @@ class interp_irregular_gen(Pdf_rows_gen):
         """
         if xvals.shape != yvals.shape: # pragma: no cover
             raise ValueError("Shape of xvals (%s) != shape of yvals (%s)" % (xvals.shape, yvals.shape))
-        self._xvals = xvals
+        self._xvals = reshape_to_pdf_size(xvals, -1)
 
         # Set support
         kwargs['a'] = self.a = np.min(self._xvals)
         kwargs['b'] = self.b = np.max(self._xvals)
-        kwargs['npdf'] = xvals.shape[0]
+        kwargs['shape'] = xvals.shape[:-1]
 
         check_input = kwargs.pop('check_input', True)
+        self._yvals = reshape_to_pdf_size(yvals, -1)
         if check_input:
-            self._yvals = normalize_interp1d(xvals, yvals)
+            self._yvals = normalize_interp1d(self._xvals, self._yvals)
         self._ycumul = None
         super(interp_irregular_gen, self).__init__(*args, **kwargs)
         self._addobjdata('xvals', self._xvals)
