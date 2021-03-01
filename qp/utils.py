@@ -459,6 +459,7 @@ def profile(x_data, y_data, x_bins, std=True):
     if not std:
         errs /= np.sqrt(count)
     return vals, errs
+<<<<<<< HEAD
 
 
 def reshape_to_pdf_size(vals, split_dim):
@@ -502,3 +503,5 @@ def reshape_to_pdf_shape(vals, pdf_shape, per_pdf):
     """
     outshape = np.hstack([pdf_shape, per_pdf])
     return vals.reshape(outshape)
+=======
+>>>>>>> master

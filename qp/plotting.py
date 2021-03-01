@@ -257,3 +257,5 @@ def plot(pdf, **kwargs):
     else:
         axes = pdf.dist.plot(pdf, **kwargs)
     return axes.figure, axes
+
+
