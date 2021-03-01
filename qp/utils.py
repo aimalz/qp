@@ -459,29 +459,6 @@ def profile(x_data, y_data, x_bins, std=True):
     if not std:
         errs /= np.sqrt(count)
     return vals, errs
-<<<<<<< HEAD
-
-
-def reshape_to_pdf_size(vals, split_dim):
-    """Reshape an array to match the number of PDFs in a distribution
-
-    Parameters
-    ----------
-    vals : array
-        The input array
-    split_dim : int
-        The dimension at which to split between pdf indices and per_pdf indices
-
-    Returns
-    -------
-    out : array
-        The reshaped array
-    """
-    in_shape = vals.shape
-    npdf = np.product(in_shape[:split_dim])
-    per_pdf = in_shape[split_dim:]
-    out_shape = np.hstack([npdf, per_pdf])
-    return vals.reshape(out_shape)
 
 
 def reshape_to_pdf_shape(vals, pdf_shape, per_pdf):
@@ -503,5 +480,3 @@ def reshape_to_pdf_shape(vals, pdf_shape, per_pdf):
     """
     outshape = np.hstack([pdf_shape, per_pdf])
     return vals.reshape(outshape)
-=======
->>>>>>> master
