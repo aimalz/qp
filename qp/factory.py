@@ -44,7 +44,7 @@ class Factory(OrderedDict):
 
         for col in data_table.columns:
             col_data = data_table[col].data
-            if len(col_data.shape) < 2:
+            if len(col_data.shape) < 2: #pragma: no cover
                 data_dict[col] = np.expand_dims(data_table[col].data, -1)
             else:
                 data_dict[col] = col_data

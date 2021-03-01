@@ -61,6 +61,33 @@ def normalize_quantiles(in_data, threshold=epsilon, vb=False):
     return out_data
 """
 
+def edge_to_center(edges):
+    """Return the centers of a set of bins given the edges"""
+    return 0.5*(edges[1:] + edges[:-1])
+
+
+def bin_widths(edges):
+    """Return the widths of a set of bins given the edges"""
+    return edges[1:] - edges[:-1]
+
+
+def get_bin_indices(bins, x):
+    """Return the bin indexes for a set of values
+
+    If the bins are equal width this will use arithmatic,
+    If the bins are not equal width this will use a binary search
+    """
+    widths = bin_widths(bins)
+    if np.allclose(widths, widths[0]):
+        idx = np.atleast_1d(np.floor((x-bins[0])/widths[0]).astype(int))
+    else:
+        idx = np.atleast_1d(np.searchsorted(bins, x, side='left')-1)
+    mask = (idx >= 0) * (idx < bins.size-1)
+    np.putmask(idx, 1-mask, 0)
+    xshape = np.shape(x)
+    return idx.reshape(xshape), mask.reshape(xshape)
+
+
 def normalize_interp1d(xvals, yvals):
     """
     Normalize a set of 1D interpolators
@@ -146,8 +173,8 @@ def evaluate_hist_x_multi_y(x, row, bins, vals):
     out : array_like (M, n)
         The histogram values
     """
-    idx = np.searchsorted(bins, x, side='left')-1
-    mask = np.ones((row.size, 1), dtype=bool) * ((idx >= 0)*(idx<bins.size))
+    idx, mask = get_bin_indices(bins, x)
+    mask = np.ones((row.size, 1)) * mask
     return np.where(mask.flatten(), vals[:,idx][row].flatten(), 0)
 
 
@@ -171,8 +198,7 @@ def evaluate_unfactored_hist_x_multi_y(x, row, bins, vals):
     out : array_like (M, n)
         The histogram values
     """
-    idx = np.searchsorted(bins, x, side='left')-1
-    mask = (idx >= 0)*(idx<bins.size)
+    idx, mask = get_bin_indices(bins, x)
     def evaluate_row(idxv, maskv, rv):
         return np.where(maskv, vals[rv, idxv], 0)
     vv = np.vectorize(evaluate_row)
@@ -201,8 +227,7 @@ def evaluate_hist_multi_x_multi_y(x, row, bins, vals):
     """
     n_vals = bins.shape[-1] - 1
     def evaluate_row(rv):
-        idx = np.searchsorted(np.squeeze(bins[rv]), x, side='left')-1
-        mask = (idx >= 0)*(idx < n_vals)
+        idx, mask = get_bin_indices(bins[rv].flatten(), x)
         return np.where(mask, np.squeeze(vals[rv])[idx.clip(0, n_vals-1)], 0).flatten()
     vv = np.vectorize(evaluate_row, signature="(1)->(%i)" % (x.size))
     return vv(np.expand_dims(row, -1)).flatten()
@@ -230,8 +255,7 @@ def evaluate_unfactored_hist_multi_x_multi_y(x, row, bins, vals):
     """
     n_vals = bins.shape[-1] - 1
     def evaluate_row(xv, rv):
-        idx = np.searchsorted(bins[rv], xv, side='left')-1
-        mask = (idx >= 0)*(idx < n_vals)
+        idx, mask = get_bin_indices(bins[rv], xv)
         return np.where(mask, vals[rv,idx.clip(0, n_vals-1)], 0)
     vv = np.vectorize(evaluate_row)
     return vv(x, row)
@@ -395,3 +419,43 @@ def interpolate_multi_x_y(x, xvals, yvals, **kwargs):
         return interp1d(xrow, yvals, **kwargs)(x)
     vv = np.vectorize(single_row, signature="(%i)->(%i)" % (yvals.size, x.size))
     return vv(xvals)
+
+
+def profile(x_data, y_data, x_bins, std=True):
+    """Make a 'profile' plot
+
+    Paramters
+    ---------
+    x_data : array_like (n)
+        The x-values
+    y_data : array_like (n)
+        The y-values
+    x_bins : array_like (nbins+1)
+        The values of the bin edges
+    std : bool
+        If true, return the standard deviations, if false return the errors on the means
+
+    Returns
+    -------
+    vals : array_like (nbins)
+        The means
+    errs : array_like (nbins)
+        The standard deviations or errors on the means
+    """
+    idx, mask = get_bin_indices(x_bins, x_data)
+    count = np.zeros(x_bins.size-1)
+    vals = np.zeros(x_bins.size-1)
+    errs = np.zeros(x_bins.size-1)
+    for i in range(x_bins.size-1):
+        mask_col = mask * (idx == i)
+        count[i] = mask_col.sum()
+        if mask_col.sum() == 0:  #pragma: no cover
+            vals[i] = np.nan
+            errs[i] = np.nan
+            continue
+        masked_vals = y_data[mask_col]
+        vals[i] = masked_vals.mean()
+        errs[i] = masked_vals.std()
+    if not std:
+        errs /= np.sqrt(count)
+    return vals, errs
