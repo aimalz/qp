@@ -11,7 +11,7 @@ from qp.conversion_funcs import extract_hist_values, extract_hist_samples
 from qp.plotting import get_axes_and_xlims, plot_pdf_histogram_on_axes
 from qp.utils import evaluate_hist_x_multi_y, evaluate_unfactored_hist_x_multi_y,\
      interpolate_unfactored_multi_x_y, interpolate_unfactored_x_multi_y,\
-     interpolate_multi_x_y, interpolate_x_multi_y
+     interpolate_multi_x_y, interpolate_x_multi_y, reshape_to_pdf_size
 from qp.test_data import XBINS, HIST_DATA, TEST_XVALS, NSAMPLES
 from qp.factory import add_class
 
@@ -48,15 +48,16 @@ class hist_gen(Pdf_rows_gen):
 
         check_input = kwargs.pop('check_input', True)
         if check_input:
-            sums = np.sum(pdfs*self._hbin_widths, axis=1)
-            self._hpdfs = (pdfs.T / sums).T
+            pdfs_2d = reshape_to_pdf_size(pdfs, -1)
+            sums = np.sum(pdfs_2d*self._hbin_widths, axis=1)
+            self._hpdfs = (pdfs_2d.T / sums).T
         else: #pragma: no cover
-            self._hpdfs = pdfs
+            self._hpdfs = reshape_to_pdf_size(pdfs, -1)
         self._hcdfs = None
         # Set support
         kwargs['a'] = self.a = self._hbins[0]
         kwargs['b'] = self.b = self._hbins[-1]
-        kwargs['npdf'] = pdfs.shape[0]
+        kwargs['shape'] = pdfs.shape[:-1]
         super(hist_gen, self).__init__(*args, **kwargs)
         self._addmetadata('bins', self._hbins)
         self._addobjdata('pdfs', self._hpdfs)
@@ -68,8 +69,6 @@ class hist_gen(Pdf_rows_gen):
         self._hcdfs = np.ndarray(copy_shape)
         self._hcdfs[:,0] = 0.
         self._hcdfs[:,1:] = np.cumsum(self._hpdfs * self._hbin_widths, axis=1)
-
-
 
     @property
     def bins(self):
@@ -88,7 +87,6 @@ class hist_gen(Pdf_rows_gen):
             # x values and row values factorize
             return evaluate_hist_x_multi_y(xr, rr, self._hbins, self._hpdfs)
         return evaluate_unfactored_hist_x_multi_y(xr, rr, self._hbins, self._hpdfs)
-
 
     def _cdf(self, x, row):
         # pylint: disable=arguments-differ

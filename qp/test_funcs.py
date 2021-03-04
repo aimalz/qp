@@ -149,6 +149,12 @@ def run_convert_tests(ens_orig, gen_class, test_data, **kwargs):
     diffs = ens_orig.pdf(xpts) - ens2.pdf(xpts)
     assert_all_small(diffs, atol=atol2, test_name="convert2")
 
+    assert ens_orig.shape[:-1] == ens1.shape[:-1]
+    assert ens_orig.shape[:-1] == ens2.shape[:-1]
+    assert ens_orig.frozen.shape[:-1] == ens2.shape[:-1]
+    if hasattr(ens2.dist, 'shape'):
+        assert ens2.dist.shape[:-1] == ens2.shape[:-1]
+
 
 def plotting_func_tests(ensemble, do_samples=False):
     """Run the test for a practicular class"""

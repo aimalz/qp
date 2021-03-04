@@ -24,6 +24,7 @@ from scipy.stats import rv_continuous
 from scipy.stats._distn_infrastructure import rv_frozen, _moment_from_stats
 from scipy.special import comb
 
+from qp.utils import reshape_to_pdf_size, reshape_to_pdf_shape
 from qp.dict_utils import get_val_or_default, set_val_or_default, pretty_print
 from qp.plotting import plot_dist_pdf
 
@@ -197,7 +198,7 @@ class rv_frozen_func(rv_frozen):
     that includes the number of PDFs it represents
     """
 
-    def __init__(self, dist, npdf, *args, **kwds):
+    def __init__(self, dist, shape, *args, **kwds):
         """C'tor
 
         Parameters
@@ -207,8 +208,14 @@ class rv_frozen_func(rv_frozen):
         npdf : `int`
             The number of PDFs this object represents
         """
-        self._npdf = npdf
+        self._shape = shape
+        self._npdf = np.product(shape)
         super(rv_frozen_func, self).__init__(dist, *args, **kwds)
+
+    @property
+    def shape(self):
+        """Return the shape of the set of PDFs this object represents"""
+        return self._shape
 
     @property
     def npdf(self):
@@ -230,31 +237,35 @@ class rv_frozen_func(rv_frozen):
             Array of pairs of arrays of lengths (N+1, N) containing endpoints
             of bins and values in bins
         """
-        cdf_vals = self.cdf(bins)
+        cdf_vals = reshape_to_pdf_size(self.cdf(bins), -1)
         bin_vals = cdf_vals[:,1:] - cdf_vals[:,0:-1]
-        return (bins, bin_vals)
-
+        return (bins, reshape_to_pdf_shape(bin_vals, self._shape, bins.size-1))
 
 
 class rv_frozen_rows(rv_frozen):
     """Trivial extention of `scipy.stats.rv_frozen`
-    that includes to use when we want to have a collection
+    that to use when we want to have a collection
     of distribution of objects such as histograms or splines,
     where each object represents a single distribtuion
     """
 
-    def __init__(self, dist, npdf, *args, **kwds):
+    def __init__(self, dist, shape, *args, **kwds):
         """C'tor"""
-        self._npdf = npdf
+        self._shape = shape
+        self._npdf = np.product(shape)
         if self._npdf is not None:
-            kwds.setdefault('row', np.expand_dims(np.arange(npdf), -1))
+            kwds.setdefault('row', np.expand_dims(np.arange(self._npdf).reshape(self._shape), -1))
         super(rv_frozen_rows, self).__init__(dist, *args, **kwds)
+
+    @property
+    def shape(self):
+        """Return the shape of the set of PDFs this object represents"""
+        return self._shape
 
     @property
     def npdf(self):
         """Return the number of PDFs this object represents"""
         return self._npdf
-
 
     def histogramize(self, bins):
         """
@@ -271,9 +282,9 @@ class rv_frozen_rows(rv_frozen):
             Array of pairs of arrays of lengths (N+1, N) containing endpoints
             of bins and values in bins
         """
-        cdf_vals = self.cdf(bins)
+        cdf_vals = reshape_to_pdf_size(self.cdf(bins), -1)
         bin_vals = cdf_vals[:,1:] - cdf_vals[:,0:-1]
-        return (bins, bin_vals)
+        return (bins, reshape_to_pdf_shape(bin_vals, self._shape, bins.size-1))
 
 
 
@@ -286,8 +297,14 @@ class Pdf_rows_gen(rv_continuous, Pdf_gen):
     """
     def __init__(self, *args, **kwargs):
         """C'tor"""
-        self._npdf = kwargs.pop('npdf', 0)
+        self._shape = kwargs.pop('shape', (1))
+        self._npdf = np.product(self._shape)
         super(Pdf_rows_gen, self).__init__(*args, **kwargs)
+
+    @property
+    def shape(self):
+        """Return the shape of the set of PDFs this object represents"""
+        return self._shape
 
     @property
     def npdf(self):
@@ -334,7 +351,7 @@ class Pdf_rows_gen(rv_continuous, Pdf_gen):
         rv_frozen : rv_frozen instance
             The frozen distribution.
         """
-        return rv_frozen_rows(self, self._npdf, *args, **kwds)
+        return rv_frozen_rows(self, self._shape, *args, **kwds)
 
     @classmethod
     def create_gen(cls, **kwds):
@@ -393,7 +410,7 @@ class Pdf_gen_wrap(Pdf_gen):
         cond0 = np.atleast_1d(self._argcheck(*args)) & (scale > 0)
         cond1 = self._support_mask(x, *args) & (scale > 0)
         cond = cond0 & cond1
-        return rv_frozen_func(self, cond.shape[0], *args, **kwds)
+        return rv_frozen_func(self, cond.shape[:-1], *args, **kwds)
 
     def _my_argcheck(self, *args):
         # pylint: disable=no-member,protected-access
