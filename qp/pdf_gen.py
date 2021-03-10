@@ -209,7 +209,7 @@ class rv_frozen_func(rv_frozen):
             The number of PDFs this object represents
         """
         self._shape = shape
-        self._npdf = np.product(shape)
+        self._npdf = np.product(shape).astype(int)
         super(rv_frozen_func, self).__init__(dist, *args, **kwds)
 
     @property
@@ -252,7 +252,7 @@ class rv_frozen_rows(rv_frozen):
     def __init__(self, dist, shape, *args, **kwds):
         """C'tor"""
         self._shape = shape
-        self._npdf = np.product(shape)
+        self._npdf = np.product(shape).astype(int)
         if self._npdf is not None:
             kwds.setdefault('row', np.expand_dims(np.arange(self._npdf).reshape(self._shape), -1))
         super(rv_frozen_rows, self).__init__(dist, *args, **kwds)
@@ -298,7 +298,7 @@ class Pdf_rows_gen(rv_continuous, Pdf_gen):
     def __init__(self, *args, **kwargs):
         """C'tor"""
         self._shape = kwargs.pop('shape', (1))
-        self._npdf = np.product(self._shape)
+        self._npdf = np.product(self._shape).astype(int)
         super(Pdf_rows_gen, self).__init__(*args, **kwargs)
 
     @property
