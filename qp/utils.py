@@ -3,7 +3,9 @@
 import numpy as np
 
 from scipy import stats as sps
+from scipy import linalg as sla
 from scipy.interpolate import interp1d
+from scipy.special import voigt_profile
 import sys
 
 epsilon = sys.float_info.epsilon
@@ -473,6 +475,9 @@ def reshape_to_pdf_size(vals, split_dim):
     out : array
         The reshaped array
     """
+    # print(vals)
+    # print(vals.shape)
+    # print(split_dim)
     in_shape = vals.shape
     npdf = np.product(in_shape[:split_dim])
     per_pdf = in_shape[split_dim:]
@@ -499,3 +504,162 @@ def reshape_to_pdf_shape(vals, pdf_shape, per_pdf):
     """
     outshape = np.hstack([pdf_shape, per_pdf])
     return vals.reshape(outshape)
+
+
+def create_voigt_basis(zfine, mu, Nmu, sigma, Nsigma, Nv, cut=1.e-5):
+    """
+    Creates a gaussian-voigt dictionary at the same resolution as the original PDF
+
+    :param float zfine: the x-axis for the PDF, the redshift resolution
+    :param float mu: [min_mu, max_mu], range of mean for gaussian
+    :param int Nmu: Number of values between min_mu and max_mu
+    :param float sigma: [min_sigma, max_sigma], range of variance for gaussian
+    :param int Nsigma: Number of values between min_sigma and max_sigma
+    :param Nv: Number of Voigt profiles per gaussian at given position mu and sigma
+    :param float cut: Lower cut for gaussians
+
+    :return: Dictionary as numpy array with shape (len(zfine), Nmu*Nsigma*Nv)
+    :rtype: float
+
+    """
+
+    zmid = np.linspace(mu[0], mu[1], Nmu)
+    sig = np.linspace(sigma[0], sigma[1], Nsigma)
+    gamma = np.linspace(0, 0.5, Nv)
+    NA = Nmu * Nsigma * Nv
+    Npdf = len(zfine)
+    A = np.zeros((Npdf, NA))
+    kk = 0
+    for i in range(Nmu):
+        for j in range(Nsigma):
+            for k in range(Nv):
+                #pdft = 1. * exp(-((zfine - zmid[i]) ** 2) / (2.*sig[j]*sig[j]))
+                pdft = voigt_profile(zfine - zmid[i], sig[j], gamma[k])
+                pdft = np.where(pdft >= cut, pdft, 0.)
+                A[:, kk] = pdft / sla.norm(pdft)
+                kk += 1
+    return A
+
+def sparse_basis(dictionary, query_vec, n_basis, tolerance=None):
+    """
+    Compute sparse representation of a vector given Dictionary  (basis)
+    for a given tolerance or number of basis. It uses Cholesky decomposition to speed the process and to
+    solve the linear operations adapted from Rubinstein, R., Zibulevsky, M. and Elad, M., Technical Report - CS
+    Technion, April 2008
+
+    :param float dictionary: Array with all basis on each column, must has shape (len(vector), total basis) and each column must have euclidean l-2 norm equal to 1
+    :param float query_vec: vector of which a sparse representation is desired
+    :param int n_basis: number of desired basis
+    :param float tolerance: tolerance desired if n_basis is not needed to be fixed, must input a large number for n_basis to assure achieving tolerance
+
+    :return: indices, values (2 arrays one with the position and the second with the coefficients)
+    """
+
+    a_n = np.zeros(dictionary.shape[1])
+    machine_eps = np.finfo(dictionary.dtype).eps
+    alpha = np.dot(dictionary.T, query_vec)
+    res = query_vec
+    idxs = np.arange(dictionary.shape[1])  # keeping track of swapping
+    L = np.zeros((n_basis, n_basis), dtype=dictionary.dtype)
+    L[0, 0] = 1.
+
+    for n_active in range(n_basis):
+        lam = np.argmax(abs(np.dot(dictionary.T, res)))
+        if lam < n_active or alpha[lam] ** 2 < machine_eps:
+            n_active -= 1
+            break
+        if n_active > 0:
+            # Updates the Cholesky decomposition of dictionary
+            L[n_active, :n_active] = np.dot(dictionary[:, :n_active].T, dictionary[:, lam])
+            sla.solve_triangular(L[:n_active, :n_active], L[n_active, :n_active], lower=True, overwrite_b=True)
+            v = sla.norm(L[n_active, :n_active]) ** 2
+            if 1 - v <= machine_eps:
+                print("Selected basis are dependent or normed are not unity")
+                break
+            L[n_active, n_active] = np.sqrt(1 - v)
+        dictionary[:, [n_active, lam]] = dictionary[:, [lam, n_active]]
+        alpha[[n_active, lam]] = alpha[[lam, n_active]]
+        idxs[[n_active, lam]] = idxs[[lam, n_active]]
+        # solves LL'x = query_vec as a composition of two triangular systems
+        gamma = sla.cho_solve((L[:n_active + 1, :n_active + 1], True), alpha[:n_active + 1], overwrite_b=False)
+        res = query_vec - np.dot(dictionary[:, :n_active + 1], gamma)
+        if tolerance is not None and sla.norm(res) ** 2 <= tolerance:
+            break
+    a_n[idxs[:n_active + 1]] = gamma
+    del dictionary
+    #return a_n
+    return idxs[:n_active + 1], gamma
+
+def combine_int(Ncoef, Nbase):
+    """
+    combine index of base (up to 62500 bases) and value (16 bits integer with sign) in a 32 bit integer
+    First half of word is for the value and second half for the index
+
+    :param int Ncoef: Integer with sign to represent the value associated with a base, this is a sign 16 bits integer
+    :param int Nbase: Integer representing the base, unsigned 16 bits integer
+    :return: 32 bits integer
+    """
+    return (Ncoef << 16) | Nbase
+
+
+def get_N(longN):
+    """
+    Extract coefficients fro the 32bits integer,
+    Extract Ncoef and Nbase from 32 bit integer
+    return (longN >> 16), longN & 0xffff
+
+    :param int longN: input 32 bits integer
+
+    :return: Ncoef, Nbase both 16 bits integer
+    """
+    return (longN >> 16), (longN & (2 ** 16 - 1))
+
+def indices2shapes(sparse_index, meta):
+    """compute the Voigt shape parameters from the sparse index
+    
+    Parameters
+    ----------
+    sparse_index: `np.array`
+        1D Array of indices for each object in the ensemble
+    
+    meta: `dict`
+        Dictionary of metadata to decode the sparse indices
+    """
+    
+    Ncoef = meta['Ncoef']
+    zfine = meta['z']
+    mu = meta['mu']
+    Nmu = meta['Nmu']
+    sigma = meta['sig']
+    Nsigma = meta['Nsig']
+    Nv = meta['Nv']
+
+    means_array = np.linspace(mu[0], mu[1], Nmu)
+    sig_array = np.linspace(sigma[0], sigma[1], Nsigma)
+    gam_array = np.linspace(0, 0.5, Nv)
+
+    #split the sparse indices into pairs (weight, basis_index)
+    #for each sparse index corresponding to one of the basis function
+    sp_ind = np.array(list(map(get_N, sparse_index)))
+    spi = sp_ind[:, 0]
+    Dind2 = sp_ind[:, 1]
+    #weights need renormalization from index value to weight value
+    dVals = 1./(Ncoef-1)
+    vals = spi * dVals
+    vals[0]=1.
+
+    means = []
+    sigmas = []
+    gammas = []
+    #extract the shape parameters for each object
+    for kk,index in enumerate(Dind2):
+        i = int(index / (Nsigma * Nv))
+        j = int((index % (Nsigma * Nv)) / Nv)
+        k = int(index % (Nsigma * Nv)) % Nv
+
+        means.append(means_array[i])
+        sigmas.append(sig_array[j])
+        gammas.append(gam_array[k])
+        
+    return vals, means, sigmas, gammas
+    

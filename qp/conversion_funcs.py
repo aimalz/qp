@@ -2,10 +2,11 @@
 These functions should then be registered with the `qp.ConversionDict` using `qp_add_mapping`.
 That will allow the automated conversion mechanisms to work.
 """
-
+import numpy
 import numpy as np
 
 from sklearn import mixture
+from .utils import create_voigt_basis, sparse_basis, combine_int, indices2shapes
 
 def extract_vals_at_x(in_dist, **kwargs):
     """Convert using a set of x and y values.
@@ -225,3 +226,135 @@ def extract_mixmod_fit_samples(in_dist, **kwargs):
     vv = np.vectorize(mixmod_helper, signature="(%i)->(3,%i)" % (n_sample, n_comps))
     fit_vals = vv(samples)
     return dict(weights=fit_vals[:,0,:], means=fit_vals[:,1,:], stds=fit_vals[:,2,:])
+
+def extract_voigt_mixmod(in_dist, **kwargs):
+    """Convert to a voigt mixture model starting with a gaussian mixture model, 
+    trivially by setting gammas to 0
+
+    Parameters
+    ----------
+    in_dist : `qp.Ensemble`
+        Input distributions
+
+    Returns
+    -------
+    data : `dict`
+        The extracted data
+    """
+    objdata = in_dist.objdata()
+    means = objdata['means']
+    stds = objdata['stds']
+    weights = objdata['weights']
+    gammas = np.zeros_like(means)
+    return dict(means=means, stds=stds, weights=weights, gammas=gammas)
+
+
+def extract_voigt_xy(in_dist, **kwargs):
+    """Build a voigt function basis and run a match-pursuit algorithm to fit gridded data
+
+    Parameters
+    ----------
+    in_dist : `qp.Ensemble`
+        Input distributions
+
+    Returns
+    -------
+    data : `dict`
+        The extracted data as sparse indices, basis, and metadata to rebuild the basis
+    """
+
+    sparse_results = extract_voigt_xy_sparse(in_dist, **kwargs)
+    indices = sparse_results['indices']
+    meta = sparse_results['metadata']
+    basis = sparse_results['basis']
+
+    weights = []
+    means = []
+    stds = []
+    gammas = []
+    for ind in indices:
+        w, m, s, g = indices2shapes(ind, meta)
+        means.append(m)
+        weights.append(w)
+        stds.append(s)
+        gammas.append(g)
+    print(weights)
+    return dict(means=np.asarray(means), stds=np.asarray(stds), weights=np.asarray(weights), gammas=np.asarray(gammas))
+    
+def extract_voigt_xy_sparse(in_dist, **kwargs):
+    """Build a voigt function basis and run a match-pursuit algorithm to fit gridded data
+
+    Parameters
+    ----------
+    in_dist : `qp.Ensemble`
+        Input distributions
+
+    Returns
+    -------
+    data : `dict`
+        The extracted data as shaped parameters means, stds, weights, gammas
+    """
+
+    yvals = in_dist.objdata()['yvals']
+    
+    default = in_dist.metadata()['xvals'][0]
+    z = kwargs.pop('xvals', default)
+
+    mu = [np.min(z), np.max(z)]
+    mu = kwargs.pop('mu', mu)
+    Nmu = kwargs.pop('Nmu', 250)
+    Nv = kwargs.pop('Nv', 3)
+    
+    dz = np.min(np.diff(z))
+    max_sig = (max(z) - min(z)) / 12.
+    min_sig = dz / 6.
+    Nsig = int(numpy.ceil(2. * (max_sig - min_sig) / dz))
+    sig = [min_sig, max_sig]
+    sig = kwargs.pop('sig', sig)
+    Nsig = kwargs.pop('Nsig',Nsig)
+
+    A = create_voigt_basis(z, mu, Nmu, sig, Nsig, Nv)
+
+    toler = 1.e-10
+    Nsparse = 20
+    Ncoef = 32001
+    AA = np.linspace(0, 1, Ncoef)
+    Da = AA[1] - AA[0]
+
+    sparse_ind = []
+    bigD = {}
+    bigD['z'] = z
+    bigD['mu'] = mu
+    bigD['sig'] = sig
+    bigD['N_SPARSE'] = Nsparse
+    bigD['Ncoef'] = Ncoef
+    bigD['Nmu'] = Nmu
+    bigD['Nsig'] = Nsig
+    bigD['Nv'] = Nv
+    #bigD['Ntot'] = Ntot
+
+    for k, pdf0 in enumerate(yvals):
+        #sparse_ind[k] = {}
+        if sum(pdf0) > 0:
+            pdf0 /= sum(pdf0)
+        else:
+            continue
+        Dind, Dval = sparse_basis(A, pdf0, Nsparse)
+        if len(Dind) <= 1: continue
+        #sparse_ind[k]['sparse'] = [Dind, Dval]
+        if max(Dval) > 0:
+            dval0=Dval[0]
+            Dvalm = Dval / max(Dval)
+            index = np.array(list(map(round, (Dvalm / Da))), dtype='int')
+            index0=int(round(dval0/Da))
+            index[0]=index0
+        else:
+            index = zeros(len(Dind), dtype='int')
+        #sparse_ind[k]['sparse_ind'] = np.array(map(combine_int, index, Dind))
+        sparse_ind.append(np.array(list(map(combine_int, index, Dind))))
+
+        #swap back columns
+        A[:, [Dind]] = A[:, [np.arange(len(Dind))]]
+
+    #print(sparse_ind)
+    return dict(indices=sparse_ind, metadata=bigD, basis=A)
