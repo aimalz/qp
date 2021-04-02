@@ -321,7 +321,7 @@ def extract_voigt_xy_sparse(in_dist, **kwargs):
     AA = np.linspace(0, 1, Ncoef)
     Da = AA[1] - AA[0]
 
-    sparse_ind = []
+    sparse_ind = {}
     bigD = {}
     bigD['z'] = z
     bigD['mu'] = mu
@@ -331,17 +331,18 @@ def extract_voigt_xy_sparse(in_dist, **kwargs):
     bigD['Nmu'] = Nmu
     bigD['Nsig'] = Nsig
     bigD['Nv'] = Nv
+    Ntot = len(yvals)
     #bigD['Ntot'] = Ntot
 
     for k, pdf0 in enumerate(yvals):
-        #sparse_ind[k] = {}
+        sparse_ind[k] = {}
         if sum(pdf0) > 0:
             pdf0 /= sum(pdf0)
         else:
             continue
         Dind, Dval = sparse_basis(A, pdf0, Nsparse)
         if len(Dind) <= 1: continue
-        #sparse_ind[k]['sparse'] = [Dind, Dval]
+        sparse_ind[k]['sparse'] = [Dind, Dval]
         if max(Dval) > 0:
             dval0=Dval[0]
             Dvalm = Dval / max(Dval)
@@ -351,10 +352,16 @@ def extract_voigt_xy_sparse(in_dist, **kwargs):
         else:
             index = zeros(len(Dind), dtype='int')
         #sparse_ind[k]['sparse_ind'] = np.array(map(combine_int, index, Dind))
-        sparse_ind.append(np.array(list(map(combine_int, index, Dind))))
+        sparse_ind[k]['sparse_ind'] = np.array(list(map(combine_int, index, Dind)))
 
         #swap back columns
         A[:, [Dind]] = A[:, [np.arange(len(Dind))]]
 
     #print(sparse_ind)
-    return dict(indices=sparse_ind, metadata=bigD, basis=A)
+    ALL = np.zeros((Ntot, Nsparse), dtype='int')
+    for i in range(Ntot):
+        if i in sparse_ind:
+            idd = sparse_ind[i]['sparse_ind']
+            ALL[i, 0:len(idd)] = idd
+
+    return dict(indices=ALL, metadata=bigD, basis=A)
