@@ -614,7 +614,7 @@ def get_N(longN):
     """
     return (longN >> 16), (longN & (2 ** 16 - 1))
 
-def indices2shapes(sparse_index, meta):
+def indices2shapes(sparse_indices, meta):
     """compute the Voigt shape parameters from the sparse index
     
     Parameters
@@ -640,26 +640,18 @@ def indices2shapes(sparse_index, meta):
 
     #split the sparse indices into pairs (weight, basis_index)
     #for each sparse index corresponding to one of the basis function
-    sp_ind = np.array(list(map(get_N, sparse_index)))
-    spi = sp_ind[:, 0]
-    Dind2 = sp_ind[:, 1]
-    #weights need renormalization from index value to weight value
+    sp_ind = np.array(list(map(get_N, sparse_indices)))
+    
+    spi = sp_ind[:,0,:]
     dVals = 1./(Ncoef-1)
     vals = spi * dVals
-    vals[0]=1.
-
-    means = []
-    sigmas = []
-    gammas = []
-    #extract the shape parameters for each object
-    for kk,index in enumerate(Dind2):
-        i = int(index / (Nsigma * Nv))
-        j = int((index % (Nsigma * Nv)) / Nv)
-        k = int(index % (Nsigma * Nv)) % Nv
-
-        means.append(means_array[i])
-        sigmas.append(sig_array[j])
-        gammas.append(gam_array[k])
-        
-    return vals, means, sigmas, gammas
+    vals[:,0]=1.
     
+    Dind2 = sp_ind[:,1,:]
+    means = means_array[np.array(Dind2 / (Nsigma * Nv), int)]
+    sigmas = sig_array[np.array((Dind2 % (Nsigma * Nv)) / Nv, int)]
+    gammas =gam_array[np.array((Dind2 % (Nsigma * Nv)) % Nv, int)]
+    
+    return vals, means, sigmas, gammas
+
+
