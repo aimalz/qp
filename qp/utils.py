@@ -625,14 +625,13 @@ def indices2shapes(sparse_indices, meta):
     meta: `dict`
         Dictionary of metadata to decode the sparse indices
     """
-    
-    Ncoef = meta['Ncoef']
+    Nmu = meta['dims'][0]
+    Nsigma = meta['dims'][1]
+    Nv = meta['dims'][2]
+    Ncoef = meta['dims'][3]
     zfine = meta['z']
     mu = meta['mu']
-    Nmu = meta['Nmu']
     sigma = meta['sig']
-    Nsigma = meta['Nsig']
-    Nv = meta['Nv']
 
     means_array = np.linspace(mu[0], mu[1], Nmu)
     sig_array = np.linspace(sigma[0], sigma[1], Nsigma)
@@ -655,3 +654,78 @@ def indices2shapes(sparse_indices, meta):
     return vals, means, sigmas, gammas
 
 
+def build_sparse_representation(z, P, mu=None, Nmu=None, sig=None, Nsig=None, Nv=3, Nsparse=20, tol=1.e-10):
+    #Note : the range for gamma is fixed to [0, 0.5] in create_voigt_basis
+    Ntot = len(P)
+    print("Total Galaxies = ", Ntot)
+    dz = z[1] - z[0]
+    print('dz = ', dz)
+    if mu is None:
+        mu = [min(z), max(z)]
+    if Nmu is None:
+        Nmu = len(z)
+    if sig is None:
+        max_sig = (max(z) - min(z)) / 12.
+        min_sig = dz / 6.
+        sig = [min_sig, max_sig]
+    if Nsig is None:
+        Nsig = int(np.ceil(2. * (max_sig - min_sig) / dz))
+
+    print('Nmu, Nsig, Nv = ', '[', Nmu, ',', Nsig, ',', Nv, ']')
+    print('Total bases in dictionary', Nmu * Nsig * Nv)
+
+    #Create dictionary
+    print('Creating Dictionary...')
+    A = create_voigt_basis(z, mu, Nmu, sig, Nsig, Nv)
+    bigD = {}
+
+    Nsparse = 20
+    Ncoef = 32001
+    AA = np.linspace(0, 1, Ncoef)
+    Da = AA[1] - AA[0]
+
+    print('Nsparse (number of bases) = ', Nsparse)
+
+    bigD['z'] = z
+    bigD['mu'] = mu
+    bigD['sig'] = sig
+    bigD['dims'] = [Nmu, Nsig, Nv, Ncoef]
+    bigD['N_SPARSE'] = Nsparse
+    bigD['Ntot'] = Ntot
+
+    print('Creating Sparse representation...')
+
+    for k in range(Ntot):
+        bigD[k] = {}
+        try:
+            pdf0 = P[k]
+        except:
+            continue
+        
+        Dind, Dval = sparse_basis(A, pdf0, Nsparse, tolerance=tol)
+
+        if len(Dind) <= 1: continue
+        bigD[k]['sparse'] = [Dind, Dval]
+        if max(Dval) > 0:
+            dval0=Dval[0]
+            Dvalm = Dval / np.max(Dval)
+            index = np.array(list(map(round, (Dvalm / Da))), dtype='int')
+            index0=int(round(dval0/Da))
+            index[0]=index0
+        else:
+            index = np.zeros(len(Dind), dtype='int')
+
+        bigD[k]['sparse_ind'] = np.array(list(map(combine_int, index, Dind)))
+    
+        #swap back columns
+        A[:, [Dind]] = A[:, [np.arange(len(Dind))]]
+
+    #For now, extend the representation into a full 2D array
+    #This may be removed eventually
+    ALL = np.zeros((Ntot, Nsparse), dtype='int')
+    for i in range(Ntot):
+        if i in bigD:
+            idd = bigD[i]['sparse_ind']
+            ALL[i, 0:len(idd)] = idd
+    print('done')
+    return ALL, bigD
