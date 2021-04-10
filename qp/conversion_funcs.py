@@ -7,6 +7,8 @@ import numpy as np
 
 from sklearn import mixture
 from .utils import create_voigt_basis, sparse_basis, combine_int, indices2shapes, build_sparse_representation
+from scipy import integrate as sciint
+from scipy import interpolate as sciinterp
 
 def extract_vals_at_x(in_dist, **kwargs):
     """Convert using a set of x and y values.
@@ -270,19 +272,7 @@ def extract_voigt_xy(in_dist, **kwargs):
     w, m, s, g = indices2shapes(indices, meta)
     return dict(means=m, stds=s, weights=w, gammas=g)
 
-    # weights = []
-    # means = []
-    # stds = []
-    # gammas = []
-    # for ind in indices:
-    #     w, m, s, g = indices2shapes(ind, meta)
-    #     print(w,m,s,g)
-    #     means.append(m)
-    #     weights.append(w)
-    #     stds.append(s)
-    #     gammas.append(g)
-    # return dict(means=np.asarray(means), stds=np.asarray(stds), weights=np.asarray(weights), gammas=np.asarray(gammas))
-    
+
 def extract_voigt_xy_sparse(in_dist, **kwargs):
     """Build a voigt function basis and run a match-pursuit algorithm to fit gridded data
 
@@ -301,6 +291,14 @@ def extract_voigt_xy_sparse(in_dist, **kwargs):
     
     default = in_dist.metadata()['xvals'][0]
     z = kwargs.pop('xvals', default)
-
-    ALL, bigD = build_sparse_representation(z, yvals)
+    nz = kwargs.pop('nz', 300)
+    
+    minz = np.min(z)
+    i,j=np.where(yvals>0)
+    maxz=np.max(z[j])
+    newz=np.linspace(minz, maxz, nz)
+    interp = sciinterp.interp1d(z, yvals, assume_sorted=True)
+    newpdf = interp(newz)
+    newpdf = newpdf / sciint.trapz(newpdf, newz).reshape(-1,1)
+    ALL, bigD = build_sparse_representation(newz, newpdf)
     return dict(indices=ALL, metadata=bigD)
