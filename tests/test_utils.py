@@ -36,6 +36,32 @@ class UtilsTestCase(unittest.TestCase):
         qp.test_funcs.assert_all_close(pf_1[1], c_vals/npdf*np.sqrt(12), atol=0.2, test_name="profile_std")
         qp.test_funcs.assert_all_close(pf_1[1], 0.1*pf_2[1], test_name="profile_err")
 
+    def test_sparse(self):
+        xvals = np.linspace(0,1,101)
+        #assert basic construction
+        A = qp.utils.create_voigt_basis(xvals, (0,1), 11, (0.01,0.5), 10, 10)
+        self.assertEqual(A.shape, (101,1100))
+        #check consistency of a constrained case od voigt basis
+        pdf0 = 1. * np.exp(-((xvals - 0.5) ** 2) / (2.* 0.01))
+        A = qp.utils.create_voigt_basis(xvals, (0.5,0.5), 1, (0.1,0.1), 1, 1)
+        pdf1 = np.squeeze(A) * np.sqrt((pdf0**2).sum())
+        self.assertTrue(np.allclose(pdf1,pdf0))
+        #NSparse set to 2 so that unit testing goes through more code in sparse_basis
+        ALL, bigD = qp.utils.build_sparse_representation(xvals, [pdf0], (0.5,0.5), 1, (0.1,0.1), 1, 1, 2)
+        va, ma, sa, ga = qp.utils.indices2shapes(ALL, bigD)
+        self.assertEqual(va[:,1],0.)
+        self.assertEqual([va[:,0],ma[:,0],sa[:,0],ga[:,0]], [1.,0.5,0.1,0.])
+        #check default values
+        ALL, bigD = qp.utils.build_sparse_representation(xvals, [pdf0])
+        self.assertEqual(bigD['mu'], [min(xvals),max(xvals)])
+        self.assertEqual(bigD['dims'][0], len(xvals))
+        #create a qp instance of voigt pdf ensemble
+        voigt = qp.voigt_pdf.voigt_gen(ma, sa, va, ga)
+        self.assertTrue(np.all(voigt.means==ma))
+        self.assertTrue(np.all(voigt.stds==sa))
+        self.assertTrue(np.all(voigt.weights==va))
+        self.assertTrue(np.all(voigt.gammas==ga))
+        print(voigt.pdf(xvals[0:2],row=0))
         
 if __name__ == '__main__':
     unittest.main()
