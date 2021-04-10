@@ -475,9 +475,6 @@ def reshape_to_pdf_size(vals, split_dim):
     out : array
         The reshaped array
     """
-    # print(vals)
-    # print(vals.shape)
-    # print(split_dim)
     in_shape = vals.shape
     npdf = np.product(in_shape[:split_dim])
     per_pdf = in_shape[split_dim:]
@@ -533,7 +530,7 @@ def create_voigt_basis(zfine, mu, Nmu, sigma, Nsigma, Nv, cut=1.e-5):
     for i in range(Nmu):
         for j in range(Nsigma):
             for k in range(Nv):
-                #pdft = 1. * exp(-((zfine - zmid[i]) ** 2) / (2.*sig[j]*sig[j]))
+                #pdft = 1. * np.exp(-((zfine - zmid[i]) ** 2) / (2.*sig[j]*sig[j]))
                 pdft = voigt_profile(zfine - zmid[i], sig[j], gamma[k])
                 pdft = np.where(pdft >= cut, pdft, 0.)
                 A[:, kk] = pdft / sla.norm(pdft)
@@ -562,13 +559,12 @@ def sparse_basis(dictionary, query_vec, n_basis, tolerance=None):
     idxs = np.arange(dictionary.shape[1])  # keeping track of swapping
     L = np.zeros((n_basis, n_basis), dtype=dictionary.dtype)
     L[0, 0] = 1.
-
     for n_active in range(n_basis):
         lam = np.argmax(abs(np.dot(dictionary.T, res)))
-        if lam < n_active or alpha[lam] ** 2 < machine_eps:
+        if lam < n_active or alpha[lam] ** 2 < machine_eps: #pragma no cover
             n_active -= 1
             break
-        if n_active > 0:
+        if n_active > 0: #pragma no cover
             # Updates the Cholesky decomposition of dictionary
             L[n_active, :n_active] = np.dot(dictionary[:, :n_active].T, dictionary[:, lam])
             sla.solve_triangular(L[:n_active, :n_active], L[n_active, :n_active], lower=True, overwrite_b=True)
@@ -679,7 +675,6 @@ def build_sparse_representation(z, P, mu=None, Nmu=None, sig=None, Nsig=None, Nv
     A = create_voigt_basis(z, mu, Nmu, sig, Nsig, Nv)
     bigD = {}
 
-    Nsparse = 20
     Ncoef = 32001
     AA = np.linspace(0, 1, Ncoef)
     Da = AA[1] - AA[0]
@@ -699,12 +694,11 @@ def build_sparse_representation(z, P, mu=None, Nmu=None, sig=None, Nsig=None, Nv
         bigD[k] = {}
         try:
             pdf0 = P[k]
-        except:
+        except: #pragma no cover
             continue
-        
         Dind, Dval = sparse_basis(A, pdf0, Nsparse, tolerance=tol)
-
-        if len(Dind) <= 1: continue
+        
+        if len(Dind) < 1: continue
         bigD[k]['sparse'] = [Dind, Dval]
         if max(Dval) > 0:
             dval0=Dval[0]
@@ -713,10 +707,10 @@ def build_sparse_representation(z, P, mu=None, Nmu=None, sig=None, Nsig=None, Nv
             index0=int(round(dval0/Da))
             index[0]=index0
         else:
-            index = np.zeros(len(Dind), dtype='int')
+            index = np.zeros(len(Dind), dtype='int') #pragma no cover
 
         bigD[k]['sparse_ind'] = np.array(list(map(combine_int, index, Dind)))
-    
+
         #swap back columns
         A[:, [Dind]] = A[:, [np.arange(len(Dind))]]
 
