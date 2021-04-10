@@ -61,7 +61,11 @@ class UtilsTestCase(unittest.TestCase):
         self.assertTrue(np.all(voigt.stds==sa))
         self.assertTrue(np.all(voigt.weights==va))
         self.assertTrue(np.all(voigt.gammas==ga))
-        print(voigt.pdf(xvals[0],row=0))
+        val=voigt.pdf(xvals[0],row=0)
+        self.assertTrue(np.isclose(val[0],1.48671951e-05))
+        val=voigt.pdf(xvals[0:2],row=0)
+        print(val)
+        self.assertTrue(np.isclose(val[0],75.74328096))
         
 if __name__ == '__main__':
     unittest.main()
