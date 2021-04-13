@@ -332,7 +332,7 @@ def extract_xy_sparse(in_dist, **kwargs):
     newx = np.linspace(xmin, xmax, nvals)
     interp = sciinterp.interp1d(xvals, yvals, assume_sorted=True)
     newpdf = interp(newx)
-    sparse_indices, metadata, A = build_sparse_representation(newx, newpdf)
+    sparse_indices, sparse_meta, A = build_sparse_representation(newx, newpdf)
     #decode the sparse indices into basis indices and weights
     basis_indices, weights = decode_sparse_indices(sparse_indices)
     #retrieve the weighted array of basis functions for each object
