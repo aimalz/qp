@@ -17,7 +17,7 @@ def shapes2pdf(wa, ma, sa, ga, meta, cut=1.e-5):
     #input : list of shape parameters for a single object
     z = meta['z']
     pdf = np.zeros_like(z)
-    for w, m, s, g in zip(wa,ma,sa,ga):
+    for w, m, s, g in zip(wa, ma, sa, ga):
         pdft = voigt_profile(z - m, s, g)
         pdft = np.where(pdft >= cut, pdft, 0.)
         pdft = w * pdft / sla.norm(pdft)
@@ -33,7 +33,7 @@ def create_basis(metadata, cut=1.e-5):
     Nv = metadata['dims'][2]
     xvals = metadata['xvals']
     return create_voigt_basis(xvals, mu, Nmu, sigma, Nsigma, Nv, cut=cut)
-    
+
 def create_voigt_basis(zfine, mu, Nmu, sigma, Nsigma, Nv, cut=1.e-5):
     """
     Creates a gaussian-voigt dictionary at the same resolution as the original PDF
@@ -144,20 +144,20 @@ def get_N(longN):
 def decode_sparse_indices(indices):
     Ncoef = 32001
     sp_ind = np.array(list(map(get_N, indices)))
-    spi = sp_ind[:,0,:]
-    dVals = 1./(Ncoef-1)
+    spi = sp_ind[:, 0, :]
+    dVals = 1./(Ncoef - 1)
     vals = spi * dVals
-    vals[:,0]=1.
-    return sp_ind[:,1,:], vals
+    vals[:, 0] = 1.
+    return sp_ind[:, 1, :], vals
 
 def indices2shapes(sparse_indices, meta):
     """compute the Voigt shape parameters from the sparse index
-    
+
     Parameters
     ----------
     sparse_index: `np.array`
         1D Array of indices for each object in the ensemble
-    
+
     meta: `dict`
         Dictionary of metadata to decode the sparse indices
     """
@@ -165,7 +165,6 @@ def indices2shapes(sparse_indices, meta):
     Nsigma = meta['dims'][1]
     Nv = meta['dims'][2]
     Ncoef = meta['dims'][3]
-    zfine = meta['z']
     mu = meta['mu']
     sigma = meta['sig']
 
@@ -176,17 +175,17 @@ def indices2shapes(sparse_indices, meta):
     #split the sparse indices into pairs (weight, basis_index)
     #for each sparse index corresponding to one of the basis function
     sp_ind = np.array(list(map(get_N, sparse_indices)))
-    
-    spi = sp_ind[:,0,:]
-    dVals = 1./(Ncoef-1)
+
+    spi = sp_ind[:, 0, :]
+    dVals = 1./(Ncoef - 1)
     vals = spi * dVals
-    vals[:,0]=1.
-    
-    Dind2 = sp_ind[:,1,:]
+    vals[:, 0] = 1.
+
+    Dind2 = sp_ind[:, 1, :]
     means = means_array[np.array(Dind2 / (Nsigma * Nv), int)]
     sigmas = sig_array[np.array((Dind2 % (Nsigma * Nv)) / Nv, int)]
-    gammas =gam_array[np.array((Dind2 % (Nsigma * Nv)) % Nv, int)]
-    
+    gammas = gam_array[np.array((Dind2 % (Nsigma * Nv)) % Nv, int)]
+
     return vals, means, sigmas, gammas
 
 
@@ -214,7 +213,7 @@ def build_sparse_representation(z, P, mu=None, Nmu=None, sig=None, Nsig=None, Nv
         print('Nsparse (number of bases) = ', Nsparse)
         #Create dictionary
         print('Creating Dictionary...')
-        
+
     A = create_voigt_basis(z, mu, Nmu, sig, Nsig, Nv)
     bigD = {}
 
@@ -230,7 +229,7 @@ def build_sparse_representation(z, P, mu=None, Nmu=None, sig=None, Nsig=None, Nv
     bigD['Ntot'] = Ntot
     if verbose:
         print('Creating Sparse representation...')
-    
+
     Sparse_Array = np.zeros((Ntot, Nsparse), dtype='int')
     for k in range(Ntot):
         #bigD[k] = {}
@@ -239,15 +238,15 @@ def build_sparse_representation(z, P, mu=None, Nmu=None, sig=None, Nsig=None, Nv
         except: #pragma no cover
             continue
         Dind, Dval = sparse_basis(A, pdf0, Nsparse, tolerance=tol)
-        
+
         if len(Dind) < 1: continue
         #bigD[k]['sparse'] = [Dind, Dval]
         if max(Dval) > 0:
-            dval0=Dval[0]
+            dval0 = Dval[0]
             Dvalm = Dval / np.max(Dval)
             index = np.array(list(map(round, (Dvalm / Da))), dtype='int')
-            index0=int(round(dval0/Da))
-            index[0]=index0
+            index0 = int(round(dval0/Da))
+            index[0] = index0
         else:
             index = np.zeros(len(Dind), dtype='int') #pragma no cover
 
@@ -264,7 +263,7 @@ def build_sparse_representation(z, P, mu=None, Nmu=None, sig=None, Nsig=None, Nv
 def pdf_from_sparse(sparse_indices, A, xvals, cut=1.e-5):
     indices, vals = decode_sparse_indices(sparse_indices)
     pdf_y = (A[:, indices]*vals).sum(axis=-1)
-    pdf_y = np.where(pdf_y >= cut, pdf_y, 0.)    
+    pdf_y = np.where(pdf_y >= cut, pdf_y, 0.)
     pdf_x = xvals
     norms = sciint.trapz(pdf_y.T, pdf_x)
     pdf_y /= norms

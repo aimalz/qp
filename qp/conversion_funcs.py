@@ -2,14 +2,12 @@
 These functions should then be registered with the `qp.ConversionDict` using `qp_add_mapping`.
 That will allow the automated conversion mechanisms to work.
 """
-import numpy
 import numpy as np
 
 from sklearn import mixture
-from .sparse_rep import create_voigt_basis, sparse_basis, combine_int, indices2shapes, build_sparse_representation, decode_sparse_indices
+from .sparse_rep import indices2shapes, build_sparse_representation, decode_sparse_indices
 from scipy import integrate as sciint
 from scipy import interpolate as sciinterp
-from scipy import linalg as sla
 
 def extract_vals_at_x(in_dist, **kwargs):
     """Convert using a set of x and y values.
@@ -228,10 +226,10 @@ def extract_mixmod_fit_samples(in_dist, **kwargs):
 
     vv = np.vectorize(mixmod_helper, signature="(%i)->(3,%i)" % (n_sample, n_comps))
     fit_vals = vv(samples)
-    return dict(weights=fit_vals[:,0,:], means=fit_vals[:,1,:], stds=fit_vals[:,2,:])
+    return dict(weights=fit_vals[:, 0, :], means=fit_vals[:, 1, :], stds=fit_vals[:, 2, :])
 
 def extract_voigt_mixmod(in_dist, **kwargs):
-    """Convert to a voigt mixture model starting with a gaussian mixture model, 
+    """Convert to a voigt mixture model starting with a gaussian mixture model,
     trivially by setting gammas to 0
 
     Parameters
@@ -295,12 +293,12 @@ def extract_voigt_xy_sparse(in_dist, **kwargs):
     nz = kwargs.pop('nz', 300)
     
     minz = np.min(z)
-    i,j=np.where(yvals>0)
-    maxz=np.max(z[j])
-    newz=np.linspace(minz, maxz, nz)
+    _, j = np.where(yvals > 0)
+    maxz = np.max(z[j])
+    newz = np.linspace(minz, maxz, nz)
     interp = sciinterp.interp1d(z, yvals, assume_sorted=True)
     newpdf = interp(newz)
-    newpdf = newpdf / sciint.trapz(newpdf, newz).reshape(-1,1)
+    newpdf = newpdf / sciint.trapz(newpdf, newz).reshape(-1, 1)
     ALL, bigD = build_sparse_representation(newz, newpdf)
     return dict(indices=ALL, metadata=bigD)
 
@@ -311,12 +309,12 @@ def extract_sparse_from_xy(in_dist, **kwargs):
     nvals = kwargs.pop('nvals', 300)
     #rebin to a grid more suited to the in_dist support
     xmin = np.min(xvals)
-    i,j = np.where(yvals>0)
+    _, j = np.where(yvals > 0)
     xmax = np.max(xvals[j])
     newx = np.linspace(xmin, xmax, nvals)
     interp = sciinterp.interp1d(xvals, yvals, assume_sorted=True)
     newpdf = interp(newx)
-    sparse_indices, metadata, basis = build_sparse_representation(newx, newpdf)
+    sparse_indices, metadata, _ = build_sparse_representation(newx, newpdf)
     metadata['xvals'] = newx
     return dict(sparse_indices=sparse_indices, sparse_meta=metadata)
 
@@ -327,7 +325,7 @@ def extract_xy_sparse(in_dist, **kwargs):
     nvals = kwargs.pop('nvals', 300)
     #rebin to a grid more suited to the in_dist support
     xmin = np.min(xvals)
-    i,j = np.where(yvals>0)
+    _, j = np.where(yvals > 0)
     xmax = np.max(xvals[j])
     newx = np.linspace(xmin, xmax, nvals)
     interp = sciinterp.interp1d(xvals, yvals, assume_sorted=True)
