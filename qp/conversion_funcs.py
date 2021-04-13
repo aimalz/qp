@@ -6,9 +6,10 @@ import numpy
 import numpy as np
 
 from sklearn import mixture
-from .utils import create_voigt_basis, sparse_basis, combine_int, indices2shapes, build_sparse_representation
+from .sparse_rep import create_voigt_basis, sparse_basis, combine_int, indices2shapes, build_sparse_representation
 from scipy import integrate as sciint
 from scipy import interpolate as sciinterp
+from scipy import linalg as sla
 
 def extract_vals_at_x(in_dist, **kwargs):
     """Convert using a set of x and y values.
@@ -302,3 +303,46 @@ def extract_voigt_xy_sparse(in_dist, **kwargs):
     newpdf = newpdf / sciint.trapz(newpdf, newz).reshape(-1,1)
     ALL, bigD = build_sparse_representation(newz, newpdf)
     return dict(indices=ALL, metadata=bigD)
+
+def extract_sparse_from_xy(in_dist, **kwargs):
+    yvals = in_dist.objdata()['yvals']
+    default = in_dist.metadata()['xvals'][0]
+    xvals = kwargs.pop('xvals', default)
+    nvals = kwargs.pop('nvals', 300)
+    #rebin to a grid more suited to the in_dist support
+    xmin = np.min(xvals)
+    i,j = np.where(yvals>0)
+    xmax = np.max(xvals[j])
+    newx = np.linspace(xmin, xmax, nvals)
+    interp = sciinterp.interp1d(xvals, yvals, assume_sorted=True)
+    newpdf = interp(newx)
+    sparse_indices, metadata, basis = build_sparse_representation(newx, newpdf)
+    metadata['xvals'] = newx
+    return dict(sparse_indices=sparse_indices, sparse_meta=metadata)
+
+def extract_xy_sparse(in_dist, **kwargs):
+    yvals = in_dist.objdata()['yvals']
+    default = in_dist.metadata()['xvals'][0]
+    xvals = kwargs.pop('xvals', default)
+    nvals = kwargs.pop('nvals', 300)
+    #rebin to a grid more suited to the in_dist support
+    xmin = np.min(xvals)
+    i,j = np.where(yvals>0)
+    xmax = np.max(xvals[j])
+    newx = np.linspace(xmin, xmax, nvals)
+    interp = sciinterp.interp1d(xvals, yvals, assume_sorted=True)
+    newpdf = interp(newx)
+    sparse_indices, metadata, A = build_sparse_representation(newx, newpdf)
+    #decode the sparse indices into basis indices and weights
+    basis_indices, weights = qp.utils.decode_sparse_indices(sparse_indices)
+    #retrieve the weighted array of basis functions for each object
+    pdf_y = A[:, basis_indices] * weights
+    #normalize and sum the weighted pdfs
+    x = sparse_meta['z']
+    y = pdf_y.sum(axis=-1)
+    norms = sciint.trapz(y.T, x)
+    y /= norms
+    #super(sparse_gen, self).__init__(x, y.T, *args, **kwargs)
+    xvals = x
+    yvals = y.T
+    return dict(xvals=xvals, yvals=yvals, **kwargs)

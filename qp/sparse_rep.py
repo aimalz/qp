@@ -21,7 +21,6 @@ def shapes2pdf(wa, ma, sa, ga, meta, cut=1.e-5):
         pdft = voigt_profile(z - m, s, g)
         pdft = np.where(pdft >= cut, pdft, 0.)
         pdft = w * pdft / sla.norm(pdft)
-        #print(pdft)
         pdf += pdft
     pdf = np.where(pdf >= cut, pdf, 0.)
     return pdf / sciint.trapz(pdf, z)

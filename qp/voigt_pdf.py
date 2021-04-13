@@ -2,6 +2,8 @@ import numpy as np
 
 from scipy.special import voigt_profile, erf, hyp2f1
 from scipy.stats import rv_continuous
+from scipy import linalg as sla
+from scipy import integrate as sciint
 
 from qp.pdf_gen import Pdf_rows_gen
 from qp.factory import add_class
@@ -72,10 +74,20 @@ class voigt_gen(Pdf_rows_gen):
         # pylint: disable=arguments-differ
         factored, xr, rr, _ = self._sliceargs(x, row)
         if factored:
-            return (np.expand_dims(self.weights[rr], -1) * voigt_profile(np.expand_dims(xr, 0) - np.expand_dims(self._means[rr], -1), np.expand_dims(self._stds[rr], -1), np.expand_dims(self._gammas[rr], -1))).sum(axis=1).reshape(x.shape)
-                    
-        return (self.weights[rr].T * voig_profile(xr - self._means[rr].T, self._stds[rr].T, self._gammas[rr].T)).sum(axis=0)
+            voigt_funcs = voigt_profile(np.expand_dims(xr, 0) - np.expand_dims(self._means[rr], -1), np.expand_dims(self._stds[rr], -1), np.expand_dims(self._gammas[rr], -1))
+            #n = np.repeat(sla.norm(voigt_funcs, axis=2), xr.shape).reshape(voigt_funcs.shape)
+            #voigt_funcs /= n
+            #voigt_funcs *= np.expand_dims(self.weights[rr], -1)
+            pdf = voigt_funcs.sum(axis=1)
+            pdf /= sciint.trapz(pdf, xr)
+            return pdf.reshape(xr.shape)
 
+        voigt_funcs = voigt_profile(xr - self._means[rr].T, self._stds[rr].T, self._gammas[rr].T)
+        voigt_funcs *= self.weights[rr].T
+        pdf = voigt_funcs.sum()
+        return pdf.reshape(x.shape)
+        
+        
     # def _voigt_cdf(self, x, mu, sigma, gamma):
     #     z = 1j * gamma
     #     z += x
