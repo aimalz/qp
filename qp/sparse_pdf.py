@@ -8,7 +8,7 @@ import qp
 from qp.factory import add_class
 from qp.pdf_gen import Pdf_rows_gen
 from qp.conversion_funcs import extract_sparse_from_xy
-from qp.utils import reshape_to_pdf_size, interpolate_x_multi_y, interpolate_unfactored_multi_x_y
+from qp.utils import reshape_to_pdf_size, interpolate_x_multi_y, interpolate_unfactored_x_multi_y, interpolate_multi_x_y, interpolate_unfactored_multi_x_y
 
 class sparse_gen(Pdf_rows_gen):
     # pylint: disable=protected-access
