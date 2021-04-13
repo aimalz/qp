@@ -6,7 +6,7 @@ import numpy
 import numpy as np
 
 from sklearn import mixture
-from .sparse_rep import create_voigt_basis, sparse_basis, combine_int, indices2shapes, build_sparse_representation
+from .sparse_rep import create_voigt_basis, sparse_basis, combine_int, indices2shapes, build_sparse_representation, decode_sparse_indices
 from scipy import integrate as sciint
 from scipy import interpolate as sciinterp
 from scipy import linalg as sla
@@ -334,7 +334,7 @@ def extract_xy_sparse(in_dist, **kwargs):
     newpdf = interp(newx)
     sparse_indices, metadata, A = build_sparse_representation(newx, newpdf)
     #decode the sparse indices into basis indices and weights
-    basis_indices, weights = qp.utils.decode_sparse_indices(sparse_indices)
+    basis_indices, weights = decode_sparse_indices(sparse_indices)
     #retrieve the weighted array of basis functions for each object
     pdf_y = A[:, basis_indices] * weights
     #normalize and sum the weighted pdfs
