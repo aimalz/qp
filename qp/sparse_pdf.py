@@ -7,6 +7,7 @@ from scipy import integrate as sciint
 import qp
 from qp.factory import add_class
 from qp.pdf_gen import Pdf_rows_gen
+from qp.plotting import get_axes_and_xlims, plot_pdf_on_axes
 from qp.conversion_funcs import extract_sparse_from_xy
 from qp.utils import reshape_to_pdf_size, interpolate_x_multi_y, interpolate_unfactored_x_multi_y, interpolate_multi_x_y, interpolate_unfactored_multi_x_y
 
@@ -21,7 +22,7 @@ class sparse_gen(Pdf_rows_gen):
     def __init__(self, sparse_indices, sparse_meta, *args, **kwargs):
         self._sparse_indices = sparse_indices
         self._sparse_meta = sparse_meta
-        cut=kwargs.pop('cut', 1.e-5)
+        cut = kwargs.pop('cut', 1.e-5)
         #recreate the basis array from the metadata
         A = qp.sparse_rep.create_basis(sparse_meta, cut=cut)
         #decode the sparse indices into basis indices and weights
@@ -51,8 +52,8 @@ class sparse_gen(Pdf_rows_gen):
         check_input = kwargs.pop('check_input', True)
         if check_input:
             self._compute_ycumul()
-            self._yvals = (self._yvals.T / self._ycumul[:,-1]).T
-            self._ycumul = (self._ycumul.T / self._ycumul[:,-1]).T
+            self._yvals = (self._yvals.T / self._ycumul[:, -1]).T
+            self._ycumul = (self._ycumul.T / self._ycumul[:, -1]).T
         else:  # pragma: no cover
             self._ycumul = None
 
@@ -68,8 +69,8 @@ class sparse_gen(Pdf_rows_gen):
         self._ycumul = np.ndarray(copy_shape)
         self._ycumul[:, 0] = 0.5 * self._yvals[:, 0] * (self._xvals[1] - self._xvals[0])
         self._ycumul[:, 1:] = np.cumsum((self._xvals[1:] - self._xvals[:-1]) *
-                                        0.5 * np.add(self._yvals[:,1:],
-                                                     self._yvals[:,:-1]), axis=1)
+                                        0.5 * np.add(self._yvals[:, 1:],
+                                                     self._yvals[:, :-1]), axis=1)
 
     @property
     def xvals(self):
@@ -97,9 +98,9 @@ class sparse_gen(Pdf_rows_gen):
         factored, xr, rr, _ = self._sliceargs(x, row)
         if factored:
             return interpolate_x_multi_y(xr, self._xvals, self._ycumul[rr],
-                                         bounds_error=False, fill_value=(0.,1.)).reshape(x.shape)
+                                         bounds_error=False, fill_value=(0., 1.)).reshape(x.shape)
         return interpolate_unfactored_x_multi_y(xr, rr, self._xvals, self._ycumul,
-                                                bounds_error=False, fill_value=(0.,1.))
+                                                bounds_error=False, fill_value=(0., 1.))
 
     def _ppf(self, x, row):
         # pylint: disable=arguments-differ
@@ -108,9 +109,9 @@ class sparse_gen(Pdf_rows_gen):
             self._compute_ycumul()
         if factored:
             return interpolate_multi_x_y(xr, self._ycumul[rr], self._xvals, bounds_error=False,
-                                         fill_value=(0.,1.)).reshape(x.shape)
+                                         fill_value=(0., 1.)).reshape(x.shape)
         return interpolate_unfactored_multi_x_y(xr, rr, self._ycumul, self._xvals,
-                                                bounds_error=False, fill_value=(0.,1.))
+                                                bounds_error=False, fill_value=(0., 1.))
 
     def _updated_ctor_param(self):
         """
