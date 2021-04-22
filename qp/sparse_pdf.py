@@ -5,6 +5,7 @@ import numpy as np
 from scipy.stats import rv_continuous
 from scipy import integrate as sciint
 import qp
+import qp.sparse_rep as sparse_rep
 from qp.factory import add_class
 from qp.pdf_gen import Pdf_rows_gen
 from qp.plotting import get_axes_and_xlims, plot_pdf_on_axes
@@ -24,23 +25,28 @@ class sparse_gen(Pdf_rows_gen):
         self._sparse_meta = sparse_meta
         cut = kwargs.pop('cut', 1.e-5)
         #recreate the basis array from the metadata
-        A = qp.sparse_rep.create_basis(sparse_meta, cut=cut)
+        A = sparse_rep.create_basis(sparse_meta, cut=cut)
         #decode the sparse indices into basis indices and weights
         basis_indices, weights = qp.sparse_rep.decode_sparse_indices(sparse_indices)
         #retrieve the weighted array of basis functions for each object
         pdf_y = A[:, basis_indices] * weights
         #normalize and sum the weighted pdfs
-        x = sparse_meta['z']
+        x = sparse_meta['xvals']
         y = pdf_y.sum(axis=-1)
         norms = sciint.trapz(y.T, x)
         y /= norms
-        #super(sparse_gen, self).__init__(x, y.T, *args, **kwargs)
-        xvals = x
         yvals = y.T
-        if xvals.size != np.sum(yvals.shape[1:]): # pragma: no cover
-            raise ValueError("Shape of xbins in xvals (%s) != shape of xbins in yvals (%s)" % (xvals.size, np.sum(yvals.shape[1:])))
-        self._xvals = xvals
+        if x.size != np.sum(yvals.shape[1:]): # pragma: no cover
+            raise ValueError("Shape of xvals (%s) != shape of yvals (%s)" % (x.size, np.sum(yvals.shape[1:])))
+        self._xvals = x
 
+        #the big basis matrix is not needed anymore
+        del A
+
+        #The following is boiler plate code from interp_pdf.py, but
+        #it appears that sparse_pdf cannot inherit from interp_gen.
+        #Something breaks when the Ensemble gets instantiated
+        
         # Set support
         kwargs['a'] = self.a = np.min(self._xvals)
         kwargs['b'] = self.b = np.max(self._xvals)
@@ -63,7 +69,14 @@ class sparse_gen(Pdf_rows_gen):
         for m in sparse_meta:
             self._metadata[m] = sparse_meta[m]
 
-
+    @property
+    def sparse_indices(self):
+        return self._sparse_indices
+    @property
+    def sparse_meta(self):
+        return self._sparse_meta
+    
+    
     def _compute_ycumul(self):
         copy_shape = np.array(self._yvals.shape)
         self._ycumul = np.ndarray(copy_shape)
