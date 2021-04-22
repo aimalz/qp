@@ -15,15 +15,15 @@ from scipy import integrate as sciint
 
 def shapes2pdf(wa, ma, sa, ga, meta, cut=1.e-5):
     #input : list of shape parameters for a single object
-    z = meta['z']
-    pdf = np.zeros_like(z)
+    x = meta['xvals']
+    pdf = np.zeros_like(x)
     for w, m, s, g in zip(wa, ma, sa, ga):
-        pdft = voigt_profile(z - m, s, g)
+        pdft = voigt_profile(x - m, s, g)
         pdft = np.where(pdft >= cut, pdft, 0.)
         pdft = w * pdft / sla.norm(pdft)
         pdf += pdft
     pdf = np.where(pdf >= cut, pdf, 0.)
-    return pdf / sciint.trapz(pdf, z)
+    return pdf / sciint.trapz(pdf, x)
 
 def create_basis(metadata, cut=1.e-5):
     mu = metadata['mu']
@@ -34,11 +34,11 @@ def create_basis(metadata, cut=1.e-5):
     xvals = metadata['xvals']
     return create_voigt_basis(xvals, mu, Nmu, sigma, Nsigma, Nv, cut=cut)
 
-def create_voigt_basis(zfine, mu, Nmu, sigma, Nsigma, Nv, cut=1.e-5):
+def create_voigt_basis(xvals, mu, Nmu, sigma, Nsigma, Nv, cut=1.e-5):
     """
     Creates a gaussian-voigt dictionary at the same resolution as the original PDF
 
-    :param float zfine: the x-axis for the PDF, the redshift resolution
+    :param float xvals: the x-axis point values for the PDF
     :param float mu: [min_mu, max_mu], range of mean for gaussian
     :param int Nmu: Number of values between min_mu and max_mu
     :param float sigma: [min_sigma, max_sigma], range of variance for gaussian
@@ -46,23 +46,22 @@ def create_voigt_basis(zfine, mu, Nmu, sigma, Nsigma, Nv, cut=1.e-5):
     :param Nv: Number of Voigt profiles per gaussian at given position mu and sigma
     :param float cut: Lower cut for gaussians
 
-    :return: Dictionary as numpy array with shape (len(zfine), Nmu*Nsigma*Nv)
+    :return: Dictionary as numpy array with shape (len(xvals), Nmu*Nsigma*Nv)
     :rtype: float
 
     """
 
-    zmid = np.linspace(mu[0], mu[1], Nmu)
+    means = np.linspace(mu[0], mu[1], Nmu)
     sig = np.linspace(sigma[0], sigma[1], Nsigma)
     gamma = np.linspace(0, 0.5, Nv)
     NA = Nmu * Nsigma * Nv
-    Npdf = len(zfine)
+    Npdf = len(xvals)
     A = np.zeros((Npdf, NA))
     kk = 0
     for i in range(Nmu):
         for j in range(Nsigma):
             for k in range(Nv):
-                #pdft = 1. * np.exp(-((zfine - zmid[i]) ** 2) / (2.*sig[j]*sig[j]))
-                pdft = voigt_profile(zfine - zmid[i], sig[j], gamma[k])
+                pdft = voigt_profile(xvals - means[i], sig[j], gamma[k])
                 pdft = np.where(pdft >= cut, pdft, 0.)
                 A[:, kk] = pdft / sla.norm(pdft)
                 kk += 1
@@ -189,39 +188,39 @@ def indices2shapes(sparse_indices, meta):
     return vals, means, sigmas, gammas
 
 
-def build_sparse_representation(z, P, mu=None, Nmu=None, sig=None, Nsig=None, Nv=3, Nsparse=20, tol=1.e-10, verbose=True):
+def build_sparse_representation(x, P, mu=None, Nmu=None, sig=None, Nsig=None, Nv=3, Nsparse=20, tol=1.e-10, verbose=True):
     #Note : the range for gamma is fixed to [0, 0.5] in create_voigt_basis
     Ntot = len(P)
     if verbose:
         print("Total Galaxies = ", Ntot)
-    dz = z[1] - z[0]
+    dx = x[1] - x[0]
     if mu is None:
-        mu = [min(z), max(z)]
+        mu = [min(x), max(x)]
     if Nmu is None:
-        Nmu = len(z)
+        Nmu = len(x)
     if sig is None:
-        max_sig = (max(z) - min(z)) / 12.
-        min_sig = dz / 6.
+        max_sig = (max(x) - min(x)) / 12.
+        min_sig = dx / 6.
         sig = [min_sig, max_sig]
     if Nsig is None:
-        Nsig = int(np.ceil(2. * (max_sig - min_sig) / dz))
+        Nsig = int(np.ceil(2. * (max_sig - min_sig) / dx))
 
     if verbose:
-        print('dz = ', dz)
+        print('dx = ', dx)
         print('Nmu, Nsig, Nv = ', '[', Nmu, ',', Nsig, ',', Nv, ']')
         print('Total bases in dictionary', Nmu * Nsig * Nv)
         print('Nsparse (number of bases) = ', Nsparse)
         #Create dictionary
         print('Creating Dictionary...')
 
-    A = create_voigt_basis(z, mu, Nmu, sig, Nsig, Nv)
+    A = create_voigt_basis(x, mu, Nmu, sig, Nsig, Nv)
     bigD = {}
 
     Ncoef = 32001
     AA = np.linspace(0, 1, Ncoef)
     Da = AA[1] - AA[0]
 
-    bigD['z'] = z
+    bigD['xvals'] = x
     bigD['mu'] = mu
     bigD['sig'] = sig
     bigD['dims'] = [Nmu, Nsig, Nv, Ncoef]
