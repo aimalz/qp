@@ -13,6 +13,14 @@ from qp.conversion_funcs import extract_sparse_from_xy
 from qp.utils import reshape_to_pdf_size, interpolate_x_multi_y, interpolate_unfactored_x_multi_y, interpolate_multi_x_y, interpolate_unfactored_multi_x_y
 
 class sparse_gen(Pdf_rows_gen):
+    """Sparse based distribution. The final behavior is similar to interp_gen, but the constructor
+    takes a sparse representation to build the interpolator
+
+    Notes
+    -----
+    This implements a qp interface to the original code SparsePz from M. Carrasco-Kind.
+
+    """
     # pylint: disable=protected-access
 
     name = 'sparse'
@@ -46,7 +54,7 @@ class sparse_gen(Pdf_rows_gen):
         #The following is boiler plate code from interp_pdf.py, but
         #it appears that sparse_pdf cannot inherit from interp_gen.
         #Something breaks when the Ensemble gets instantiated
-        
+
         # Set support
         kwargs['a'] = self.a = np.min(self._xvals)
         kwargs['b'] = self.b = np.max(self._xvals)
@@ -71,12 +79,14 @@ class sparse_gen(Pdf_rows_gen):
 
     @property
     def sparse_indices(self):
+        """Return sparse_indices as property"""
         return self._sparse_indices
     @property
     def sparse_meta(self):
+        """Return sparse_indices as property"""
         return self._sparse_meta
-    
-    
+
+
     def _compute_ycumul(self):
         copy_shape = np.array(self._yvals.shape)
         self._ycumul = np.ndarray(copy_shape)
