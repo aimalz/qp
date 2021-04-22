@@ -6,7 +6,7 @@ import numpy as np
 from scipy.stats import rv_continuous
 
 from qp.pdf_gen import Pdf_rows_gen
-from qp.conversion_funcs import extract_vals_at_x, extract_xy_vals
+from qp.conversion_funcs import extract_vals_at_x, extract_xy_vals, extract_xy_sparse
 from qp.plotting import get_axes_and_xlims, plot_pdf_on_axes
 from qp.utils import normalize_interp1d,\
      interpolate_unfactored_multi_x_multi_y, interpolate_unfactored_multi_x_y, interpolate_unfactored_x_multi_y,\
@@ -265,6 +265,7 @@ class interp_irregular_gen(Pdf_rows_gen):
         """
         cls._add_creation_method(cls.create, None)
         cls._add_extraction_method(extract_xy_vals, None)
+        cls._add_extraction_method(extract_xy_sparse, None)
 
 
 interp_irregular = interp_irregular_gen.create
