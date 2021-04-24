@@ -1,7 +1,6 @@
 """This module implements a PDT distribution sub-class using a Gaussian mixture model
 """
 
-import numpy as np
 from scipy.stats import rv_continuous
 from scipy import integrate as sciint
 import qp
@@ -10,6 +9,17 @@ from qp.interp_pdf import interp_gen
 from qp.conversion_funcs import extract_sparse_from_xy
 
 class sparse2_gen(interp_gen):
+    """Sparse based distribution. The final behavior is similar to interp_gen, but the constructor
+    takes a sparse representation to build the interpolator.
+    Attempt to inherit from interp_gen : this is failing
+
+    Notes
+    -----
+    This implements a qp interface to the original code SparsePz from M. Carrasco-Kind.
+
+    """
+    # pylint: disable=protected-access
+
 
     name = 'sparse2'
     version = 0
@@ -27,7 +37,7 @@ class sparse2_gen(interp_gen):
         #retrieve the weighted array of basis functions for each object
         pdf_y = A[:, basis_indices] * weights
         #normalize and sum the weighted pdfs
-        x = sparse_meta['z']
+        x = sparse_meta['xvals']
         y = pdf_y.sum(axis=-1)
         norms = sciint.trapz(y.T, x)
         y /= norms

@@ -303,7 +303,8 @@ def extract_voigt_xy_sparse(in_dist, **kwargs):
     return dict(indices=ALL, metadata=bigD)
 
 def extract_sparse_from_xy(in_dist, **kwargs):
-    yvals = in_dist.objdata()['yvals']
+    default = in_dist.objdata()['yvals']
+    yvals = kwargs.pop('yvals', default)
     default = in_dist.metadata()['xvals'][0]
     xvals = kwargs.pop('xvals', default)
     nvals = kwargs.pop('nvals', 300)
