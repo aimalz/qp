@@ -1,14 +1,12 @@
 import numpy as np
 
-from scipy.special import voigt_profile, erf, hyp2f1
+from scipy.special import voigt_profile
 from scipy.stats import rv_continuous
-from scipy import linalg as sla
 from scipy import integrate as sciint
 
 from qp.pdf_gen import Pdf_rows_gen
 from qp.factory import add_class
 from qp.conversion_funcs import extract_voigt_mixmod, extract_voigt_xy, extract_voigt_xy_sparse
-from qp.utils import reshape_to_pdf_size
 
 
 class voigt_gen(Pdf_rows_gen):
@@ -28,7 +26,7 @@ class voigt_gen(Pdf_rows_gen):
     def __init__(self, means, stds, weights, gammas, *args, **kwargs):
         """
         create the Voigt mixture model using the input parameters
-        
+
         Parameters
         ----------
         means : array_like
@@ -86,8 +84,8 @@ class voigt_gen(Pdf_rows_gen):
         voigt_funcs *= self.weights[rr].T
         pdf = voigt_funcs.sum()
         return pdf.reshape(x.shape)
-        
-        
+
+
     # def _voigt_cdf(self, x, mu, sigma, gamma):
     #     z = 1j * gamma
     #     z += x
@@ -95,7 +93,7 @@ class voigt_gen(Pdf_rows_gen):
     #     val = Real(0.5 + np.erf(z)/2 + 1j*z*z/np.pi * hyp2f2(1,1;1.5,2;-z*z) )
     # hyp2f2(1,1;1.5,2;-z*z) = hyp2f2(1,1;2,1.5;-z*z) = 1/(1+1-1.5)*hyp1f1(0.5;1.5;z)*hyp1f1(0.5;1.5;-z)
     #cf https://functions.wolfram.com/HypergeometricFunctions/Hypergeometric2F2/03/02/04/0002/
-        
+
     def _updated_ctor_param(self):
         """
         Add gamma to the parameters

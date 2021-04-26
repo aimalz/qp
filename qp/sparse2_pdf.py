@@ -67,4 +67,6 @@ class sparse2_gen(interp_gen):
 
 sparse2 = sparse2_gen.create
 
+sparse2_gen.test_data = {}
+
 add_class(sparse2_gen)

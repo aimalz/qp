@@ -499,4 +499,3 @@ def reshape_to_pdf_shape(vals, pdf_shape, per_pdf):
     """
     outshape = np.hstack([pdf_shape, per_pdf])
     return vals.reshape(outshape)
-

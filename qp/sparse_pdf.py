@@ -4,7 +4,6 @@
 import numpy as np
 from scipy.stats import rv_continuous
 from scipy import integrate as sciint
-from qp import sparse_pdf
 import qp.sparse_rep as sparse_rep
 from qp.factory import add_class
 from qp.pdf_gen import Pdf_rows_gen
