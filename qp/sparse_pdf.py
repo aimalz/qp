@@ -4,7 +4,7 @@
 import numpy as np
 from scipy.stats import rv_continuous
 from scipy import integrate as sciint
-import qp
+from qp import sparse_pdf
 import qp.sparse_rep as sparse_rep
 from qp.factory import add_class
 from qp.pdf_gen import Pdf_rows_gen
@@ -35,7 +35,7 @@ class sparse_gen(Pdf_rows_gen):
         #recreate the basis array from the metadata
         A = sparse_rep.create_basis(sparse_meta, cut=cut)
         #decode the sparse indices into basis indices and weights
-        basis_indices, weights = qp.sparse_rep.decode_sparse_indices(sparse_indices)
+        basis_indices, weights = sparse_rep.decode_sparse_indices(sparse_indices)
         #retrieve the weighted array of basis functions for each object
         pdf_y = A[:, basis_indices] * weights
         #normalize and sum the weighted pdfs

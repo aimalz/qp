@@ -3,7 +3,7 @@
 
 from scipy.stats import rv_continuous
 from scipy import integrate as sciint
-import qp
+import qp.sparse_rep as sparse_rep
 from qp.factory import add_class
 from qp.interp_pdf import interp_gen
 from qp.conversion_funcs import extract_sparse_from_xy
@@ -31,9 +31,9 @@ class sparse2_gen(interp_gen):
         self._sparse_meta = sparse_meta
         cut = kwargs.pop('cut', 1.e-5)
         #recreate the basis array from the metadata
-        A = qp.sparse_rep.create_basis(sparse_meta, cut=cut)
+        A = sparse_rep.create_basis(sparse_meta, cut=cut)
         #decode the sparse indices into basis indices and weights
-        basis_indices, weights = qp.sparse_rep.decode_sparse_indices(sparse_indices)
+        basis_indices, weights = sparse_rep.decode_sparse_indices(sparse_indices)
         #retrieve the weighted array of basis functions for each object
         pdf_y = A[:, basis_indices] * weights
         #normalize and sum the weighted pdfs

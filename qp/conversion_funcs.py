@@ -299,7 +299,7 @@ def extract_voigt_xy_sparse(in_dist, **kwargs):
     interp = sciinterp.interp1d(z, yvals, assume_sorted=True)
     newpdf = interp(newz)
     newpdf = newpdf / sciint.trapz(newpdf, newz).reshape(-1, 1)
-    ALL, bigD = build_sparse_representation(newz, newpdf)
+    ALL, bigD, _ = build_sparse_representation(newz, newpdf)
     return dict(indices=ALL, metadata=bigD)
 
 def extract_sparse_from_xy(in_dist, **kwargs):
