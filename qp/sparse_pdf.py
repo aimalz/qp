@@ -27,11 +27,16 @@ class sparse_gen(Pdf_rows_gen):
 
     _support_mask = rv_continuous._support_mask
 
-    def __init__(self, sparse_indices, sparse_meta, *args, **kwargs):
+    def __init__(self, xvals, mu, sig, N_SPARSE, dims, sparse_indices, *args, **kwargs):
         self._sparse_indices = sparse_indices
-        self._sparse_meta = sparse_meta
+        self._xvals = xvals
+        self._mu = mu
+        self._sig = sig
+        self._N_SPARSE = N_SPARSE
+        self._dims = dims
         cut = kwargs.pop('cut', 1.e-5)
         #recreate the basis array from the metadata
+        sparse_meta = dict(xvals=xvals, mu=mu, sig=sig, N_SPARSE=N_SPARSE, dims=dims)
         A = sparse_rep.create_basis(sparse_meta, cut=cut)
         #decode the sparse indices into basis indices and weights
         basis_indices, weights = sparse_rep.decode_sparse_indices(sparse_indices)
@@ -72,19 +77,16 @@ class sparse_gen(Pdf_rows_gen):
 
         super(sparse_gen, self).__init__(*args, **kwargs)
         self._addmetadata('xvals', self._xvals)
-        self._addobjdata('yvals', self._yvals)
-        for m in sparse_meta:
-            self._metadata[m] = sparse_meta[m]
-
+        self._addmetadata('mu', self._mu)
+        self._addmetadata('sig', self._sig)
+        self._addmetadata('N_SPARSE', self._N_SPARSE)
+        self._addmetadata('dims', self._dims)        
+        self._addobjdata('sparse_indices', self._sparse_indices)
+        
     @property
     def sparse_indices(self):
         """Return sparse_indices as property"""
         return self._sparse_indices
-    @property
-    def sparse_meta(self):
-        """Return sparse_indices as property"""
-        return self._sparse_meta
-
 
     def _compute_ycumul(self):
         copy_shape = np.array(self._yvals.shape)
@@ -141,7 +143,11 @@ class sparse_gen(Pdf_rows_gen):
         """
         dct = super(sparse_gen, self)._updated_ctor_param()
         dct['sparse_indices'] = self._sparse_indices
-        dct['sparse_meta'] = self._sparse_meta
+        dct['xvals'] = self._xvals
+        dct['mu'] = self._mu
+        dct['sig'] = self._sig
+        dct['N_SPARSE'] = self._N_SPARSE
+        dct['dims'] = self._dims
         return dct
 
     @classmethod

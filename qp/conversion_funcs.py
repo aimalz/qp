@@ -317,7 +317,9 @@ def extract_sparse_from_xy(in_dist, **kwargs):
     newpdf = interp(newx)
     sparse_indices, metadata, _ = build_sparse_representation(newx, newpdf)
     metadata['xvals'] = newx
-    return dict(sparse_indices=sparse_indices, sparse_meta=metadata)
+    metadata['sparse_indices'] = sparse_indices
+    metadata.pop('Ntot')    
+    return metadata
 
 def extract_xy_sparse(in_dist, **kwargs):
     yvals = in_dist.objdata()['yvals']
