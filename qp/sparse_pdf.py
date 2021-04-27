@@ -7,7 +7,7 @@ from qp import sparse_rep
 from qp.factory import add_class
 from qp.interp_pdf import interp_gen
 from qp.conversion_funcs import extract_sparse_from_xy
-from qp.test_data import SAMPLES, XARRAY, YARRAY, TEST_XVALS
+from qp.test_data import XARRAY, YARRAY, TEST_XVALS
 
 class sparse_gen(interp_gen):
     """Sparse based distribution. The final behavior is similar to interp_gen, but the constructor
@@ -55,7 +55,7 @@ class sparse_gen(interp_gen):
         self._addmetadata('mu', self.mu)
         self._addmetadata('sig', self.sig)
         self._addmetadata('N_SPARSE', self.N_SPARSE)
-        self._addmetadata('dims', self.dims)        
+        self._addmetadata('dims', self.dims)
         self._addobjdata('sparse_indices', self.sparse_indices)
         #self._xvals = x
         #self._yvals = y.T
@@ -94,4 +94,3 @@ sparse_gen.test_data = dict(sparse=dict(gen_func=sparse, \
                                         ctor_data=dict(xvals=META['xvals'], mu=META['mu'], sig=META['sig'],\
                                                        N_SPARSE=META['N_SPARSE'], dims=META['dims'], sparse_indices=SPARSE_IDX),\
                                         test_xvals=TEST_XVALS[::10]), )
-

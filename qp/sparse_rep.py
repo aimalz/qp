@@ -14,6 +14,8 @@ from scipy import linalg as sla
 from scipy import integrate as sciint
 
 def shapes2pdf(wa, ma, sa, ga, meta, cut=1.e-5):
+    """return a pdf evaluated at the meta['xvals'] values for the
+    given set of Voigt parameters"""
     #input : list of shape parameters for a single object
     x = meta['xvals']
     pdf = np.zeros_like(x)
@@ -26,6 +28,7 @@ def shapes2pdf(wa, ma, sa, ga, meta, cut=1.e-5):
     return pdf / sciint.trapz(pdf, x)
 
 def create_basis(metadata, cut=1.e-5):
+    """create the Voigt basis matrix out of a metadata dictionary"""
     mu = metadata['mu']
     Nmu = metadata['dims'][0]
     sigma = metadata['sig']
@@ -141,6 +144,8 @@ def get_N(longN):
     return (longN >> 16), (longN & (2 ** 16 - 1))
 
 def decode_sparse_indices(indices):
+    """decode sparse indices into basis indices and weigth array
+    """
     Ncoef = 32001
     sp_ind = np.array(list(map(get_N, indices)))
     spi = sp_ind[:, 0, :]
@@ -189,6 +194,8 @@ def indices2shapes(sparse_indices, meta):
 
 
 def build_sparse_representation(x, P, mu=None, Nmu=None, sig=None, Nsig=None, Nv=3, Nsparse=20, tol=1.e-10, verbose=True):
+    """compute the sparse representation of a set of pdfs evaluated on a common x array
+    """
     #Note : the range for gamma is fixed to [0, 0.5] in create_voigt_basis
     Ntot = len(P)
     if verbose:
@@ -231,14 +238,12 @@ def build_sparse_representation(x, P, mu=None, Nmu=None, sig=None, Nsig=None, Nv
 
     Sparse_Array = np.zeros((Ntot, Nsparse), dtype='int')
     for k in range(Ntot):
-        #bigD[k] = {}
-        try:
-            pdf0 = P[k]
-        except: #pragma no cover
-            continue
+        pdf0 = P[k]
+
         Dind, Dval = sparse_basis(A, pdf0, Nsparse, tolerance=tol)
 
-        if len(Dind) < 1: continue
+        if len(Dind) < 1:
+            continue
         #bigD[k]['sparse'] = [Dind, Dval]
         if max(Dval) > 0:
             dval0 = Dval[0]
@@ -260,6 +265,8 @@ def build_sparse_representation(x, P, mu=None, Nmu=None, sig=None, Nsig=None, Nv
     return Sparse_Array, bigD, A
 
 def pdf_from_sparse(sparse_indices, A, xvals, cut=1.e-5):
+    """return the array of evaluations at xvals from the sparse indices
+    """
     indices, vals = decode_sparse_indices(sparse_indices)
     pdf_y = (A[:, indices]*vals).sum(axis=-1)
     pdf_y = np.where(pdf_y >= cut, pdf_y, 0.)
