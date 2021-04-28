@@ -4,6 +4,8 @@ import os
 import numpy as np
 import scipy.stats as sps
 
+np.random.seed(1234)
+
 NPDF = 11
 NBIN = 21
 NSAMPLES = 100
