@@ -230,8 +230,7 @@ def build_sparse_representation(x, P, mu=None, Nmu=None, sig=None, Nsig=None, Nv
     bigD['xvals'] = x
     bigD['mu'] = mu
     bigD['sig'] = sig
-    bigD['dims'] = [Nmu, Nsig, Nv, Ncoef]
-    bigD['N_SPARSE'] = Nsparse
+    bigD['dims'] = [Nmu, Nsig, Nv, Ncoef, Nsparse]
     bigD['Ntot'] = Ntot
     if verbose:
         print('Creating Sparse representation...')
