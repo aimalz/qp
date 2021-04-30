@@ -95,6 +95,7 @@ class voigt_gen(Pdf_rows_gen):
     #cf https://functions.wolfram.com/HypergeometricFunctions/Hypergeometric2F2/03/02/04/0002/
 
     def _updated_ctor_param(self):
+        #pragma: no cover
         """
         Add gamma to the parameters
         """

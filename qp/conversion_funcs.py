@@ -228,7 +228,7 @@ def extract_mixmod_fit_samples(in_dist, **kwargs):
     fit_vals = vv(samples)
     return dict(weights=fit_vals[:, 0, :], means=fit_vals[:, 1, :], stds=fit_vals[:, 2, :])
 
-def extract_voigt_mixmod(in_dist, **kwargs):
+def extract_voigt_mixmod(in_dist, **kwargs): #pragma: no cover
     """Convert to a voigt mixture model starting with a gaussian mixture model,
     trivially by setting gammas to 0
 
@@ -250,7 +250,7 @@ def extract_voigt_mixmod(in_dist, **kwargs):
     return dict(means=means, stds=stds, weights=weights, gammas=gammas)
 
 
-def extract_voigt_xy(in_dist, **kwargs):
+def extract_voigt_xy(in_dist, **kwargs): #pragma: no cover
     """Build a voigt function basis and run a match-pursuit algorithm to fit gridded data
 
     Parameters
@@ -272,7 +272,7 @@ def extract_voigt_xy(in_dist, **kwargs):
     return dict(means=m, stds=s, weights=w, gammas=g)
 
 
-def extract_voigt_xy_sparse(in_dist, **kwargs):
+def extract_voigt_xy_sparse(in_dist, **kwargs): #pragma: no cover
     """Build a voigt function basis and run a match-pursuit algorithm to fit gridded data
 
     Parameters
@@ -302,7 +302,7 @@ def extract_voigt_xy_sparse(in_dist, **kwargs):
     ALL, bigD, _ = build_sparse_representation(newz, newpdf)
     return dict(indices=ALL, metadata=bigD)
 
-def extract_sparse_from_xy(in_dist, **kwargs):
+def extract_sparse_from_xy(in_dist, **kwargs): #pragma: no cover
     default = in_dist.objdata()['yvals']
     yvals = kwargs.pop('yvals', default)
     default = in_dist.metadata()['xvals'][0]
@@ -321,7 +321,7 @@ def extract_sparse_from_xy(in_dist, **kwargs):
     metadata.pop('Ntot')    
     return metadata
 
-def extract_xy_sparse(in_dist, **kwargs):
+def extract_xy_sparse(in_dist, **kwargs): #pragma: no cover
     yvals = in_dist.objdata()['yvals']
     default = in_dist.metadata()['xvals'][0]
     xvals = kwargs.pop('xvals', default)

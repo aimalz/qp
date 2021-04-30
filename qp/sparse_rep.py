@@ -94,10 +94,10 @@ def sparse_basis(dictionary, query_vec, n_basis, tolerance=None):
     L[0, 0] = 1.
     for n_active in range(n_basis):
         lam = np.argmax(abs(np.dot(dictionary.T, res)))
-        if lam < n_active or alpha[lam] ** 2 < machine_eps: #pragma no cover
+        if lam < n_active or alpha[lam] ** 2 < machine_eps: #pragma: no cover
             n_active -= 1
             break
-        if n_active > 0: #pragma no cover
+        if n_active > 0: #pragma: no cover
             # Updates the Cholesky decomposition of dictionary
             L[n_active, :n_active] = np.dot(dictionary[:, :n_active].T, dictionary[:, lam])
             sla.solve_triangular(L[:n_active, :n_active], L[n_active, :n_active], lower=True, overwrite_b=True)
@@ -241,7 +241,7 @@ def build_sparse_representation(x, P, mu=None, Nmu=None, sig=None, Nsig=None, Nv
 
         Dind, Dval = sparse_basis(A, pdf0, Nsparse, tolerance=tol)
 
-        if len(Dind) < 1:
+        if len(Dind) < 1:#pragma: no cover
             continue
         #bigD[k]['sparse'] = [Dind, Dval]
         if max(Dval) > 0:
@@ -251,7 +251,7 @@ def build_sparse_representation(x, P, mu=None, Nmu=None, sig=None, Nsig=None, Nv
             index0 = int(round(dval0/Da))
             index[0] = index0
         else:
-            index = np.zeros(len(Dind), dtype='int') #pragma no cover
+            index = np.zeros(len(Dind), dtype='int') #pragma: no cover
 
         sparse_ind = np.array(list(map(combine_int, index, Dind)))
         Sparse_Array[k, 0:len(sparse_ind)] = sparse_ind

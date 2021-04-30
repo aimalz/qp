@@ -39,22 +39,26 @@ class UtilsTestCase(unittest.TestCase):
     def test_sparse(self):
         xvals = np.linspace(0,1,101)
         #assert basic construction
-        A = qp.sparse_rep.create_voigt_basis(xvals, (0,1), 11, (0.01,0.5), 10, 10)
-        self.assertEqual(A.shape, (101,1100))
+        A = qp.sparse_rep.create_voigt_basis(xvals, (0, 1), 11, (0.01, 0.5), 10, 10)
+        self.assertEqual(A.shape, (101, 1100))
         #check consistency of a constrained case od voigt basis
-        pdf0 = 1. * np.exp(-((xvals - 0.5) ** 2) / (2.* 0.01))
+        pdf0 = np.exp(-((xvals - 0.5) ** 2) / (2.* 0.01)) / (np.sqrt(2*np.pi)*0.1)
+        pdf2 = qp.sparse_rep.shapes2pdf([1,], [0.5,], [0.1,], [0,], dict(xvals=xvals), cut=1.e-7)
+        self.assertTrue(np.allclose(pdf2, pdf0))
         A = qp.sparse_rep.create_voigt_basis(xvals, (0.5,0.5), 1, (0.1,0.1), 1, 1)
         pdf1 = np.squeeze(A) * np.sqrt((pdf0**2).sum())
         self.assertTrue(np.allclose(pdf1,pdf0))
         #NSparse set to 2 so that unit testing goes through more code in sparse_basis
         ALL, bigD, _ = qp.sparse_rep.build_sparse_representation(xvals, [pdf0], (0.5,0.5), 1, (0.1,0.1), 1, 1, 2)
         va, ma, sa, ga = qp.sparse_rep.indices2shapes(ALL, bigD)
-        self.assertEqual(va[:,1],0.)
-        self.assertEqual([va[:,0],ma[:,0],sa[:,0],ga[:,0]], [1.,0.5,0.1,0.])
+        self.assertEqual(va[:, 1], 0.)
+        self.assertEqual([va[:, 0], ma[:, 0], sa[:, 0], ga[:, 0]], [1., 0.5, 0.1, 0.])
         #check default values
-        ALL, bigD, _ = qp.sparse_rep.build_sparse_representation(xvals, [pdf0])
-        self.assertEqual(bigD['mu'], [min(xvals),max(xvals)])
+        ALL, bigD, A = qp.sparse_rep.build_sparse_representation(xvals, [pdf0])
+        self.assertEqual(bigD['mu'], [min(xvals), max(xvals)])
         self.assertEqual(bigD['dims'][0], len(xvals))
+        pdf_rec = qp.sparse_rep.pdf_from_sparse(ALL, A, xvals)
+        self.assertTrue(np.allclose(pdf_rec[:, 0], pdf0, atol=1.5e-2))
         #create a qp instance of voigt pdf ensemble
         voigt = qp.voigt_pdf.voigt_gen(ma, sa, va, ga)
         self.assertTrue(np.all(voigt.means==ma))
