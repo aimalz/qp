@@ -59,17 +59,6 @@ class UtilsTestCase(unittest.TestCase):
         self.assertEqual(bigD['dims'][0], len(xvals))
         pdf_rec = qp.sparse_rep.pdf_from_sparse(ALL, A, xvals)
         self.assertTrue(np.allclose(pdf_rec[:, 0], pdf0, atol=1.5e-2))
-        #create a qp instance of voigt pdf ensemble
-        voigt = qp.voigt_pdf.voigt_gen(ma, sa, va, ga)
-        self.assertTrue(np.all(voigt.means==ma))
-        self.assertTrue(np.all(voigt.stds==sa))
-        self.assertTrue(np.all(voigt.weights==va))
-        self.assertTrue(np.all(voigt.gammas==ga))
-        val=voigt.pdf(xvals[0],row=0)
-        self.assertTrue(np.isclose(val[0],1.48671951e-05))
-        val=voigt.pdf(xvals[0:2],row=0)
-        print(val)
-        self.assertTrue(np.isclose(val[0],75.74328096))
         
 if __name__ == '__main__':
     unittest.main()

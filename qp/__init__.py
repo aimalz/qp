@@ -13,7 +13,6 @@ from .hist_pdf import *
 from .interp_pdf import *
 from .quant_pdf import *
 from .mixmod_pdf import *
-from .voigt_pdf import *
 from .sparse_pdf import *
 from .scipy_pdfs import *
 from .ensemble import Ensemble
