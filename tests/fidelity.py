@@ -8,7 +8,7 @@ from qp import plotting
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-testfile = 'qp_test_ensemble.hdf5'
+testfile = '../qp/docs/notebooks/qp_test_ensemble.hdf5'
 
 def run_metrics(prefix, ens_orig, ens_test):
 
@@ -35,17 +35,18 @@ ens_q21 = qp.convert(ens_orig, 'quant', quants=np.linspace(0.01, 0.99, 21))
 ens_h51 = qp.convert(ens_orig, 'hist', bins=np.linspace(0, 3.0, 51))
 ens_h21 = qp.convert(ens_orig, 'hist', bins=np.linspace(0, 3.0, 21))
 
-print("Running conversinos for spline, mixmod")
+print("Running conversinos for spline, mixmod, sparse")
 ens_red = ens_orig[np.arange(100)]
 ens_s51 = qp.convert(ens_red, 'spline', xvals=np.linspace(0, 3.0, 51), method="xy")
 ens_s21 = qp.convert(ens_red, 'spline', xvals=np.linspace(0, 3.0, 21), method="xy")
 ens_m3 = qp.convert(ens_red, 'mixmod', xvals=np.linspace(0, 3.0, 301), ncomps=3)
 ens_m5 = qp.convert(ens_red, 'mixmod', xvals=np.linspace(0, 3.0, 301), ncomps=3)
+ens_sp = qp.convert(ens_red, class_name='voigt', method='xy')
 
 label_list = ['g51', 'g21', 'q51', 'q21', 'h51', 'h21']
-label_list2 = ['s51', 's21', 'm3', 'm5']
+label_list2 = ['s51', 's21', 'm3', 'm5', 'sp']
 ens_list = [ens_g51, ens_g21, ens_q51, ens_q21, ens_h51, ens_h21]
-ens_list2 = [ens_s51, ens_s21, ens_m3, ens_m5]
+ens_list2 = [ens_s51, ens_s21, ens_m3, ens_m5, ens_sp]
 
 for label, ens in zip(label_list, ens_list):
     print("Running metrics for %s" % label)
