@@ -8,10 +8,11 @@ setup(
     author="Alex Malz, Phil Marshall, Eric Charles",
     author_email="aimalz@nyu.edu, pjm@slac.stanford.edu, echarles@slac.stanford.edu",
     url = "https://github.com/aimalz/qp",
-    packages=["qp"],
+    packages=["qp", "docs/notebooks"],
     description="Quantile parametrization of probability distribution functions",
     long_description=open("README.md").read(),
-    package_data={"": ["README.md", "LICENSE"]},
+    package_data={"": ["README.md", "LICENSE", "*.npy"],
+                      "docs/notebooks": ["*.npy"]},
     include_package_data=True,
     classifiers=[
         "Development Status :: 4 - Beta",
