@@ -92,7 +92,7 @@ class interp_gen(Pdf_rows_gen):
         if factored:
             return interpolate_x_multi_y(xr, self._xvals, self._yvals[rr], bounds_error=False,
                                          fill_value=0.).reshape(x.shape)
-        if xr.shape[:-1] == rr.shape[:-1]:
+        if np.shape(xr)[:-1] == np.shape(rr)[:-1]:
             return interpolate_unfactored_x_multi_y(xr, rr, self._xvals, self._yvals,
                                                     bounds_error=False, fill_value=0.)
         return interp1d(self._xvals, self._yvals[np.squeeze(rr)], bounds_error=False, fill_value=0.)(xr)
@@ -105,7 +105,7 @@ class interp_gen(Pdf_rows_gen):
         if factored:
             return interpolate_x_multi_y(xr, self._xvals, self._ycumul[rr],
                                          bounds_error=False, fill_value=(0.,1.)).reshape(x.shape)
-        if xr.shape[:-1] == rr.shape[:-1]:
+        if np.shape(xr)[:-1] == np.shape(rr)[:-1]:
             return interpolate_unfactored_x_multi_y(xr, rr, self._xvals, self._ycumul, bounds_error=False, fill_value=(0.,1.))            
         return interp1d(self._xvals, self._ycumul[np.squeeze(rr)], bounds_error=False, fill_value=(0.,1.))(xr)  # pragma: no cover
 
@@ -120,6 +120,18 @@ class interp_gen(Pdf_rows_gen):
                                          fill_value=(0.,1.)).reshape(x.shape)        
         return interpolate_unfactored_multi_x_y(xr, rr, self._ycumul, self._xvals,
                                                 bounds_error=False, fill_value=(0.,1.))
+
+    def _munp(self, m, *args):
+        """ compute moments """
+        # Silence floating point warnings from integration.
+        with np.errstate(all='ignore'):
+            vals = self.custom_generic_moment(m)
+        return vals
+
+    def custom_generic_moment(self, m):
+        m = np.asarray(m)
+        dx = self._xvals[1] - self._xvals[0]
+        return np.expand_dims(np.sum(self._xvals**m * self._yvals, axis=1) * dx, -1)
 
     def _updated_ctor_param(self):
         """
