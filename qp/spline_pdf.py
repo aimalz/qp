@@ -4,7 +4,7 @@
 import numpy as np
 
 from scipy.stats import rv_continuous
-
+from scipy.special import errstate
 from scipy.interpolate import splev, splrep, splint
 from scipy.integrate import quad
 
@@ -44,7 +44,8 @@ def normalize_spline(xvals, yvals, limits, **kwargs):
         return quad(spl, limits[0], limits[1], **kwargs)[0]
 
     vv = np.vectorize(row_integral)
-    integrals = vv(np.arange(xvals.shape[0]))
+    with errstate(all='ignore'):
+        integrals = vv(np.arange(xvals.shape[0]))
     return (yvals.T / integrals).T
 
 
@@ -79,15 +80,29 @@ def build_splines(xvals, yvals):
     return np.vstack(l_x), np.vstack(l_y), np.vstack(l_n)
 
 
-
-
-
 class spline_gen(Pdf_rows_gen):
     """Spline based distribution
 
     Notes
     -----
-    This implements a PDF using a set splines
+    This implements PDFs using a set of splines
+
+    The relevant data members are:
+
+    splx:  (npdf, n) spline-knot x-values
+    
+    sply:  (npdf, n) spline-knot y-values
+
+    spln:  (npdf) spline-knot order paramters
+
+    The pdf() for the ith pdf will return the result of 
+    scipy.interpolate.splev(x, splx[i], sply[i], spln[i))
+    
+    The cdf() for the ith pdf will return the result of 
+    scipy.interpolate.splint(x, splx[i], sply[i], spln[i))
+
+    The ppf() will use the default scipy implementation, which 
+    inverts the cdf() as evaluated on an adaptive grid.
     """
     # pylint: disable=protected-access
 
@@ -226,20 +241,11 @@ class spline_gen(Pdf_rows_gen):
 
     def _pdf(self, x, row):
         # pylint: disable=arguments-differ
-        #factored, xr, rr, _ = self._sliceargs(x, row)
-        ns = self._splx.shape[-1]
-        #if factored:  #pragma: no cover
-        #    def pdf_row_fact(spl_):
-        #        return splev(xr, (spl_[0:ns], spl_[ns:2*ns], spl_[-1].astype(int)))
-
-        #    vv = np.vectorize(pdf_row_fact, signature="(%i)->(%i)" % (2*ns+1, xr.size))
-        #    spl = np.hstack([self._splx[rr], self._sply[rr], self._spln[rr]])
-        #    return vv(spl).flat
-
         def pdf_row(xv, irow):
             return splev(xv, (self._splx[irow], self._sply[irow], self._spln[irow].item()))
 
-        vv = np.vectorize(pdf_row)
+        with errstate(all='ignore'):
+            vv = np.vectorize(pdf_row)
         return vv(x, row)
 
 
@@ -248,7 +254,8 @@ class spline_gen(Pdf_rows_gen):
         def cdf_row(xv, irow):
             return splint(self._xmin, xv, (self._splx[irow], self._sply[irow], self._spln[irow].item()))
 
-        vv = np.vectorize(cdf_row)
+        with errstate(all='ignore'):
+            vv = np.vectorize(cdf_row)
         return vv(x, row)
 
     def _updated_ctor_param(self):
@@ -285,6 +292,7 @@ class spline_gen(Pdf_rows_gen):
 
     @classmethod
     def make_test_data(cls):
+        """ Make data for unit tests """
         SPLX, SPLY, SPLN = cls.build_normed_splines(XARRAY, YARRAY)
         cls.test_data = dict(spline=dict(gen_func=spline, ctor_data=dict(splx=SPLX, sply=SPLY, spln=SPLN),\
                                          test_xvals=TEST_XVALS[::10]),

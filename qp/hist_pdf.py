@@ -10,9 +10,9 @@ from scipy.interpolate import interp1d
 from qp.pdf_gen import Pdf_rows_gen
 from qp.conversion_funcs import extract_hist_values, extract_hist_samples
 from qp.plotting import get_axes_and_xlims, plot_pdf_histogram_on_axes
-from qp.utils import evaluate_hist_x_multi_y, evaluate_unfactored_hist_x_multi_y,\
+from qp.utils import evaluate_unfactored_hist_x_multi_y,\
      interpolate_unfactored_multi_x_y, interpolate_unfactored_x_multi_y,\
-     interpolate_multi_x_y, interpolate_x_multi_y, reshape_to_pdf_size
+     reshape_to_pdf_size
 from qp.test_data import XBINS, HIST_DATA, TEST_XVALS, NSAMPLES
 from qp.factory import add_class
 
@@ -25,6 +25,21 @@ class hist_gen(Pdf_rows_gen):
     -----
     This implements a PDF using a set of histogramed values.
 
+    The relevant data members are:
+
+    bins:  n+1 bin edges (shared for all PDFs)
+    
+    pdfs:  (npdf, n) bin values 
+
+    Inside a given bin the pdf() will return the pdf value.
+    Outside the range bins[0], bins[-1] the pdf() will return 0.
+
+    Inside a given bin the cdf() will use a linear interpolation accross the bin
+    Outside the range bins[0], bins[-1] the cdf() will return (0 or 1), respectively
+
+    The ppf() is computed by inverting the cdf(). 
+    ppf(0) will return bins[0]
+    ppf(1) will return bins[-1]
     """
     # pylint: disable=protected-access
 
@@ -36,18 +51,23 @@ class hist_gen(Pdf_rows_gen):
     def __init__(self, bins, pdfs, *args, **kwargs):
         """
         Create a new distribution using the given histogram
+
         Parameters
         ----------
         bins : array_like
-          The second containing the (n+1) bin boundaries
+          The array containing the (n+1) bin boundaries
+
+        pdfs : array_like
+          The array containing the (npdf, n) bin values
         """
         self._hbins = np.asarray(bins)
         self._nbins = self._hbins.size - 1
         self._hbin_widths = self._hbins[1:] - self._hbins[:-1]
         self._xmin = self._hbins[0]
         self._xmax = self._hbins[-1]
-        if pdfs.shape[-1] != self._nbins: # pragma: no cover
-            raise ValueError("Number of bins (%i) != number of values (%i)" % (self._nbins, pdfs.shape[-1]))
+        if np.shape(pdfs)[-1] != self._nbins: # pragma: no cover
+            raise ValueError("Number of bins (%i) != number of values (%i)" %
+                             (self._nbins, np.shape(pdfs)[-1]))
 
         check_input = kwargs.pop('check_input', True)
         if check_input:
@@ -132,6 +152,7 @@ class hist_gen(Pdf_rows_gen):
 
     @classmethod
     def make_test_data(cls):
+        """ Make data for unit tests """
         cls.test_data = dict(hist=dict(gen_func=hist, ctor_data=dict(bins=XBINS, pdfs=HIST_DATA),\
                                        convert_data=dict(bins=XBINS), atol_diff=1e-1, atol_diff2=1e-1, test_xvals=TEST_XVALS),
                              hist_samples=dict(gen_func=hist, ctor_data=dict(bins=XBINS, pdfs=HIST_DATA),\

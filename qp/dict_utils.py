@@ -105,7 +105,7 @@ def print_dict_shape(in_dict):
         The dictionary to print
     """
     for key, val in in_dict.items():
-        print(key, val.shape)
+        print(key, np.shape(val))
 
 
 def slice_dict(in_dict, subslice):
@@ -178,9 +178,9 @@ def check_array_shapes(in_dict, npdf):
     for key, val in in_dict.items():
         if np.size(val) == 1 and npdf == 1:  #pragma: no cover
             continue
-        if val.shape[0] != npdf:  #pragma: no cover
+        if np.shape(val)[0] != npdf:  #pragma: no cover
             raise ValueError("First dimension of array %s does not match npdf: %i != %i" %
-                                 (key, val.shape[0], npdf))
+                                 (key, np.shape(val)[0], npdf))
 
 def compare_two_dicts(d1, d2):
     """Check that all the items in d1 and d2 match
@@ -189,11 +189,11 @@ def compare_two_dicts(d1, d2):
     -------
     match : `bool`
         True if they all match, False otherwise
-    """    
+    """
     if d1.keys() != d2.keys():  #pragma: no cover
         return False
     for k, v in d1.items():
-        vv = d2[k]        
+        vv = d2[k]
         try:
             if v != vv:  #pragma: no cover
                 return False

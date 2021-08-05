@@ -30,9 +30,9 @@ Also: [Read the Docs](http://qp.readthedocs.io/)
 
 ## People
 
-* [Alex Malz](https://github.com/aimalz/qp/issues/new?body=@aimalz) (NYU)
-* [Phil Marshall](https://github.com/aimalz/qp/issues/new?body=@drphilmarshall) (SLAC)
-* [Eric Charles](https://github.com/aimalz/qp/issues/new?body=@eacharles) (SLAC)
+* [Alex Malz](https://github.com/LSSTDESC/qp/issues/new?body=@aimalz) (NYU)
+* [Phil Marshall](https://github.com/LSSTDESC/qp/issues/new?body=@drphilmarshall) (SLAC)
+* [Eric Charles](https://github.com/LSSTDESC/qp/issues/new?body=@eacharles) (SLAC)
 
 ## License, Contributing etc
 
