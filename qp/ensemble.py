@@ -7,12 +7,11 @@ import numpy as np
 
 from astropy.table import Table
 
+from tables_io import io
 
 from qp.dict_utils import slice_dict, print_dict_shape, check_array_shapes, compare_dicts, concatenate_dicts
 
 from qp.metrics import quick_moment
-
-from qp import io_layer
 
 
 class Ensemble:
@@ -344,16 +343,7 @@ class Ensemble:
         """
         basename, ext = os.path.splitext(filename)
         tables = self.build_tables()
-        if ext in ['.fits', '.fit']:
-            io_layer.writeTablesToFits(tables, filename, overwrite=True)
-        elif ext in ['.hdf5']:
-            io_layer.writeTablesToHdf5(tables, filename, overwrite=True)
-        elif ext in ['.pq', '.parquet']:
-            dataframes = io_layer.tablesToDataframes(tables)
-            io_layer.writeDataframesToPq(dataframes, basename)
-        else:  #pragma: no cover
-            raise ValueError("Can not write to format %s.  Only fits, hdf5 and parquet are supported" % ext)
-
+        io.write(tables, basename, ext[1:])
 
     def pdf(self, x):
         """
