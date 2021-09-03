@@ -7,7 +7,7 @@ setup(
     url = "https://github.com/LSSTDESC/qp",
     packages=["qp"],
     description="Quantile parametrization of probability distribution functions",
-    setup_requires=['setuptools_scm'],
+    setup_requires=['setuptools_scm', 'setuptools_scm_git_archive'],
     long_description=open("README.md").read(),
     package_data={"": ["README.md", "LICENSE", "*.npy"]},
     use_scm_version={"write_to":"qp/_version.py"},
@@ -26,5 +26,6 @@ setup(
                       "astropy",
                       "sklearn",
                       "tables_io",
-                      "setuptools_scm"],
+                      "setuptools_scm",
+                      "setuptools_scm_git_archive"],
 )
