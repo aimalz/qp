@@ -156,6 +156,22 @@ class quant_gen(Pdf_rows_gen):
         return dct
 
     @classmethod
+    def get_allocation_kwds(cls, npdf, **kwargs):
+        """Return kwds necessary to create 'empty' hdf5 file with npdf entries
+        for iterative writeout
+        """
+        try:
+            quants = kwargs['quants'].flatten()
+        except ValueError: #pragma: no cover
+            print("required argument 'quants' not included in kwargs")
+        nquants = quants.size
+        if quants[0] > sys.float_info.epsilon:
+            nquants += 1
+        if quants[-1] < 1.:
+            nquants += 1
+        return dict(locs=((npdf, nquants), 'f4'))
+
+    @classmethod
     def plot_native(cls, pdf, **kwargs):
         """Plot the PDF in a way that is particular to this type of distibution
 

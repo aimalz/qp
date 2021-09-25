@@ -592,6 +592,31 @@ class Ensemble:
         """
         return self._gen_class.plot_native(self[key], **kwargs)
 
+    def _get_allocation_kwds(self, npdf):
+        return self._gen_class.get_allocation_kwds(npdf, **self.metadata())
+
+
+    def initializeHdf5Write(self, filename, npdf):
+        """set up the output write for an ensemble, but set size to npdf rather than
+        the size of the ensemble, as the "initial chunk" will not contain the full data
+        """
+        kwds = self._get_allocation_kwds(npdf)
+        group, fout = io.initializeHdf5Write(filename, 'data', **kwds)
+        return group, fout
+
+    def writeHdf5Chunk(self, fname, start, end):
+        """write ensemble data chunk to file
+        Parameters
+        ----------
+        fname : h5py `File object` file or group
+        start : `int` starting index of h5py file
+        end : `int` ending index in h5py file
+        """
+        io.writeDictToHdf5Chunk(fname, self.objdata(), start, end)
+
+    def finalizeHdf5Write(self, filename):
+        mdata = self.metadata()
+        io.finalizeHdf5Write(filename, 'meta', **mdata)
 
     # def stack(self, loc, using, vb=True):
     #     """

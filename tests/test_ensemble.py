@@ -6,6 +6,7 @@ import numpy as np
 import unittest
 import qp
 from qp import test_data
+import os
 
 from qp.test_funcs import assert_all_small, assert_all_close, build_ensemble
 
@@ -103,6 +104,18 @@ class EnsembleTestCase(unittest.TestCase):
 
         check_red = red_pdf - pdfs[0:5]
         assert_all_small(check_red, atol=1e-5, test_name="red")
+
+        if hasattr(ens.gen_obj, 'npdf'): # skip scipy norm
+            group, fout = ens.initializeHdf5Write("testwrite.hdf5", ens.npdf)
+            ens.writeHdf5Chunk(group, 0, ens.npdf)
+            ens.finalizeHdf5Write(fout)
+            readens = qp.read("testwrite.hdf5")
+            for key in readens.metadata().keys():
+                assert key in ens.metadata().keys()
+            for key in readens.objdata().keys():
+                assert key in ens.objdata().keys()
+            os.remove("testwrite.hdf5")
+
 
     @staticmethod
     def _run_merge_tests(ens, xpts):

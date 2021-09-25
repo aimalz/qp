@@ -143,6 +143,13 @@ class hist_gen(Pdf_rows_gen):
         return dct
 
     @classmethod
+    def get_allocation_kwds(cls, npdf, **kwargs):
+        if 'bins' not in kwargs: #pragma: no cover
+            raise ValueError("required argument 'bins' not included in kwargs")
+        nbins = len(kwargs['bins'].flatten())
+        return dict(pdfs=((npdf, nbins-1), 'f4'))
+
+    @classmethod
     def plot_native(cls, pdf, **kwargs):
         """Plot the PDF in a way that is particular to this type of distibution
 
