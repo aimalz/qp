@@ -72,6 +72,14 @@ class sparse_gen(interp_gen):
         return dct
 
     @classmethod
+    def get_allocation_kwds(cls, npdf, **kwargs):
+        if 'dims' not in kwargs:
+            raise ValueError("required argument dims not in kwargs")
+        nsp = kwargs['dims'].flatten()[4]
+        nmu = kwargs['dims'].flatten()[0]
+        return dict(yvals=((npdf, nmu), 'f4'), sparse_indices=((npdf, nsp), 'i8'))
+
+    @classmethod
     def add_mappings(cls):
         """
         Add this classes mappings to the conversion dictionary

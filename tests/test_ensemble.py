@@ -110,10 +110,8 @@ class EnsembleTestCase(unittest.TestCase):
             ens.writeHdf5Chunk(group, 0, ens.npdf)
             ens.finalizeHdf5Write(fout)
             readens = qp.read("testwrite.hdf5")
-            for key in readens.metadata().keys():
-                assert key in ens.metadata().keys()
-            for key in readens.objdata().keys():
-                assert key in ens.objdata().keys()
+            assert readens.metadata().keys() == ens.metadata().keys()
+            assert readens.objdata().keys() == ens.objdata().keys()
             os.remove("testwrite.hdf5")
 
 
