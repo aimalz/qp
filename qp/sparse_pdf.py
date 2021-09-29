@@ -53,6 +53,7 @@ class sparse_gen(interp_gen):
         kwargs.setdefault('yvals', y.T)
         super(sparse_gen, self).__init__(*args, **kwargs)
 
+        self._clearobjdata()
         self._addmetadata('xvals', self._xvals)
         self._addmetadata('mu', self.mu)
         self._addmetadata('sig', self.sig)

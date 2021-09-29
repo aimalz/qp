@@ -63,6 +63,9 @@ class Pdf_gen:
     def _addobjdata(self, key, val):
         self._objdata[key] = val
 
+    def _clearobjdata(self):
+        self._objdata = {}
+
     @property
     def metadata(self):
         """Return the metadata for this set of PDFs"""
