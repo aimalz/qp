@@ -63,6 +63,9 @@ class Pdf_gen:
     def _addobjdata(self, key, val):
         self._objdata[key] = val
 
+    def _clearobjdata(self):
+        self._objdata = {}
+
     @property
     def metadata(self):
         """Return the metadata for this set of PDFs"""
@@ -146,6 +149,13 @@ class Pdf_gen:
         This defaults to plotting it as a curve, but this can be overwritten
         """
         return plot_dist_pdf(pdf, **kwargs)
+
+    @classmethod
+    def get_allocation_kwds(cls, npdf, **kwargs):
+        """Return kwds necessary to create 'empty' hdf5 file with npdf entries
+        for iterative writeout
+        """
+        raise NotImplementedError()  #pragma: no cover
 
     def _moment_fix(self, n, *args, **kwds):
         """Hack fix for the moments calculation in scipy.stats, which can't handle
@@ -415,6 +425,12 @@ class Pdf_gen_wrap(Pdf_gen):
     def _my_argcheck(self, *args):
         # pylint: disable=no-member,protected-access
         return np.atleast_1d(self._other_argcheck(*args))
+
+
+    @classmethod
+    def get_allocation_kwds(cls, npdf, **kwargs):
+        return {key:((npdf,1), val.dtype) for key, val in kwargs.items()}
+
 
     @classmethod
     def add_mappings(cls):

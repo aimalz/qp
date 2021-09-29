@@ -53,6 +53,7 @@ class sparse_gen(interp_gen):
         kwargs.setdefault('yvals', y.T)
         super(sparse_gen, self).__init__(*args, **kwargs)
 
+        self._clearobjdata()
         self._addmetadata('xvals', self._xvals)
         self._addmetadata('mu', self.mu)
         self._addmetadata('sig', self.sig)
@@ -70,6 +71,14 @@ class sparse_gen(interp_gen):
         dct['sig'] = self.sig
         dct['dims'] = self.dims
         return dct
+
+    @classmethod
+    def get_allocation_kwds(cls, npdf, **kwargs):
+        if 'dims' not in kwargs:
+            raise ValueError("required argument dims not in kwargs") #pragma: no cover
+        nsp = np.array(kwargs['dims']).flatten()[4]
+        nmu = np.array(kwargs['dims']).flatten()[0]
+        return dict(sparse_indices=((npdf, nsp), 'i8'))
 
     @classmethod
     def add_mappings(cls):
