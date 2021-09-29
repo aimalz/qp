@@ -110,6 +110,11 @@ def run_pdf_func_tests(test_class, test_data, short=False, check_props=True):
     except Exception as exep: #pragma: no cover
         print("Failed to make %s %s %s" % (ctor_func, test_data['ctor_data'], exep))
         raise ValueError from exep
+
+    alloc_kwds = pdf.dist.get_allocation_kwds(pdf.npdf, **test_data['ctor_data'])
+    for key, val in alloc_kwds.items():
+        assert val[0] == np.shape(test_data['ctor_data'][key])
+
     return pdf_func_tests(pdf, test_data, short=short, check_props=check_props)
 
 

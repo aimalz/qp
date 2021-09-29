@@ -161,14 +161,15 @@ class quant_gen(Pdf_rows_gen):
         for iterative writeout
         """
         try:
-            quants = kwargs['quants'].flatten()
+            quants = kwargs['quants']
         except ValueError: #pragma: no cover
             print("required argument 'quants' not included in kwargs")
-        nquants = quants.size
-        if quants[0] > sys.float_info.epsilon:
-            nquants += 1
-        if quants[-1] < 1.:
-            nquants += 1
+        nquants = np.shape(quants)[-1]
+        # EC, I don't thing you need these lines, as you don't actually store the ends
+        #if quants[0] > sys.float_info.epsilon:
+        #    nquants += 1
+        #if quants[-1] < 1.:
+        #    nquants += 1
         return dict(locs=((npdf, nquants), 'f4'))
 
     @classmethod
@@ -292,6 +293,18 @@ class quant_piecewise_gen(Pdf_rows_gen):
         dct['quants'] = self._quants
         dct['locs'] = self._locs
         return dct
+
+    @classmethod
+    def get_allocation_kwds(cls, npdf, **kwargs):
+        """Return kwds necessary to create 'empty' hdf5 file with npdf entries
+        for iterative writeout
+        """
+        try:
+            quants = kwargs['quants']
+        except ValueError: #pragma: no cover
+            print("required argument 'quants' not included in kwargs")
+        nquants = np.shape(quants)[-1]
+        return dict(locs=((npdf, nquants), 'f4'))
 
     @classmethod
     def plot_native(cls, pdf, **kwargs):

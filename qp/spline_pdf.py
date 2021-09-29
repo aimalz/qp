@@ -133,7 +133,7 @@ class spline_gen(Pdf_rows_gen):
         spln = kwargs.pop('spln', None)
 
         if splx is None:  # pragma: no cover
-            raise ValueError("Either splx must be provided")
+            raise ValueError("splx must be provided")
         if splx.shape != sply.shape:  # pragma: no cover
             raise ValueError("Shape of xvals (%s) != shape of yvals (%s)" % (splx.shape, sply.shape))
         #kwargs['a'] = self.a = np.min(splx)
@@ -267,6 +267,24 @@ class spline_gen(Pdf_rows_gen):
         dct['sply'] = self._sply
         dct['spln'] = self._spln
         return dct
+
+    @classmethod
+    def get_allocation_kwds(cls, npdf, **kwargs):
+        """
+        Return the keywords necessary to create an 'empty' hdf5 file with npdf entries
+        for iterative file writeout.  We only need to allocate the objdata columns, as
+        the metadata can be written when we finalize the file.
+        Parameters
+        ----------
+        npdf: (int) number of *total* PDFs that will be written out
+        kwargs: (dict) dictionary of kwargs needed to create the ensemble
+        """
+        if 'splx' not in kwargs: #pragma: no cover
+            raise ValueError("required argument splx not included in kwargs")
+
+        shape = np.shape(kwargs['splx'])        
+        return dict(splx=(shape, 'f4'), sply=(shape, 'f4'), spln=((shape[0],1), 'i4'))
+
 
     @classmethod
     def plot_native(cls, pdf, **kwargs):

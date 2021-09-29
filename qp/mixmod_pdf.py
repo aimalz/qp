@@ -115,6 +115,25 @@ class mixmod_gen(Pdf_rows_gen):
         dct['weights'] = self._weights
         return dct
 
+
+    @classmethod
+    def get_allocation_kwds(cls, npdf, **kwargs):
+        """
+        Return the keywords necessary to create an 'empty' hdf5 file with npdf entries
+        for iterative file writeout.  We only need to allocate the objdata columns, as
+        the metadata can be written when we finalize the file.
+        Parameters
+        ----------
+        npdf: (int) number of *total* PDFs that will be written out
+        kwargs: (dict) dictionary of kwargs needed to create the ensemble
+        """
+        if 'means' not in kwargs: #pragma: no cover
+            raise ValueError("required argument means not included in kwargs")
+
+        ncomp = np.shape(kwargs['means'])[-1]        
+        return dict(means=((npdf, ncomp), 'f4'), stds=((npdf, ncomp), 'f4'), weights=((npdf, ncomp), 'f4'))
+
+
     @classmethod
     def add_mappings(cls):
         """

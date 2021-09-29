@@ -162,7 +162,7 @@ class interp_gen(Pdf_rows_gen):
         """
         if 'xvals' not in kwargs: #pragma: no cover
             raise ValueError("required argument xvals not included in kwargs")
-        ngrid = len(kwargs['xvals'].flatten())
+        ngrid = np.shape(kwargs['xvals'])[-1]
         return dict(yvals=((npdf, ngrid), 'f4'))
 
     @classmethod
@@ -304,6 +304,22 @@ class interp_irregular_gen(Pdf_rows_gen):
         dct['xvals'] = self._xvals
         dct['yvals'] = self._yvals
         return dct
+
+    @classmethod
+    def get_allocation_kwds(cls, npdf, **kwargs):
+        """
+        Return the keywords necessary to create an 'empty' hdf5 file with npdf entries
+        for iterative file writeout.  We only need to allocate the objdata columns, as
+        the metadata can be written when we finalize the file.
+        Parameters
+        ----------
+        npdf: (int) number of *total* PDFs that will be written out
+        kwargs: (dict) dictionary of kwargs needed to create the ensemble
+        """
+        if 'xvals' not in kwargs: #pragma: no cover
+            raise ValueError("required argument xvals not included in kwargs")
+        ngrid = np.shape(kwargs['xvals'])[-1]
+        return dict(xvals=((npdf, ngrid), 'f4'), yvals=((npdf, ngrid), 'f4'))
 
     @classmethod
     def plot_native(cls, pdf, **kwargs):
