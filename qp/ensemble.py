@@ -598,8 +598,9 @@ class Ensemble:
         return self._gen_class.plot_native(self[key], **kwargs)
 
     def _get_allocation_kwds(self, npdf):
-        return self._gen_class.get_allocation_kwds(npdf, **self.metadata())
-
+        return self._gen_class.get_allocation_kwds(npdf,
+                                                   **{**self.metadata(),
+                                                      **self.objdata()})
 
     def initializeHdf5Write(self, filename, npdf):
         """set up the output write for an ensemble, but set size to npdf rather than
