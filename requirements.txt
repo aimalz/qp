@@ -1,5 +1,5 @@
 matplotlib
 numpy
 scipy>=1.7.0
-sklearn
+scikit-learn
 setuptools_scm

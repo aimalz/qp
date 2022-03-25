@@ -23,8 +23,6 @@ setup(
     install_requires=["matplotlib",
                       "numpy",
                       "scipy>=1.7.0",
-                      "sklearn",
-                      "tables_io",
-                      "setuptools_scm",
-                      "setuptools_scm_git_archive"],
+                      "scikit-learn",
+                      "tables_io"],
 )
