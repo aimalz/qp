@@ -9,6 +9,7 @@ from qp import test_data
 import os
 
 from qp.test_funcs import assert_all_small, assert_all_close, build_ensemble
+from qp.plotting import init_matplotlib
 
 
 class EnsembleTestCase(unittest.TestCase):
@@ -95,7 +96,7 @@ class EnsembleTestCase(unittest.TestCase):
             #pmf = ens.pmf(N)
             #logpmf = ens.logpmf(N)
 
-
+        init_matplotlib()
         axes = ens.plot(xlim=(xpts[0], xpts[-1]))
         ens.plot_native(axes=axes)
 
