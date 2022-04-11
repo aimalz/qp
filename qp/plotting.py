@@ -8,8 +8,11 @@ import matplotlib.pyplot as plt
 
 def init_matplotlib():
     """Initialize matplotlib parameters"""
-    mpl.rcParams['text.usetex'] = True
-    mpl.rcParams['mathtext.rm'] = 'serif'
+    # Comment out usetex and serif, as these sometimes
+    # cause issues on cori with no LaTex installed by
+    # default
+    # mpl.rcParams['text.usetex'] = True
+    # mpl.rcParams['mathtext.rm'] = 'serif'
     mpl.rcParams['font.family'] = 'serif'
     mpl.rcParams['font.serif'] = 'Times New Roman'
     mpl.rcParams['axes.titlesize'] = 16
@@ -19,7 +22,7 @@ def init_matplotlib():
     mpl.rcParams['savefig.bbox'] = 'tight'
 
 
-init_matplotlib()
+# init_matplotlib()
 
 COLORS = {}
 COLORS['truth'] = 'k'
@@ -56,8 +59,8 @@ def make_figure_axes(xlim, **kwargs):
     fig, axes : The figure and axes
     """
 
-    xlabel = kwargs.pop('xlabel', r'$z$')
-    ylabel = kwargs.pop('ylabel', r'$p(z)$')
+    xlabel = kwargs.pop('xlabel', 'redshift')
+    ylabel = kwargs.pop('ylabel', 'p(z)')
 
     fig = plt.figure()
     axes = fig.add_subplot(111)
@@ -174,9 +177,10 @@ def plot_pdf_quantiles_on_axes(axes, xvals, yvals, quantiles, **kwargs):
     axes : The axes the data are plotted on
     """
     kwargs.setdefault('label', 'Quantiles')
-    axes.scatter(quantiles[1], np.zeros(np.shape(quantiles[1])), color=COLORS['quantiles'], marker='|', s=100, alpha=0.75, **kwargs)
+    kwargs.setdefault('color', COLORS['quantiles'])
+    axes.scatter(quantiles[1], np.zeros(np.shape(quantiles[1])), marker='|', s=100, alpha=0.75, **kwargs)
     kwargs.setdefault('label', 'Quantile Interpolated PDF')
-    axes.plot(xvals, yvals, color=COLORS['quantiles'], lw=2.0, alpha=1.0, linestyle=STYLES['quantiles'], **kwargs)
+    axes.plot(xvals, yvals, lw=2.0, alpha=1.0, linestyle=STYLES['quantiles'], **kwargs)
     return axes
 
 
@@ -200,10 +204,11 @@ def plot_pdf_histogram_on_axes(axes, hist, **kwargs):
     axes : The axes the data are plotted on
     """
 
-    axes.scatter(hist[0], np.zeros(np.shape(hist[0])), color=COLORS['histogram'], marker='|', s=100, label='Histogram Bin Ends', alpha=0.75)
+    kwargs.setdefault('color', COLORS['histogram'])
+    axes.scatter(hist[0], np.zeros(np.shape(hist[0])), marker='|', s=100, label='Histogram Bin Ends', alpha=0.75)
     bin_centers = (hist[0][0:-1] + hist[0][1:])/2.
     kwargs.setdefault('label', 'Histogram Interpolated PDF')
-    axes.hist(bin_centers, bins=hist[0], weights=np.squeeze(hist[1]), color=COLORS['histogram'], lw=None, alpha=1.0, **kwargs)
+    axes.hist(bin_centers, bins=hist[0], weights=np.squeeze(hist[1]), lw=None, alpha=1.0, **kwargs)
     return axes
 
 
@@ -231,13 +236,14 @@ def plot_pdf_samples_on_axes(axes, pdf, samples, **kwargs):
     axes : The axes the data are plotted on
     """
     kwargs.setdefault('label', 'Samples')
-    axes.scatter(samples, np.zeros(np.shape(samples)), color=COLORS['samples'], marker='|', s=100, alpha=0.75, **kwargs)
+    kwargs.setdefault('color', COLORS['samples'])
+    axes.scatter(samples, np.zeros(np.shape(samples)), marker='|', s=100, alpha=0.75, **kwargs)
     npoints = kwargs.pop('npoints', 101)
     xlim = axes.get_xlim()
     xvals = np.linspace(xlim[0], xlim[1], npoints)
     yvals = np.squeeze(pdf.pdf(xvals))
     kwargs.setdefault('label', 'Samples Interpolated PDF')
-    plt.plot(xvals, yvals, color=COLORS['samples'], lw=2.0, alpha=1.0, linestyle=STYLES['samples'], **kwargs)
+    plt.plot(xvals, yvals, lw=2.0, alpha=1.0, linestyle=STYLES['samples'], **kwargs)
     return axes
 
 
