@@ -616,7 +616,7 @@ class Ensemble:
         the size of the ensemble, as the "initial chunk" will not contain the full data
         """
         kwds = self._get_allocation_kwds(npdf)
-        group, fout = io.initializeHdf5Write(filename, 'data', **kwds)
+        group, fout = io.initializeHdf5Write(filename, **kwds)
         return group, fout
 
     def writeHdf5Chunk(self, fname, start, end):
