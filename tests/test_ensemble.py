@@ -7,6 +7,7 @@ import unittest
 import qp
 from qp import test_data
 import os
+import sys
 
 from qp.test_funcs import assert_all_small, assert_all_close, build_ensemble
 from qp.plotting import init_matplotlib
