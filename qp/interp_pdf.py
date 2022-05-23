@@ -138,7 +138,7 @@ class interp_gen(Pdf_rows_gen):
         """ Compute the mth moment """
         m = np.asarray(m)
         dx = self._xvals[1] - self._xvals[0]
-        return np.expand_dims(np.sum(self._xvals**m * self._yvals, axis=1) * dx, -1)
+        return np.sum(self._xvals**m * self._yvals, axis=1) * dx
 
     def _updated_ctor_param(self):
         """

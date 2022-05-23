@@ -64,7 +64,6 @@ class Factory(OrderedDict):
                                 freeze=Pdf_gen_wrap._my_freeze,
                                 _argcheck=Pdf_gen_wrap._my_argcheck,
                                 _other_argcheck=scipy_class._argcheck,
-                                moment=Pdf_gen_wrap._moment_fix,
                                 _other_init=scipy_class.__init__)
         the_class = type(class_name, (Pdf_gen_wrap, scipy_class), override_dict)
         self.add_class(the_class)
