@@ -131,7 +131,7 @@ class hist_gen(Pdf_rows_gen):
         m = np.asarray(m)
         dx = self._hbins[1] - self._hbins[0]
         xv = 0.5*(self._hbins[1:] + self._hbins[:-1])
-        return np.expand_dims(np.sum(xv**m * self._hpdfs, axis=1) * dx, -1)
+        return np.sum(xv**m * self._hpdfs, axis=1) * dx
 
     def _updated_ctor_param(self):
         """

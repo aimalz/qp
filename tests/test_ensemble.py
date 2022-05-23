@@ -64,7 +64,7 @@ class EnsembleTestCase(unittest.TestCase):
         assert samples.shape[1] == 1000
 
         median = ens.median()
-        mean = ens.mean()
+        mean = ens.mean()        
         var = ens.var()
         std = ens.std()
         entropy = ens.entropy()
@@ -74,6 +74,7 @@ class EnsembleTestCase(unittest.TestCase):
 
         assert median.size == ens.npdf
         assert mean.size == ens.npdf
+        assert np.std(mean) > 1e-8
         assert var.size == ens.npdf
         assert std.size == ens.npdf
         assert entropy.size == ens.npdf

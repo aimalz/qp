@@ -602,7 +602,6 @@ class Ensemble:
 
     def _get_allocation_kwds(self, npdf):
         tables = self.build_tables()
-        groups = tables.items()
         keywords = {}
         for group, tab in tables.items():
             if group != 'meta':

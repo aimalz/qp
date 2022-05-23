@@ -65,13 +65,13 @@ class mixmod_gen(Pdf_rows_gen):
         self._addobjdata('means', self._means)
 
     def _scipy_version_warning(self):
-        import scipy
+        import scipy #pylint: disable=import-outside-toplevel
         scipy_version = scipy.__version__
         vtuple = scipy_version.split('.')
         if int(vtuple[0]) > 1 or int(vtuple[1]) > 7:
             return
-        raise DeprecationWarning(f"Mixmod_gen will not work correctly with scipy version < 1.8.0, you have {scipy_version}")  #pragma: no cover       
-        
+        raise DeprecationWarning(f"Mixmod_gen will not work correctly with scipy version < 1.8.0, you have {scipy_version}")  #pragma: no cover
+
     @property
     def weights(self):
         """Return weights to attach to the Gaussians"""
