@@ -297,9 +297,11 @@ class Ensemble:
         -------
         mode: array-like
             The modes of the PDFs evaluated on new_grid
+        Note: adding expand_dims to return an (N, 1) array to be
+        consistent with mean, median, and other point estimates
         """
         new_grid, griddata = self.gridded(grid)
-        return new_grid[np.argmax(griddata, axis=1)]
+        return np.expand_dims(new_grid[np.argmax(griddata, axis=1)], -1)
 
     def gridded(self, grid):
         """Build, cache are return the PDF values at grid points
