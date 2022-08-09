@@ -64,24 +64,22 @@ class EnsembleTestCase(unittest.TestCase):
         assert samples.shape[0] == ens.frozen.npdf
         assert samples.shape[1] == 1000
 
-        # skip moments and other stuff in python 3.7
-        if sys.version_info.minor > 7:
-            median = ens.median()
-            mean = ens.mean()        
-            var = ens.var()
-            std = ens.std()
-            entropy = ens.entropy()
+        median = ens.median()
+        mean = ens.mean()        
+        var = ens.var()
+        std = ens.std()
+        entropy = ens.entropy()
 
-            _ = ens.stats()
-            modes = ens.mode(xpts)
+        _ = ens.stats()
+        modes = ens.mode(xpts)
 
-            assert median.size == ens.npdf
-            assert mean.size == ens.npdf
-            assert np.std(mean) > 1e-8
-            assert var.size == ens.npdf
-            assert std.size == ens.npdf
-            assert entropy.size == ens.npdf
-            assert modes.size == ens.npdf
+        assert median.size == ens.npdf
+        assert mean.size == ens.npdf
+        assert np.std(mean) > 1e-8
+        assert var.size == ens.npdf
+        assert std.size == ens.npdf
+        assert entropy.size == ens.npdf
+        assert modes.size == ens.npdf
 
         integral = ens.integrate(limits=(ens.gen_obj.a, ens.gen_obj.a))
         interval = ens.interval(0.05)
@@ -89,19 +87,16 @@ class EnsembleTestCase(unittest.TestCase):
         assert integral.size == ens.npdf
         assert interval[0].size == ens.npdf
 
-        # skip moments and other stuff in python 3.7
-        if sys.version_info.minor > 7:
-               
-            for N in range(3):
-                moment_partial = ens.moment_partial(N, limits=(test_data.XMIN, test_data.XMAX))
-                calc_moment = qp.metrics.calculate_moment(ens, N, limits=(test_data.XMIN, test_data.XMAX))
-                assert_all_close(moment_partial, calc_moment, rtol=5e-2, test_name="moment_partial_%i" % N)
+        for N in range(3):
+            moment_partial = ens.moment_partial(N, limits=(test_data.XMIN, test_data.XMAX))
+            calc_moment = qp.metrics.calculate_moment(ens, N, limits=(test_data.XMIN, test_data.XMAX))
+            assert_all_close(moment_partial, calc_moment, rtol=5e-2, test_name="moment_partial_%i" % N)
 
-                sps_moment = ens.moment(N)
-                assert sps_moment.size == ens.npdf
-                #assert_all_close(sps_moment.flatten(), moment_partial.flatten(), rtol=5e-2, test_name="moment_%i" % N)
-                #pmf = ens.pmf(N)
-                #logpmf = ens.logpmf(N)
+            sps_moment = ens.moment(N)
+            assert sps_moment.size == ens.npdf
+            #assert_all_close(sps_moment.flatten(), moment_partial.flatten(), rtol=5e-2, test_name="moment_%i" % N)
+            #pmf = ens.pmf(N)
+            #logpmf = ens.logpmf(N)
 
         init_matplotlib()
         axes = ens.plot(xlim=(xpts[0], xpts[-1]))
@@ -121,7 +116,10 @@ class EnsembleTestCase(unittest.TestCase):
             except ImportError:
                 pass
             for comm in commList:
-                group, fout = ens.initializeHdf5Write("testwrite.hdf5", ens.npdf, comm)
+                try:
+                    group, fout = ens.initializeHdf5Write("testwrite.hdf5", ens.npdf, comm)
+                except TypeError:
+                    continue
                 ens.writeHdf5Chunk(group, 0, ens.npdf)
                 ens.finalizeHdf5Write(fout)
                 readens = qp.read("testwrite.hdf5")
