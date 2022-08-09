@@ -8,11 +8,15 @@ import qp
 from qp import test_data
 import os
 import sys
+import pytest
 
 from qp.test_funcs import assert_all_small, assert_all_close, build_ensemble
 from qp.plotting import init_matplotlib
 from mpi4py import MPI
+import h5py
 
+
+@pytest.mark.skipif(not h5py.get_config().mpi, reason="Do not have parallel version of hdf5py")
 class EnsembleTestCase(unittest.TestCase):
     """ Class to test qp.Ensemble functionality """
 
