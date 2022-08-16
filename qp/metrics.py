@@ -85,6 +85,9 @@ def calculate_kld(p, q, limits, dx=0.01):
     TO DO: change this to calculate_kld
     TO DO: have this take number of points not dx!
     """
+    if p.shape != q.shape:
+        raise ValueError('Cannot calculate KLD between two ensembles with different shapes')
+    
     # Make a grid from the limits and resolution
     N = int((limits[-1] - limits[0]) / dx)
     grid = np.linspace(limits[0], limits[1], N)
@@ -105,7 +108,7 @@ def calculate_kld(p, q, limits, dx=0.01):
     # logq = safelog(qn)
     # Calculate the KLD from q to p
     Dpq = quick_kld(pn, qn, dx=dx)# np.dot(pn * logquotient, np.ones(len(grid)) * dx)
-    if Dpq.any() < 0.: #pragma: no cover
+    if np.any(Dpq < 0.): #pragma: no cover
         print('broken KLD: '+str((Dpq, pn, qn, dx)))
         Dpq = epsilon*np.ones(Dpq.shape)
     return Dpq
@@ -163,6 +166,9 @@ def calculate_rmse(p, q, limits, dx=0.01):
     -----
     TO DO: change dx to N
     """
+    if p.shape != q.shape:
+        raise ValueError('Cannot calculate RMSE between two ensembles with different shapes')
+    
     # Make a grid from the limits and resolution
     N = int((limits[-1] - limits[0]) / dx)
     grid = np.linspace(limits[0], limits[1], N)
