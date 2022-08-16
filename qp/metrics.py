@@ -85,8 +85,8 @@ def calculate_kld(p, q, limits, dx=0.01):
     TO DO: change this to calculate_kld
     TO DO: have this take number of points not dx!
     """
-    if p.npdf != q.npdf:
-        raise ValueError('Cannot calculate KLD between two ensembles with different number of PDFs')
+    if p.shape != q.shape:
+        raise ValueError('Cannot calculate KLD between two ensembles with different shapes')
     
     # Make a grid from the limits and resolution
     N = int((limits[-1] - limits[0]) / dx)
@@ -166,8 +166,8 @@ def calculate_rmse(p, q, limits, dx=0.01):
     -----
     TO DO: change dx to N
     """
-    if p.npdf != q.npdf:
-        raise ValueError('Cannot calculate RMSE between two ensembles with different number of PDFs')
+    if p.shape != q.shape:
+        raise ValueError('Cannot calculate RMSE between two ensembles with different shapes')
     
     # Make a grid from the limits and resolution
     N = int((limits[-1] - limits[0]) / dx)

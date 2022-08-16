@@ -35,12 +35,12 @@ class MetricTestCase(unittest.TestCase):
         kld = qp.metrics.calculate_kld(self.ens_n, self.ens_n_shift, limits=(0.,2.5))
         assert np.all(kld == 0.)
 
-    def test_kld_different_npdf(self):
+    def test_kld_different_shapes(self):
         """ Ensure that the kld function fails when trying to compare ensembles of different sizes. """
         with self.assertRaises(ValueError) as context:
             qp.metrics.calculate_kld(self.ens_n, self.ens_n_plus_one, limits=(0.,2.5))
 
-        self.assertTrue('Cannot calculate KLD between two ensembles with different number of PDFs' in str(context.exception))
+        self.assertTrue('Cannot calculate KLD between two ensembles with different shapes' in str(context.exception))
 
     def test_broken_kld(self):
         """ Test to see if the calculate_kld function responds appropriately to negative results """
@@ -54,12 +54,12 @@ class MetricTestCase(unittest.TestCase):
         rmse = qp.metrics.calculate_rmse(self.ens_n, self.ens_n_shift, limits=(0.,2.5))
         assert np.all(rmse == 0.)
 
-    def test_rmse_different_npdf(self):
+    def test_rmse_different_shapes(self):
         """ Ensure that the rmse function fails when trying to compare ensembles of different sizes. """
         with self.assertRaises(ValueError) as context:
             qp.metrics.calculate_rmse(self.ens_n, self.ens_n_plus_one, limits=(0.,2.5))
 
-        self.assertTrue('Cannot calculate RMSE between two ensembles with different number of PDFs' in str(context.exception))
+        self.assertTrue('Cannot calculate RMSE between two ensembles with different shapes' in str(context.exception))
 
 
 if __name__ == '__main__':
