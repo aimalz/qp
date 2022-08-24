@@ -231,7 +231,7 @@ def risk_based_point_estimate(p, limits=(np.inf, np.inf)):
     for n in range(0, p.npdf):
         rbpes.append(quick_rbpe(p[n], limits))
 
-    return rbpes
+    return np.array(rbpes)
 
 def quick_rbpe(p_eval, limits=(np.inf, np.inf)):
     """
