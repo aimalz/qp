@@ -125,6 +125,11 @@ class MetricTestCase(unittest.TestCase):
         assert np.all(rpbe >= 0.)
         assert np.all(rpbe <= 2.5)
 
+    def test_rpbe_no_limits(self):
+        """ Test the risk_based_point_estimate method when the user doesn't provide a set of limits """
+        rpbe = qp.metrics.risk_based_point_estimate(self.ens_n)
+        assert np.all(rpbe >= -2.)
+
     def test_rpbe_alternative_ensembles(self):
         """ Test the risk_based_point_estimate method against different types of ensembles """
         bins = np.linspace(-5, 5, 11)
@@ -162,6 +167,11 @@ class MetricTestCase(unittest.TestCase):
         rpbe = qp.metrics.quick_rbpe(self.ens_n[0], limits=(0.,2.5))
         assert np.all(rpbe >= 0.)
         assert np.all(rpbe <= 2.5)
+
+    def test_quick_rpbe_no_limits(self):
+        """ Test the quick_rpbe method """
+        rpbe = qp.metrics.quick_rbpe(self.ens_n[0])
+        assert np.all(rpbe >= -2.)
 
     def test_quick_rpbe_multiple_pdfs(self):
         """ Ensure that the quick_rpbe function fails when trying to evaluate an ensemble with more than one pdf. """
