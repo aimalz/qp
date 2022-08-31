@@ -46,6 +46,7 @@ coverage.xml
 *,cover
 cover/
 .hypothesis/
+test_normancil.pq
 
 # Translations
 *.mo

@@ -2,6 +2,9 @@
 
 import numpy as np
 
+from scipy.integrate import quad
+from scipy.optimize import minimize_scalar
+
 from qp.utils import safelog, epsilon
 
 def calculate_moment(p, N, limits, dx=0.01):
@@ -203,3 +206,64 @@ def quick_rmse(p_eval, q_eval, N):
     # Calculate the RMS between p and q
     rms = np.sqrt(np.sum((p_eval - q_eval) ** 2, axis=-1) / N)
     return rms
+
+def risk_based_point_estimate(p, limits=(np.inf, np.inf)):
+    """
+    Calculates the risk based point estimates of a qp.Ensemble object.
+    Algorithm as defined in 4.2 of 'Photometric redshifts for Hyper Suprime-Cam 
+    Subaru Strategic Program Data Release 1' (Tanaka et al. 2018).
+
+    Parameters
+    ----------
+    p: qp.Ensemble object
+        Ensemble of PDFs to be evalutated
+    limits, tuple of floats
+        The limits at which to evaluate possible z_best estimates.
+        If custom limits are not provided then all potential z value will be
+        considered using the scipy.optimize.minimize_scalar function.
+
+    Returns
+    -------
+    rbpes: array of floats
+        The risk based point estimates of the provided ensemble.
+    """
+    rbpes = []
+    for n in range(0, p.npdf):
+        rbpes.append(quick_rbpe(p[n], limits))
+
+    return np.array(rbpes)
+
+def quick_rbpe(p_eval, limits=(np.inf, np.inf)):
+    """
+    Calculates the risk based point estimate of a qp.Ensemble object with npdf == 1.
+
+    Parameters
+    ----------
+    p_eval: qp.Ensemble object
+        Ensemble of a single PDF to be evaluated.
+    limits, tuple of floats
+        The limits at which to evaluate possible z_best estimates.
+        If custom limits are not provided then all potential z value will be
+        considered using the scipy.optimize.minimize_scalar function.
+
+    Returns
+    -------
+    rbpe: float
+        The risk based point estimate of the provided ensemble.
+    """
+    if p_eval.npdf != 1:
+        raise ValueError('quick_rbpe only handles Ensembles with a single PDF, for ensembles with more than one PDF, use the qp.metrics.risk_based_point_estimate function.')
+
+    loss = lambda x : 1. - (1. / (1. + (pow((x / .15), 2))))
+    pz = lambda z: p_eval.pdf(z)[0][0]
+    lower = p_eval.ppf(0.01)[0][0]
+    upper = p_eval.ppf(0.99)[0][0]
+
+    def find_z_risk(zp):
+                integrand = lambda z : pz(z) * loss((zp - z) / (1. + z))
+                return quad(integrand, lower, upper)[0]
+
+    if limits[0] == np.inf:
+        return minimize_scalar(find_z_risk).x
+    return minimize_scalar(find_z_risk, bounds=(limits[0], limits[1]), method='bounded').x
+
