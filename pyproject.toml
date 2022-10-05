@@ -1,6 +1,6 @@
 [project]
 name = "qp-prob"
-license = "MIT"
+license = {file = "LICENSE"}
 readme = "README.md"
 
 classifiers = [
