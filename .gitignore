@@ -103,3 +103,6 @@ plot.png
 
 # Data
 bpz_euclid_test_10_2.probs
+
+#IDE settings
+.vscode/

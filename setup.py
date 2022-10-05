@@ -6,11 +6,12 @@ setup(
     author_email="aimalz@nyu.edu, pjm@slac.stanford.edu, echarles@slac.stanford.edu",
     url = "https://github.com/LSSTDESC/qp",
     packages=["qp"],
+    package_dir={"qp": "src"},
     description="Quantile parametrization of probability distribution functions",
     setup_requires=['setuptools_scm', 'setuptools_scm_git_archive'],
     long_description=open("README.md").read(),
     package_data={"": ["README.md", "LICENSE", "*.npy"]},
-    use_scm_version={"write_to":"qp/_version.py"},
+    use_scm_version={"write_to":"src/qp/_version.py"},
     include_package_data=True,
     classifiers=[
         "Development Status :: 4 - Beta",
@@ -24,5 +25,5 @@ setup(
                       "numpy",
                       "scipy>=1.9.0",
                       "scikit-learn",
-                      "tables_io>=0.7.7"]                     
+                      "tables_io>=0.7.7"]
 )
