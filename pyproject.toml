@@ -1,0 +1,72 @@
+[project]
+name = "qp-prob"
+license = {file = "LICENSE"}
+readme = "README.md"
+
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: MIT License",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+]
+dynamic = ["version"]
+
+[metadata]
+author = "Alex Malz, Phil Marshall, Eric Charles"
+author_email = "aimalz@nyu.edu, pjm@slac.stanford.edu, echarles@slac.stanford.edu"
+description = "Quantile parametrization of probability distribution functions"
+long_description = { file = "README.md" }
+url = "https://github.com/LSSTDESC/qp"
+
+[build-system]
+requires = [
+    "setuptools>=61",
+    "wheel",
+    "setuptools_scm[toml]>=7.0.0",
+    "setuptools_scm_git_archive"
+]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.package-data]
+"qp.data" = ["*.npy"]
+
+[tool.setuptools_scm]
+write_to = "src/qp/_version.py"
+
+[options]
+install_requires = [
+    "matplotlib",
+    "numpy",
+    "scipy >= 1.9.0",
+    "scikit-learn",
+    "tables_io >= 0.7.7",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "packaging",
+    "pillow",
+    "cycler",
+    "python-dateutil",
+    "kiwisolver",
+    "joblib",
+    "threadpoolctl",
+    "h5py",
+    "pylint",
+    "mpi4py",
+    "coverage",
+]
+
+[tool.coverage.run]
+source = ["qp"]
+branch = true
+
+[tool.pytest.ini_options]
+addopts = [
+    "--cov=qp",
+    "--cov-report=html"
+]
