@@ -175,7 +175,7 @@ class Factory(OrderedDict):
         chunk_size : `int`
         """
         extension = os.path.splitext(filename)[1]
-        if extension not in ['.hdf5']:
+        if extension not in ['.hdf5']:  #pragma: no cover
             raise TypeError("Can only use qp.iterator on hdf5 files")
         
         metadata = io.readHdf5ToDict(filename, 'meta')
@@ -190,7 +190,7 @@ class Factory(OrderedDict):
         f, infp = io.readHdf5Group(filename, 'data')
         try:
             ancil_f, ancil_infp = io.readHdf5Group(filename, 'data')
-        except KeyError:
+        except KeyError:  #pragma: no cover
             ancil_f, ancil_infp = (None, None)
         num_rows = io.getGroupInputDataLength(f)
         ranges = io.data_ranges_by_rank(num_rows, chunk_size, parallel_size, rank)

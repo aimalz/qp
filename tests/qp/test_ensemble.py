@@ -187,6 +187,18 @@ class EnsembleTestCase(unittest.TestCase):
         assert isinstance(ens_i.gen_obj, qp.interp_gen)
         self._run_ensemble_funcs(ens_i, cls_test_data['test_xvals'])
 
+    def test_iterator(self):
+        """ Test the iterated read """
+        QP_DIR = os.path.abspath(os.path.dirname(qp.__file__))
+        data_file = os.path.join(QP_DIR, 'data', 'test.hdf5')
+        ens = qp.read(data_file)
+        itr = qp.iterator(data_file, 10)
+        test_grid = np.linspace(0., 1., 11)
+        for start, end, ens_i in itr:
+            check_vals = ens[start:end].pdf(test_grid)
+            test_vals = ens_i.pdf(test_grid)
+            assert np.allclose(check_vals, test_vals)
+
 
 if __name__ == '__main__':
     unittest.main()
