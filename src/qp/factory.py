@@ -166,7 +166,7 @@ class Factory(OrderedDict):
 
 
     def iterator(self, filename, chunk_size=100_000, rank=0, parallel_size=1):
-        """Return an iterator for chunked read=
+        """Return an iterator for chunked read
 
         Parameters
         ----------
