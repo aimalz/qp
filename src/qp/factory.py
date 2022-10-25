@@ -165,6 +165,48 @@ class Factory(OrderedDict):
         return Ensemble(ctor_func, data=data, ancil=ancil_table)
 
 
+    def iterator(self, filename, chunk_size=100_000, rank=0, parallel_size=1):
+        """Return an iterator for chunked read
+
+        Parameters
+        ----------
+        filename : `str`
+
+        chunk_size : `int`
+        """
+        extension = os.path.splitext(filename)[1]
+        if extension not in ['.hdf5']:  #pragma: no cover
+            raise TypeError("Can only use qp.iterator on hdf5 files")
+        
+        metadata = io.readHdf5ToDict(filename, 'meta')
+        pdf_name = metadata.pop('pdf_name')[0].decode()
+        pdf_version = metadata.pop('pdf_version')[0]
+        if pdf_name not in self: #pragma: no cover
+            raise KeyError("Class nameed %s is not in factory" % pdf_name)
+        the_class = self[pdf_name]
+        reader_convert = the_class.reader_method(pdf_version)
+        ctor_func = the_class.creation_method(None)
+        
+        f, infp = io.readHdf5Group(filename, 'data')
+        try:
+            ancil_f, ancil_infp = io.readHdf5Group(filename, 'data')
+        except KeyError:  #pragma: no cover
+            ancil_f, ancil_infp = (None, None)
+        num_rows = io.getGroupInputDataLength(f)
+        ranges = io.data_ranges_by_rank(num_rows, chunk_size, parallel_size, rank)
+        data = OrderedDict()
+        ancil_data = OrderedDict()
+        for start, end in ranges:
+            for key, val in f.items():
+                data[key] = io.readHdf5DatasetToArray(val, start, end)
+            if ancil_f is not None:
+                for key, val in ancil_f.items():
+                    ancil_data[key] = io.readHdf5DatasetToArray(val, start, end)
+            yield start, end, Ensemble(ctor_func, data=data, ancil=ancil_data)
+        infp.close()
+        if ancil_infp is not None:
+            ancil_infp.close()
+        
     def convert(self, in_dist, class_name, **kwds):
         """Read an ensemble to a different repersenation
 
@@ -262,5 +304,6 @@ stats = _FACTORY
 add_class = _FACTORY.add_class
 create = _FACTORY.create
 read = _FACTORY.read
+iterator = _FACTORY.iterator
 convert = _FACTORY.convert
 concatenate = _FACTORY.concatenate
