@@ -44,9 +44,16 @@ class EnsembleTestCase(unittest.TestCase):
         assert len(readens.ancil['zmode']) == mpi_size*ens.npdf
         assert readens.metadata().keys() == ens.metadata().keys()
         assert readens.objdata().keys() == ens.objdata().keys()
+
+        test_grid = grid=np.linspace(-3,3,100)        
+        itr = qp.iterator("testwrite.hdf5", 10, mpi_rank, mpi_size)
+        for start, end, ens_i in itr:
+            assert np.allclose(read_ens[start:end].pdf(test_grid), ens_i.pdf(test_grid))
+        
         if mpi_rank == 0:
             os.remove("testwrite.hdf5")
 
+            
 
     def test_norm(self):
         """ Run the ensemble tests on an ensemble of scipy.stats.norm distributions """
