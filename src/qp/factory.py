@@ -194,7 +194,7 @@ class Factory(OrderedDict):
             ancil_f, ancil_infp = (None, None)
         num_rows = io.getGroupInputDataLength(f)
         ranges = io.data_ranges_by_rank(num_rows, chunk_size, parallel_size, rank)
-        data = OrderedDict()
+        data = self._build_data_dict(metadata, {})
         ancil_data = OrderedDict()
         for start, end in ranges:
             for key, val in f.items():
