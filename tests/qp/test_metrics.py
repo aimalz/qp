@@ -41,7 +41,20 @@ class MetricTestCase(unittest.TestCase):
         assert grid_params.grid_values[0] == limits[0]
         assert grid_params.grid_values[-1] == limits[-1]
         assert grid_params.grid_values.size == grid_params.cardinality
+        assert grid_params.hist_bin_edges[0] == limits[0] - grid_params.resolution/2
+        assert grid_params.hist_bin_edges[-1] == limits[-1] + grid_params.resolution/2
+        assert grid_params.hist_bin_edges.size == grid_params.cardinality + 1
 
+    def test_calculate_grid_parameters_larger_range(self):
+        limits = (-75,112)
+        dx = 0.042
+        grid_params = qp.metrics._calculate_grid_parameters(limits, dx)  #pylint: disable=W0212
+        assert grid_params.grid_values[0] == limits[0]
+        assert grid_params.grid_values[-1] == limits[-1]
+        assert grid_params.grid_values.size == grid_params.cardinality
+        assert grid_params.hist_bin_edges[0] == limits[0] - grid_params.resolution/2
+        assert grid_params.hist_bin_edges[-1] == limits[-1] + grid_params.resolution/2
+        assert grid_params.hist_bin_edges.size == grid_params.cardinality + 1
     def test_kld(self):
         """ Test the calculate_kld method """
         kld = qp.metrics.calculate_kld(self.ens_n, self.ens_n_shift, limits=(0.,2.5))
