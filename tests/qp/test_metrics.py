@@ -8,6 +8,7 @@ import qp.metrics
 import numpy as np
 
 from qp import test_funcs
+from qp.metrics.metrics import * 
 from qp.utils import epsilon
 
 
@@ -33,6 +34,7 @@ class MetricTestCase(unittest.TestCase):
         """ Clean up any mock data files created by the tests. """
 
     def test_calculate_grid_parameters(self):
+        """ Given a small, simple input, ensure that the grid parameters are correct. """
         limits = (0,1)
         dx = 1./11
         grid_params = qp.metrics._calculate_grid_parameters(limits, dx)  #pylint: disable=W0212
@@ -41,12 +43,35 @@ class MetricTestCase(unittest.TestCase):
         assert grid_params.grid_values[0] == limits[0]
         assert grid_params.grid_values[-1] == limits[-1]
         assert grid_params.grid_values.size == grid_params.cardinality
+        assert grid_params.hist_bin_edges[0] == limits[0] - grid_params.resolution/2
+        assert grid_params.hist_bin_edges[-1] == limits[-1] + grid_params.resolution/2
+        assert grid_params.hist_bin_edges.size == grid_params.cardinality + 1
+
+    def test_calculate_grid_parameters_larger_range(self):
+        """ Test that a large range in limits and small delta returns expected results """
+        limits = (-75,112)
+        dx = 0.042
+        grid_params = qp.metrics._calculate_grid_parameters(limits, dx)  #pylint: disable=W0212
+        assert grid_params.grid_values[0] == limits[0]
+        assert grid_params.grid_values[-1] == limits[-1]
+        assert grid_params.grid_values.size == grid_params.cardinality
+        assert grid_params.hist_bin_edges[0] == limits[0] - grid_params.resolution/2
+        assert grid_params.hist_bin_edges[-1] == limits[-1] + grid_params.resolution/2
+        assert grid_params.hist_bin_edges.size == grid_params.cardinality + 1
 
     def test_kld(self):
         """ Test the calculate_kld method """
         kld = qp.metrics.calculate_kld(self.ens_n, self.ens_n_shift, limits=(0.,2.5))
         assert np.all(kld == 0.)
 
+    def test_calculate_moment(self):
+        """ Base case test """
+        moment = 1
+        limits = (-2., 2.)
+        result = calculate_moment(self.ens_n, moment, limits)
+
+        self.assertTrue(result is not None)
+    
     def test_kld_alternative_ensembles(self):
         """ Test the calculate_kld method against different types of ensembles """
         bins = np.linspace(-5, 5, 11)
@@ -199,6 +224,95 @@ class MetricTestCase(unittest.TestCase):
         error_msg = 'quick_rbpe only handles Ensembles with a single PDF'
         self.assertTrue(error_msg in str(context.exception))
 
+    def test_calculate_brier(self):
+        """ Base test case of Ensemble-based brier metric """
+        truth = 2* (np.random.uniform(size=(11,1))-0.5)
+        limits = [-2., 2]
+        result = calculate_brier(self.ens_n, truth, limits)
+        self.assertTrue(result is not None)
+
+    def test_calculate_brier_mismatched_number_of_truths(self):
+        """ Expect an exception when number of truth values doesn't match number of distributions """
+        truth = 2* (np.random.uniform(size=(10,1))-0.5)
+        limits = [-2., 2]
+        with self.assertRaises(ValueError) as context:
+            _ = calculate_brier(self.ens_n, truth, limits)
+
+        error_msg = "Number of distributions in the Ensemble"
+        self.assertTrue(error_msg in str(context.exception))
+
+    def test_calculate_brier_truth_outside_of_limits(self):
+        """ Expect an exception when truth is outside of the limits """
+        truth = 2* (np.random.uniform(size=(10,1))-0.5)
+        truth = np.append(truth, 100)
+        limits = [-2., 2]
+        with self.assertRaises(ValueError) as context:
+            _ = calculate_brier(self.ens_n, truth, limits)
+
+        error_msg = "Input truth values exceed the defined limits"
+        self.assertTrue(error_msg in str(context.exception))
+
+    def test_calculate_outlier_rate(self):
+        """Base case test"""
+        output = qp.metrics.calculate_outlier_rate(self.ens_n[0])
+        self.assertTrue(len(output) == 1)
+        self.assertTrue(np.isclose(output[0], 0.012436869911068668))
+
+    def test_calculate_outlier_rate_with_bounds(self):
+        """Include min/max bounds for outlier rate"""
+        output = qp.metrics.calculate_outlier_rate(self.ens_n[0], -10, 10)
+        self.assertTrue(len(output) == 1)
+        self.assertTrue(np.isclose(output[0], 0))
+
+    def test_calculate_outlier_rate_many_distributions(self):
+        """Check that the outlier rate is correctly calculated for an Ensemble with many distributions"""
+        output = qp.metrics.calculate_outlier_rate(self.ens_n)
+        self.assertTrue(len(output) == 11)
+
+    def test_calculate_kolmogorov_smirnov(self):
+        """Bare minimum test to ensure that the data is flowing correctly"""
+        output = qp.metrics.calculate_kolmogorov_smirnov(self.ens_n, self.ens_n)
+        self.assertTrue(len(output) == self.ens_n.npdf)
+
+    def test_calculate_cramer_von_mises(self):
+        """Bare minimum test to ensure that the data is flowing correctly"""
+        output = qp.metrics.calculate_cramer_von_mises(self.ens_n, self.ens_n)
+        self.assertTrue(len(output) == self.ens_n.npdf)
+
+    def test_calculate_anderson_darling(self):
+        """Bare minimum test to ensure that the data is flowing correctly"""
+        output = qp.metrics.calculate_anderson_darling(self.ens_n, 'norm')
+        self.assertTrue(len(output) == self.ens_n.npdf)
+
+    def test_check_ensembles_are_same_size(self):
+        """Test that no Value Error is raised when the ensembles are the same size"""
+        try:
+            qp.metrics._check_ensembles_are_same_size(self.ens_n, self.ens_n_shift)  #pylint: disable=W0212
+        except ValueError:
+            self.fail("Unexpectedly raised ValueError")
+
+    def test_check_ensembles_are_same_size_asserts(self):
+        """Test that a Value Error is raised when the ensembles are not the same size"""
+        with self.assertRaises(ValueError) as context:
+            qp.metrics._check_ensembles_are_same_size(self.ens_n, self.ens_n_plus_one)  #pylint: disable=W0212
+
+        error_msg = "Input ensembles should have the same number of distributions"
+        self.assertTrue(error_msg in str(context.exception))
+
+    def test_check_ensemble_is_not_nested_with_flat_ensemble(self):
+        """Test that no ValueError is raised when a flat Ensemble is passed in"""
+        try:
+            qp.metrics._check_ensemble_is_not_nested(self.ens_n)  #pylint: disable=W0212
+        except ValueError:
+            self.fail("Unexpectedly raised ValueError")
+
+    def test_check_ensemble_is_not_nested_with_nested_ensemble(self):
+        """Test that a ValueError is raised when a nested Ensemble is passed in"""
+        with self.assertRaises(ValueError) as context:
+            qp.metrics._check_ensemble_is_not_nested(self.ens_n_multi)  #pylint: disable=W0212
+
+        error_msg = "Each element in the input Ensemble should be a single distribution."
+        self.assertTrue(error_msg in str(context.exception))
 
 if __name__ == '__main__':
     unittest.main()
