@@ -1,6 +1,6 @@
 """This module implements a PDT distribution sub-class using interpolated quantiles
 """
-
+import logging
 import sys
 import numpy as np
 
@@ -12,9 +12,17 @@ from qp.conversion_funcs import extract_quantiles
 from qp.plotting import get_axes_and_xlims, plot_pdf_quantiles_on_axes
 from qp.utils import evaluate_hist_multi_x_multi_y,\
      interpolate_multi_x_y, interpolate_x_multi_y,\
-     interpolate_multi_x_multi_y, reshape_to_pdf_size
+     interpolate_multi_x_multi_y, reshape_to_pdf_size,\
+        normalize_interp1d
 from qp.test_data import QUANTS, QLOCS, TEST_XVALS
 from qp.factory import add_class
+
+from qp.quantile_pdf_constructors import \
+    AbstractQuantilePdfConstructor, \
+    CdfSplineDerivative, \
+    DualSplineAverage, \
+    PiecewiseConstant, \
+    PiecewiseLinear
 
 
 epsilon = sys.float_info.epsilon
@@ -64,6 +72,13 @@ def pad_quantiles(quants, locs):
 
     return quants_out, locs_out
 
+DEFAULT_PDF_CONSTRUCTOR = 'cdf_spline_derivative'
+PDF_CONSTRUCTORS = {
+    'cdf_spline_derivative': CdfSplineDerivative,
+    'dual_spline_average': DualSplineAverage,
+    'piecewise_linear': PiecewiseLinear,
+    'piecewise_constant': PiecewiseConstant,
+}
 
 class quant_gen(Pdf_rows_gen):
     """Quantile based distribution, where the PDF is defined piecewise from the quantiles
@@ -110,21 +125,14 @@ class quant_gen(Pdf_rows_gen):
         if locs_2d.shape[-1] != self._nquants:  # pragma: no cover
             raise ValueError("Number of locations (%i) != number of quantile values (%i)" % (self._nquants, locs_2d.shape[-1]))
         self._locs = locs_2d
-        self._cdf_derivs = None
-        self._cdf_locs = None
+
         self._addmetadata('quants', self._quants)
         self._addobjdata('locs', self._locs)
 
-
-    def _compute_derivs(self):
-        # calculate the first derivative using a forward difference.
-        self._cdf_derivs = (self._quants[1:] - self._quants[0:-1])/(self._locs[:,1:] - self._locs[:,0:-1])
-
-        # Offset the locations by -(l_[i+1] - l_i) / 2. So that the cdf_deriv can be correctly located.
-        # This offset is necessary to correctly place the _cdf_derivs because we are using a
-        # forward difference to calculate the numerical derivative.
-        self._cdf_locs = self._locs[:,1:]-np.diff(self._locs)/2
-
+        # & I don't think that this section of code should live down here, it should be moved closer to the top of the init method
+        self._pdf_constructor_name = kwargs.get('pdf_constructor', DEFAULT_PDF_CONSTRUCTOR)
+        self._pdf_constructor = None
+        self._instantiate_pdf_constructor()
 
     @property
     def quants(self):
@@ -136,12 +144,63 @@ class quant_gen(Pdf_rows_gen):
         """Return the locations at which those quantiles are reached"""
         return self._locs
 
+    @property
+    def pdf_constructor_name(self):
+        """Returns the name of the current pdf constructor. Matches a key in
+        the PDF_CONSTRUCTORS dictionary."""
+        return self._pdf_constructor_name
+
+    @pdf_constructor_name.setter
+    def pdf_constructor_name(self, value: str):
+        """Allows users to specify a different interpolator without having to recreate
+        the ensemble.
+
+        Parameters
+        ----------
+        value : str
+            One of the supported interpolators. See PDF_CONSTRUCTORS
+            dictionary for supported interpolators.
+
+        Raises
+        ------
+        ValueError
+            If the value provided isn't a key in PDF_CONSTRUCTORS, raise
+            a value error.
+        """
+        if value not in PDF_CONSTRUCTORS:
+            raise ValueError(f"Unknown interpolator provided: '{value}'. Allowed interpolators are {list(PDF_CONSTRUCTORS.keys())}")
+
+        if value is self._pdf_constructor_name:
+            logging.warning(f"Already using interpolator: '{value}'.")
+            return
+
+        self._pdf_constructor_name = value
+        self._instantiate_pdf_constructor()
+
+    @property
+    def pdf_constructor(self) -> AbstractQuantilePdfConstructor:
+        """Returns the current PDF constructor, and allows the user to interact
+        with it's methods.
+
+        Returns
+        -------
+        AbstractQuantilePdfConstructor
+            Abstract base class of the active concrete PDF constructor.
+        """
+        return self._pdf_constructor
+
+    def _instantiate_pdf_constructor(self):
+        self._pdf_constructor = PDF_CONSTRUCTORS[self._pdf_constructor_name](
+            self._quants, self._locs)
+
+
     def _pdf(self, x, row):
-        # pylint: disable=arguments-differ
-        if self._cdf_derivs is None:  # pragma: no cover
-            self._compute_derivs()
-        return interpolate_multi_x_multi_y(x, row, self._cdf_locs, self._cdf_derivs,
-            bounds_error=False, fill_value=(0.,0.), kind='linear').ravel()
+        # We're not requiring that the output be normalized!
+        # `util.normalize_interp1d` addresses _one_ of the ways that a reconstruction
+        # can be bad, but not all. It should be replaced with a more comprehensive
+        # normalization function.
+        # See qp issue #147
+        return self._pdf_constructor.construct_pdf(x, row)
 
     def _cdf(self, x, row):
         # pylint: disable=arguments-differ
@@ -207,139 +266,3 @@ quant_gen.test_data = dict(quant=dict(gen_func=quant, ctor_data=dict(quants=QUAN
                                           convert_data=dict(quants=QUANTS), test_xvals=TEST_XVALS))
 
 add_class(quant_gen)
-
-
-
-
-class quant_piecewise_gen(Pdf_rows_gen):
-    """Quantile based distribution, where the PDF is defined piecewise from the quantiles
-
-    Notes
-    -----
-    This implements a CDF by interpolating a set of quantile values
-
-    It simply takes a set of x and y values and uses `scipy.interpolate.interp1d` to
-    build the CDF
-    """
-    # pylint: disable=protected-access
-
-    name = 'quant_piecewise'
-    version = 0
-
-    _support_mask = rv_continuous._support_mask
-
-    def __init__(self, quants, locs, *args, **kwargs):
-        """
-        Create a new distribution using the given values
-
-        Parameters
-        ----------
-        quants : array_like
-           The quantiles used to build the CDF
-        locs : array_like
-           The locations at which those quantiles are reached
-        """
-        kwargs['shape'] = locs.shape[:-1]
-        self._xmin = np.min(locs)
-        self._xmax = np.max(locs)
-
-        super(quant_piecewise_gen, self).__init__(*args, **kwargs)
-
-        check_input = kwargs.pop('check_input', True)
-        locs_2d = reshape_to_pdf_size(locs, -1)
-        if check_input:
-            quants, locs_2d = pad_quantiles(quants, locs_2d)
-
-        self._quants = np.asarray(quants)
-        self._nquants = self._quants.size
-        if locs_2d.shape[-1] != self._nquants:  # pragma: no cover
-            raise ValueError("Number of locations (%i) != number of quantile values (%i)" % (self._nquants, locs_2d.shape[-1]))
-        self._locs = locs_2d
-        self._valatloc = None
-        self._addmetadata('quants', self._quants)
-        self._addobjdata('locs', self._locs)
-
-
-    def _compute_valatloc(self):
-        self._valatloc = (self._quants[1:] - self._quants[0:-1])/(self._locs[:,1:] - self._locs[:,0:-1])
-
-
-    @property
-    def quants(self):
-        """Return quantiles used to build the CDF"""
-        return self._quants
-
-    @property
-    def locs(self):
-        """Return the locations at which those quantiles are reached"""
-        return self._locs
-
-    def _pdf(self, x, row):
-        # pylint: disable=arguments-differ
-        if self._valatloc is None:  # pragma: no cover
-            self._compute_valatloc()
-        return evaluate_hist_multi_x_multi_y(x, row, self._locs, self._valatloc).ravel()
-
-
-    def _cdf(self, x, row):
-        # pylint: disable=arguments-differ
-        return interpolate_multi_x_y(x, row, self._locs, self._quants,
-                                     bounds_error=False, fill_value=(0., 1)).ravel()
-
-    def _ppf(self, x, row):
-        # pylint: disable=arguments-differ
-        return interpolate_x_multi_y(x, row, self._quants, self._locs,
-                                     bounds_error=False, fill_value=(self._xmin, self._xmax)).ravel()
-
-
-    def _updated_ctor_param(self):
-        """
-        Set the bins as additional construstor argument
-        """
-        dct = super(quant_piecewise_gen, self)._updated_ctor_param()
-        dct['quants'] = self._quants
-        dct['locs'] = self._locs
-        return dct
-
-    @classmethod
-    def get_allocation_kwds(cls, npdf, **kwargs):
-        """Return kwds necessary to create 'empty' hdf5 file with npdf entries
-        for iterative writeout
-        """
-        try:
-            quants = kwargs['quants']
-        except ValueError: #pragma: no cover
-            print("required argument 'quants' not included in kwargs")
-        nquants = np.shape(quants)[-1]
-        return dict(locs=((npdf, nquants), 'f4'))
-
-    @classmethod
-    def plot_native(cls, pdf, **kwargs):
-        """Plot the PDF in a way that is particular to this type of distibution
-
-        For a quantile this shows the quantiles points
-        """
-        axes, xlim, kw = get_axes_and_xlims(**kwargs)
-        xvals = np.linspace(xlim[0], xlim[1], kw.pop('npts', 101))
-        locs = np.squeeze(pdf.dist.locs[pdf.kwds['row']])
-        quants = np.squeeze(pdf.dist.quants)
-        yvals = np.squeeze(pdf.pdf(xvals))
-        return plot_pdf_quantiles_on_axes(axes, xvals, yvals, quantiles=(quants, locs), **kw)
-
-    @classmethod
-    def add_mappings(cls):
-        """
-        Add this classes mappings to the conversion dictionary
-        """
-        cls._add_creation_method(cls.create, None)
-        cls._add_extraction_method(extract_quantiles, None)
-
-    @classmethod
-    def make_test_data(cls):
-        """ Make data for unit tests """
-        cls.test_data = dict(quant_piecewise=dict(gen_func=quant_piecewise, ctor_data=dict(quants=QUANTS, locs=QLOCS),\
-                                                  convert_data=dict(quants=QUANTS), test_xvals=TEST_XVALS))
-
-quant_piecewise = quant_piecewise_gen.create
-
-add_class(quant_piecewise_gen)
