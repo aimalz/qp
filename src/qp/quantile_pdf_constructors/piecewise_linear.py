@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 
 import numpy as np
 
@@ -6,11 +6,13 @@ from qp.quantile_pdf_constructors.abstract_pdf_constructor import AbstractQuanti
 from qp.utils import interpolate_multi_x_multi_y
 
 class PiecewiseLinear(AbstractQuantilePdfConstructor):
-    """_summary_
+    """This constructor takes the input quantiles and locations, and calculates a numerical
+    derivative. The resulting values are passed to scipy's `interp1d` which will
+    perform a linear interpolation given a set of x values.
     """
 
     def __init__(self, quantiles, locations):
-        """_summary_
+        """Constructor to instantiate this class.
 
         Parameters
         ----------
@@ -27,6 +29,10 @@ class PiecewiseLinear(AbstractQuantilePdfConstructor):
         self._adjusted_locations = None
 
     def prepare_constructor(self):
+        """This method will calculate the numerical derivative as well as the
+        adjusted locations. The adjustments are necessary because the derivative is
+        not a central derivative.
+        """
         # calculate the first derivative using a forward difference.
         self._cdf_derivatives = (self._quantiles[1:] - self._quantiles[0:-1])/(self._locations[:,1:] - self._locations[:,0:-1])
 
@@ -35,9 +41,38 @@ class PiecewiseLinear(AbstractQuantilePdfConstructor):
         # forward difference to calculate the numerical derivative.
         self._adjusted_locations = self._locations[:,1:]-np.diff(self._locations)/2
 
-    def construct_pdf(self, grid, row) -> List[List[float]]:
+    def construct_pdf(self, grid, row: List[int] = None) -> List[List[float]]:
+        """Take the intermediate calculations and return the interpolated y values
+        given the input grid.
+
+        Parameters
+        ----------
+        grid : List[float]
+            List of x values to calculate y values for.
+        row : List[int], optional
+            A list of indexes of the original distribution to return, used as a filter.
+            By default None will do no filtering.
+
+        Returns
+        -------
+        List[List[float]]
+            The lists of y values returned from self._interpolation_functions
+        """
         if self._cdf_derivatives is None:  # pragma: no cover
             self.prepare_constructor()
 
         return interpolate_multi_x_multi_y(grid, row, self._adjusted_locations, self._cdf_derivatives,
             bounds_error=False, fill_value=(0.,0.), kind='linear').ravel()
+
+    def debug(self):
+        """Utility method to help with debugging. Returns input and intermediate
+        calculations.
+
+        Returns
+        -------
+            _quantiles :
+                Input during constructor instantiation
+            _locations :
+                Input during constructor instantiation
+        """
+        return self._quantiles, self._locations, self._cdf_derivatives, self._adjusted_locations

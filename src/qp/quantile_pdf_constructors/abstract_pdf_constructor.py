@@ -1,19 +1,49 @@
-from typing import List, Optional
+from typing import List
 
 class AbstractQuantilePdfConstructor():
+    """Abstract class to define an interface for concrete PDF Constructor classes
+    """
+
     def __init__(self, quantiles, locations):
-        pass
+        """Constructor to instantiate this class.
 
-    # All the math should happen here.
-    # This is public so that the user can trigger a recalculation of the of
-    # variables needed to reconstruct the original PDF.
-    # Should either return functions or set variables that will receive
-    # x values and return y values.
+        Parameters
+        ----------
+        quantiles : List[float]
+            List of n quantile values in the range (0,1).
+        locations : List[List[float]]
+            List of m Lists, each containing n values corresponding to the
+            y-value of the PPF function at the same quantile index.
+        """
+
     def prepare_constructor(self):
-        pass
+        """All the intermediate math for a constructor should happen here.
+        This is public so that the user can trigger a recalculation of the of
+        variables needed to construct the original PDF.
+        This method should either return functions or set variables that will 
+        receive x values and return y values.
+        """
 
-    # This is the method that the user would most often be interacting with by
-    # passing a grid (set of x values) and optionally a list of indexes for
-    # for filtering. And receiving back a list of lists of floats.
-    def construct_pdf(self, grid, row:Optional[List[int]]=None) -> List[List[float]]:
-        pass
+    def construct_pdf(self, grid, row: List[int] = None) -> List[List[float]]:
+        """This is the method that the user would most often be interacting with by
+        passing a grid (set of x values) and optionally a list of indexes for
+        for filtering.
+
+        This is also the method that is called by `quant_gen._pdf`.
+
+        Parameters
+        ----------
+        grid : List[int]
+            The input x values used to calculate y values.
+        row : List[int], optional
+            A list that specifies which elements to calculate values for.
+            Passing None will return y values for all distributions, by default None
+
+        Returns
+        -------
+        List[List[float]]
+            A list of lists of floats. Each list of floats has length equal to
+            the length of `grid`. There will be N lists returned where N is the number
+            of lists in `locations`, or the length of `row`, if `row` is being
+            used to filter the output.
+        """

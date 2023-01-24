@@ -2,7 +2,6 @@ from typing import List, Optional
 
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline
-from typing import List, Optional
 
 from qp.quantile_pdf_constructors.abstract_pdf_constructor import AbstractQuantilePdfConstructor
 
@@ -16,7 +15,7 @@ class CdfSplineDerivative(AbstractQuantilePdfConstructor):
     provided grid values.
     """
     def __init__(self, quantiles, locations):
-        """_summary_
+        """Constructor to instantiate this class.
 
         Parameters
         ----------
@@ -53,7 +52,7 @@ class CdfSplineDerivative(AbstractQuantilePdfConstructor):
             InterpolatedUnivariateSpline(self._locations[i,:], self._quantiles, k=spline_order, ext=1).derivative() for i in range(0,number_of_locations)
         ]
 
-    def construct_pdf(self, grid, row:Optional[List[int]]=None) -> List[List[float]]:
+    def construct_pdf(self, grid, row: List[int] = None) -> List[List[float]]:
         """Evaluate the fit spline derivative at each of the grid values
 
         Parameters
@@ -77,7 +76,6 @@ class CdfSplineDerivative(AbstractQuantilePdfConstructor):
         # otherwise, return a subset of the rows.
         selected_interpolation_functions = self._interpolation_functions
         if row is not None:
-            # ! There's some silliness going on with row here. When quant.pdf([1,2,3,4]) is called, `row` here is equal to `[0,0,0,0]`. WHY???
             selected_interpolation_functions = map(self._interpolation_functions.__getitem__, np.unique(row))
 
         # For each of the fit spline derivative, calculate y value given the grid (or x) values.
@@ -86,3 +84,18 @@ class CdfSplineDerivative(AbstractQuantilePdfConstructor):
         # 1) np.vectorize doesn't work well for a list of functions (i.e. self._interpolation_functions)
         # 2) np.vectorize doesn't provide any any performance improvements over list comprehension
         return np.asarray([func(grid) for func in selected_interpolation_functions])
+
+    def debug(self):
+        """This is a debugging utility that is meant to return intermediate calculation values
+        to make it easier to visualize and debug the reconstruction algorithm.
+
+        Returns
+        -------
+            _quantiles :
+                Input during constructor instantiation
+            _locations :
+                Input during constructor instantiation
+            _interpolation_functions :
+                The list of analytic derivatives of splines fit to the input data
+        """
+        return self._quantiles, self._locations, self._interpolation_functions
