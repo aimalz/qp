@@ -11,7 +11,7 @@ class PiecewiseLinear(AbstractQuantilePdfConstructor):
     perform a linear interpolation given a set of x values.
     """
 
-    def __init__(self, quantiles, locations):
+    def __init__(self, quantiles:List[float], locations: List[List[float]]) -> None:
         """Constructor to instantiate this class.
 
         Parameters
@@ -23,12 +23,12 @@ class PiecewiseLinear(AbstractQuantilePdfConstructor):
             y-value of the PPF function at the same quantile index.
         """
         self._quantiles = quantiles
-        self._locations = locations
+        self._locations = np.atleast_2d(locations)
 
         self._cdf_derivatives = None
         self._adjusted_locations = None
 
-    def prepare_constructor(self):
+    def prepare_constructor(self) -> None:
         """This method will calculate the numerical derivative as well as the
         adjusted locations. The adjustments are necessary because the derivative is
         not a central derivative.
@@ -58,8 +58,14 @@ class PiecewiseLinear(AbstractQuantilePdfConstructor):
         List[List[float]]
             The lists of y values returned from self._interpolation_functions
         """
-        if self._cdf_derivatives is None:  # pragma: no cover
+        if self._cdf_derivatives is None:
             self.prepare_constructor()
+
+        # Theoretically, it should be possible for row to be passed in as None,
+        # However the existing code that implements `interpolate_multi_x_multi_y`
+        # doesn't handle `row = None`. So we hard code it here to be array([0]).
+        if row is None:
+            row = np.asarray([0])
 
         return interpolate_multi_x_multi_y(grid, row, self._adjusted_locations, self._cdf_derivatives,
             bounds_error=False, fill_value=(0.,0.), kind='linear').ravel()

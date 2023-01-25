@@ -22,7 +22,7 @@ class DualSplineAverage(AbstractQuantilePdfConstructor):
     This constructor implements that algorithmic approach.
     """
 
-    def __init__(self, quantiles, locations):
+    def __init__(self, quantiles:List[float], locations: List[List[float]]) -> None:
         """Constructor to instantiate this class.
 
         Parameters
@@ -34,12 +34,13 @@ class DualSplineAverage(AbstractQuantilePdfConstructor):
             y-value of the PPF function at the same quantile index.
         """
         self._quantiles = quantiles
-        self._locations = locations
+        self._locations = np.atleast_2d(locations)
+
         self._p_of_zs = None
         self.y1 = None
         self.y2 = None
 
-    def prepare_constructor(self):
+    def prepare_constructor(self) -> None:
         """This method solves for the area under the PDF via a stepwise algorithm.
         Given that the difference between any two quantile values is equal to the
         area under the PDF between the corresponding pair of locations, _and_ given
@@ -56,12 +57,22 @@ class DualSplineAverage(AbstractQuantilePdfConstructor):
         all distributions simultaneously for each location, using the previous p(z) value to
         calculate the next.
         """
+
+        # Prepare an empty container for the output
         self._p_of_zs = np.zeros(self._locations.shape)
 
-        first_term = np.squeeze(2 * np.diff(self._quantiles) / np.diff(self._locations))
+        # Prepare an all-zero list, used in the step-wise calculation to prevent negative values
+        zeros_for_comparison = np.zeros(self._locations.shape[0])
 
+        # Calculate the first term
+        first_term = 2 * np.diff(self._quantiles) / np.diff(self._locations)
+
+        # Perform the step-wise calculation for all distributions simultaneously
         for i in range(1, np.shape(self._p_of_zs)[-1]):
-            self._p_of_zs[:,i] = max(0.0, first_term[i-1] - self._p_of_zs[:,i-1])
+            self._p_of_zs[:,i] = np.maximum(zeros_for_comparison, first_term[:,i-1] - self._p_of_zs[:,i-1])
+
+        # Set any negative values to 0.
+        self._p_of_zs = np.maximum(np.zeros(self._locations.shape), self._p_of_zs)
 
     def construct_pdf(self, grid, row: List[int] = None) -> List[List[float]]:
         """This method utilizes intermediate calculations from `prepare_constructor`
@@ -88,14 +99,26 @@ class DualSplineAverage(AbstractQuantilePdfConstructor):
         # otherwise, return a subset of the rows.
         # Using `map` alone will return an iterator that will be completely consumed after the first
         # list comprehension. Thus we convert the map to a list so that it can be used multiple times.
-        p_of_zs = self._p_of_zs
+        filtered_p_of_zs = self._p_of_zs
+        filtered_locations = self._locations
         if row is not None:
-            p_of_zs = list(map(self._p_of_zs.__getitem__, np.unique(row)))
-            locations = list(map(self._locations.__getitem__, np.unique(row)))
+            filtered_p_of_zs = list(map(self._p_of_zs.__getitem__, np.unique(row)))
+            filtered_locations = list(map(self._locations.__getitem__, np.unique(row)))
 
         # Create a list of interpolated splines for the even and odd pairs of (specific_locations, specific_p_of_zs)
-        f1 = np.asarray([interp1d(np.squeeze(specific_locations[0::2]), np.squeeze(specific_p_of_zs[0::2]), bounds_error=False, fill_value=0.0, kind='cubic') for specific_p_of_zs, specific_locations in zip(p_of_zs, locations)])
-        f2 = np.asarray([interp1d(np.squeeze(specific_locations[1::2]), np.squeeze(specific_p_of_zs[1::2]), bounds_error=False, fill_value=0.0, kind='cubic') for specific_p_of_zs, specific_locations in zip(p_of_zs, locations)])
+        f1 = np.asarray(
+            [
+                interp1d(np.squeeze(specific_locations[0::2]), np.squeeze(specific_p_of_zs[0::2]), bounds_error=False, fill_value=0.0, kind='cubic')
+                for specific_p_of_zs, specific_locations in zip(filtered_p_of_zs, filtered_locations)
+            ]
+        )
+
+        f2 = np.asarray(
+            [
+                interp1d(np.squeeze(specific_locations[1::2]), np.squeeze(specific_p_of_zs[1::2]), bounds_error=False, fill_value=0.0, kind='cubic')
+                for specific_p_of_zs, specific_locations in zip(filtered_p_of_zs, filtered_locations)
+            ]
+        )
 
         # Evaluate all the splines at the input grid values
         self.y1 = np.asarray([func_1(grid) for func_1 in f1])

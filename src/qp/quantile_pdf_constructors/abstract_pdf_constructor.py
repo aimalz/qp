@@ -4,7 +4,7 @@ class AbstractQuantilePdfConstructor():
     """Abstract class to define an interface for concrete PDF Constructor classes
     """
 
-    def __init__(self, quantiles, locations):
+    def __init__(self, quantiles:List[float], locations: List[List[float]]) -> None:
         """Constructor to instantiate this class.
 
         Parameters
@@ -16,7 +16,7 @@ class AbstractQuantilePdfConstructor():
             y-value of the PPF function at the same quantile index.
         """
 
-    def prepare_constructor(self):
+    def prepare_constructor(self) -> None:
         """All the intermediate math for a constructor should happen here.
         This is public so that the user can trigger a recalculation of the of
         variables needed to construct the original PDF.

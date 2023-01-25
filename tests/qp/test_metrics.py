@@ -86,8 +86,8 @@ class MetricTestCase(unittest.TestCase):
         ens_s = self.ens_n[0].convert_to(qp.spline_gen, xvals=bins, method="xy")
         ens_s_shift = self.ens_n_shift[0].convert_to(qp.spline_gen, xvals=bins, method="xy")
 
-        ens_q = self.ens_n[0].convert_to(qp.quant_piecewise_gen, quants=quants)
-        ens_q_shift = self.ens_n_shift[0].convert_to(qp.quant_piecewise_gen, quants=quants)
+        ens_q = self.ens_n[0].convert_to(qp.quant_gen, quants=quants)
+        ens_q_shift = self.ens_n_shift[0].convert_to(qp.quant_gen, quants=quants)
 
         kld_histogram = qp.metrics.calculate_kld(ens_h, ens_h_shift, limits=(0.,2.5))
         assert np.all(kld_histogram == 0.)
@@ -134,8 +134,8 @@ class MetricTestCase(unittest.TestCase):
         ens_s = self.ens_n[0].convert_to(qp.spline_gen, xvals=bins, method="xy")
         ens_s_shift = self.ens_n_shift[0].convert_to(qp.spline_gen, xvals=bins, method="xy")
 
-        ens_q = self.ens_n[0].convert_to(qp.quant_piecewise_gen, quants=quants)
-        ens_q_shift = self.ens_n_shift[0].convert_to(qp.quant_piecewise_gen, quants=quants)
+        ens_q = self.ens_n[0].convert_to(qp.quant_gen, quants=quants)
+        ens_q_shift = self.ens_n_shift[0].convert_to(qp.quant_gen, quants=quants)
 
         rmse_histogram = qp.metrics.calculate_rmse(ens_h, ens_h_shift, limits=(0.,2.5))
         assert np.all(rmse_histogram == 0.)
@@ -175,7 +175,7 @@ class MetricTestCase(unittest.TestCase):
         ens_h = self.ens_n[0].convert_to(qp.hist_gen, bins=bins)
         ens_i = self.ens_n[0].convert_to(qp.interp_gen, xvals=bins)
         ens_s = self.ens_n[0].convert_to(qp.spline_gen, xvals=bins, method="xy")
-        ens_q = self.ens_n[0].convert_to(qp.quant_piecewise_gen, quants=quants)
+        ens_q = self.ens_n[0].convert_to(qp.quant_gen, quants=quants)
         ens_m = self.ens_n[0].convert_to(qp.mixmod_gen, samples=1000, ncomps=3)
 
         rbpe_histogram = qp.metrics.calculate_rbpe(ens_h, limits=(0.,2.5))

@@ -51,7 +51,7 @@ class PIT():
             eval_grid = np.linspace(0, 1, n_pit)
 
         data_quants = np.quantile(self._pit_samps, eval_grid)
-        self._pit = qp.Ensemble(qp.quant_piecewise, data=dict(quants=eval_grid, locs=np.atleast_2d(data_quants)))
+        self._pit = qp.Ensemble(qp.quant, data=dict(quants=eval_grid, locs=np.atleast_2d(data_quants)))
 
     @property
     def pit_samps(self):
