@@ -206,7 +206,7 @@ class EnsembleTestCase(unittest.TestCase):
         quantiles = np.linspace(0.001, 0.999, 16)
         locations = np.linspace(0, 5, 16)
         quant_dist = qp.quant(quants=quantiles, locs=locations)
-        self.assertEqual(quant_dist.dist.pdf_constructor_name, 'cdf_spline_derivative')
+        self.assertEqual(quant_dist.dist.pdf_constructor_name, 'piecewise_linear')
 
     def test_quant_get_default_pdf_constructor(self):
         """Test that the getter for pdf constructor returns an AbstractQuantilePdfConstructor"""
@@ -220,8 +220,8 @@ class EnsembleTestCase(unittest.TestCase):
         quantiles = np.linspace(0.001, 0.999, 16)
         locations = np.linspace(0, 5, 16)
         quant_dist = qp.quant(quants=quantiles, locs=locations)
-        quant_dist.dist.pdf_constructor_name = 'piecewise_linear'
-        self.assertEqual(quant_dist.dist.pdf_constructor_name, 'piecewise_linear')
+        quant_dist.dist.pdf_constructor_name = 'piecewise_constant'
+        self.assertEqual(quant_dist.dist.pdf_constructor_name, 'piecewise_constant')
 
     def test_quant_change_pdf_constructor_raises(self):
         """Verify that attempting to change the pdf constructor to one that
@@ -239,7 +239,7 @@ class EnsembleTestCase(unittest.TestCase):
         locations = np.linspace(0, 5, 16)
         quant_dist = qp.quant(quants=quantiles, locs=locations)
         with self.assertLogs(level=logging.WARNING) as log:
-            quant_dist.dist.pdf_constructor_name = 'cdf_spline_derivative'
+            quant_dist.dist.pdf_constructor_name = 'piecewise_linear'
             self.assertIn('Already using', log.output[0])
 
 if __name__ == '__main__':

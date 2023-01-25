@@ -72,7 +72,7 @@ def pad_quantiles(quants, locs):
 
     return quants_out, locs_out
 
-DEFAULT_PDF_CONSTRUCTOR = 'cdf_spline_derivative'
+DEFAULT_PDF_CONSTRUCTOR = 'piecewise_linear'
 PDF_CONSTRUCTORS = {
     'cdf_spline_derivative': CdfSplineDerivative,
     'dual_spline_average': DualSplineAverage,
