@@ -1,5 +1,4 @@
 import unittest
-import logging
 
 import numpy as np
 
@@ -7,7 +6,6 @@ import qp
 from qp.quantile_pdf_constructors import AbstractQuantilePdfConstructor, \
     PiecewiseConstant
 
-LOGGER = logging.getLogger(__name__)
 
 class PiecewiseLinearTestCase(unittest.TestCase):
     """Tests for the CDF Spline Derivative PDF constructor for quantile parameterization."""

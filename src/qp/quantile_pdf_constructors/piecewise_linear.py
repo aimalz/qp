@@ -41,7 +41,7 @@ class PiecewiseLinear(AbstractQuantilePdfConstructor):
         # forward difference to calculate the numerical derivative.
         self._adjusted_locations = self._locations[:,1:]-np.diff(self._locations)/2
 
-    def construct_pdf(self, grid, row: List[int] = None) -> List[List[float]]:
+    def construct_pdf(self, grid: List[float], row: List[int] = None) -> List[List[float]]:
         """Take the intermediate calculations and return the interpolated y values
         given the input grid.
 
@@ -81,5 +81,9 @@ class PiecewiseLinear(AbstractQuantilePdfConstructor):
                 Input during constructor instantiation
             _locations :
                 Input during constructor instantiation
+            _cdf_derivatives :
+                Numerical derivative using _quantiles and _locations
+            _adjusted_locations :
+                Result of shifting the locations due to the use of non-central numerical derivatives
         """
         return self._quantiles, self._locations, self._cdf_derivatives, self._adjusted_locations

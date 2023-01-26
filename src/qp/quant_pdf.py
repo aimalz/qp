@@ -180,7 +180,7 @@ class quant_gen(Pdf_rows_gen):
     @property
     def pdf_constructor(self) -> AbstractQuantilePdfConstructor:
         """Returns the current PDF constructor, and allows the user to interact
-        with it's methods.
+        with its methods.
 
         Returns
         -------

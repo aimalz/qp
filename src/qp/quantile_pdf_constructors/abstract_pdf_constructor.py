@@ -24,7 +24,7 @@ class AbstractQuantilePdfConstructor():
         receive x values and return y values.
         """
 
-    def construct_pdf(self, grid, row: List[int] = None) -> List[List[float]]:
+    def construct_pdf(self, grid: List[float], row: List[int] = None) -> List[List[float]]:
         """This is the method that the user would most often be interacting with by
         passing a grid (set of x values) and optionally a list of indexes for
         for filtering.
@@ -33,7 +33,7 @@ class AbstractQuantilePdfConstructor():
 
         Parameters
         ----------
-        grid : List[int]
+        grid : List[float]
             The input x values used to calculate y values.
         row : List[int], optional
             A list that specifies which elements to calculate values for.

@@ -74,14 +74,14 @@ class DualSplineAverage(AbstractQuantilePdfConstructor):
         # Set any negative values to 0.
         self._p_of_zs = np.maximum(np.zeros(self._locations.shape), self._p_of_zs)
 
-    def construct_pdf(self, grid, row: List[int] = None) -> List[List[float]]:
+    def construct_pdf(self, grid: List[float], row: List[int] = None) -> List[List[float]]:
         """This method utilizes intermediate calculations from `prepare_constructor`
         along with the provided grid (i.e. x) values to return corresponding y values
         to construct the PDF approximation.
 
         Parameters
         ----------
-        grid : List[int]
+        grid : List[float]
             x values used to calculate corresponding y values
         row : List[int], optional
             A list of indexes of the original distribution to return, used as a filter.
@@ -101,7 +101,7 @@ class DualSplineAverage(AbstractQuantilePdfConstructor):
         # list comprehension. Thus we convert the map to a list so that it can be used multiple times.
         filtered_p_of_zs = self._p_of_zs
         filtered_locations = self._locations
-        if row is not None:
+        if row:
             filtered_p_of_zs = list(map(self._p_of_zs.__getitem__, np.unique(row)))
             filtered_locations = list(map(self._locations.__getitem__, np.unique(row)))
 

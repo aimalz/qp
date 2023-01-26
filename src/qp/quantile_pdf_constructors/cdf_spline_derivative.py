@@ -53,7 +53,7 @@ class CdfSplineDerivative(AbstractQuantilePdfConstructor):
             for i in range(0,number_of_locations)
         ]
 
-    def construct_pdf(self, grid, row: List[int] = None) -> List[List[float]]:
+    def construct_pdf(self, grid: List[float], row: List[int] = None) -> List[List[float]]:
         """Evaluate the fit spline derivative at each of the grid values
 
         Parameters
