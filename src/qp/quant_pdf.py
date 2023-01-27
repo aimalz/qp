@@ -10,10 +10,7 @@ from qp.pdf_gen import Pdf_rows_gen
 
 from qp.conversion_funcs import extract_quantiles
 from qp.plotting import get_axes_and_xlims, plot_pdf_quantiles_on_axes
-from qp.utils import evaluate_hist_multi_x_multi_y,\
-     interpolate_multi_x_y, interpolate_x_multi_y,\
-     interpolate_multi_x_multi_y, reshape_to_pdf_size,\
-        normalize_interp1d
+from qp.utils import interpolate_multi_x_y, interpolate_x_multi_y, reshape_to_pdf_size
 from qp.test_data import QUANTS, QLOCS, TEST_XVALS
 from qp.factory import add_class
 
@@ -108,12 +105,9 @@ class quant_gen(Pdf_rows_gen):
         locs : array_like
            The locations at which those quantiles are reached
         """
-        kwargs['shape'] = locs.shape[:-1]
 
         self._xmin = np.min(locs)
         self._xmax = np.max(locs)
-
-        super(quant_gen, self).__init__(*args, **kwargs)
 
         locs_2d = reshape_to_pdf_size(locs, -1)
         check_input = kwargs.pop('check_input', True)
@@ -126,13 +120,16 @@ class quant_gen(Pdf_rows_gen):
             raise ValueError("Number of locations (%i) != number of quantile values (%i)" % (self._nquants, locs_2d.shape[-1]))
         self._locs = locs_2d
 
-        self._addmetadata('quants', self._quants)
-        self._addobjdata('locs', self._locs)
-
-        # & I don't think that this section of code should live down here, it should be moved closer to the top of the init method
-        self._pdf_constructor_name = kwargs.get('pdf_constructor', DEFAULT_PDF_CONSTRUCTOR)
+        self._pdf_constructor_name = str(kwargs.pop('pdf_constructor_name', DEFAULT_PDF_CONSTRUCTOR))
         self._pdf_constructor = None
         self._instantiate_pdf_constructor()
+
+        kwargs['shape'] = locs.shape[:-1]
+        super(quant_gen, self).__init__(*args, **kwargs)
+
+        self._addmetadata('quants', self._quants)
+        self._addmetadata('pdf_constructor_name', self._pdf_constructor_name)
+        self._addobjdata('locs', self._locs)
 
     @property
     def quants(self):
@@ -176,6 +173,7 @@ class quant_gen(Pdf_rows_gen):
 
         self._pdf_constructor_name = value
         self._instantiate_pdf_constructor()
+        self._addmetadata('pdf_constructor_name', self._pdf_constructor_name)
 
     @property
     def pdf_constructor(self) -> AbstractQuantilePdfConstructor:
@@ -214,7 +212,7 @@ class quant_gen(Pdf_rows_gen):
 
     def _updated_ctor_param(self):
         """
-        Set the bins as additional construstor argument
+        Set the quants and locs as additional constructor arguments
         """
         dct = super(quant_gen, self)._updated_ctor_param()
         dct['quants'] = self._quants
@@ -224,18 +222,14 @@ class quant_gen(Pdf_rows_gen):
     @classmethod
     def get_allocation_kwds(cls, npdf, **kwargs):
         """Return kwds necessary to create 'empty' hdf5 file with npdf entries
-        for iterative writeout
+        for iterative writeout.  We only need to allocate the objdata columns, as
+        the metadata can be written when we finalize the file.
         """
         try:
             quants = kwargs['quants']
         except ValueError: #pragma: no cover
             print("required argument 'quants' not included in kwargs")
         nquants = np.shape(quants)[-1]
-        # EC, I don't thing you need these lines, as you don't actually store the ends
-        #if quants[0] > sys.float_info.epsilon:
-        #    nquants += 1
-        #if quants[-1] < 1.:
-        #    nquants += 1
         return dict(locs=((npdf, nquants), 'f4'))
 
     @classmethod

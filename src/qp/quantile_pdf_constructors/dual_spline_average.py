@@ -101,7 +101,7 @@ class DualSplineAverage(AbstractQuantilePdfConstructor):
         # list comprehension. Thus we convert the map to a list so that it can be used multiple times.
         filtered_p_of_zs = self._p_of_zs
         filtered_locations = self._locations
-        if row:
+        if row is not None:
             filtered_p_of_zs = list(map(self._p_of_zs.__getitem__, np.unique(row)))
             filtered_locations = list(map(self._locations.__getitem__, np.unique(row)))
 

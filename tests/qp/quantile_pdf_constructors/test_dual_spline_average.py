@@ -58,6 +58,7 @@ class DualSplineAverageTestCase(unittest.TestCase):
         pdf_constructor = self.pdf_constructor(quantiles=self.user_defined_quantiles, locations=user_defined_locations)
         results = pdf_constructor.construct_pdf(self.user_defined_grid)
         self.assertIsNot(np.sum(results), 0.0)
+        self.assertEqual(len(results), 3)
 
     def test_basic_construct_pdf_for_subset_of_multiple_distributions(self):
         """Base case to ensure that `construct_pdf` method runs with minimum arguments for many-distribution case
