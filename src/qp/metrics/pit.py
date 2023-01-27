@@ -71,7 +71,7 @@ class PIT():
         Returns
         -------
         qp.Ensemble
-            An Ensemble containing 1 qp.quant_piecewise distribution.
+            An Ensemble containing 1 qp.quant distribution.
         """
         return self._pit
 
