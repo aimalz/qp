@@ -4,11 +4,11 @@ That will allow the automated conversion mechanisms to work.
 """
 import numpy as np
 
-from sklearn import mixture
 from scipy import integrate as sciint
 from scipy import interpolate as sciinterp
 
 from .sparse_rep import indices2shapes, build_sparse_representation, decode_sparse_indices
+from .lazy_modules import mixture
 
 def extract_vals_at_x(in_dist, **kwargs):
     """Convert using a set of x and y values.

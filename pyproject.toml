@@ -13,11 +13,9 @@ classifiers = [
 ]
 dynamic = ["version"]
 dependencies = [
-    "matplotlib",
     "numpy",
     "scipy >= 1.9.0",
-    "scikit-learn",
-    "tables_io >= 0.7.7",
+    "tables-io >= 0.8.0",
     "deprecated",
 ]
 
@@ -45,7 +43,18 @@ build-backend = "setuptools.build_meta"
 write_to = "src/qp/_version.py"
 
 [project.optional-dependencies]
+full = [
+    "tables-io[full]",
+]
+all = [
+    "tables-io[full]",
+    "matplotlib",
+    "scikit-learn",
+]
 dev = [
+    "tables-io[full]",
+    "matplotlib",
+    "scikit-learn",
     "pytest",
     "pytest-cov",
     "packaging",
@@ -55,7 +64,6 @@ dev = [
     "kiwisolver",
     "joblib",
     "threadpoolctl",
-    "h5py",
     "pylint",
     "mpi4py",
     "coverage",
