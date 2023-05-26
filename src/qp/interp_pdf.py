@@ -2,17 +2,17 @@
 """
 
 import numpy as np
-
 from scipy.stats import rv_continuous
 
-from qp.pdf_gen import Pdf_rows_gen
-from qp.conversion_funcs import extract_vals_at_x, extract_xy_vals, extract_xy_sparse
-from qp.plotting import get_axes_and_xlims, plot_pdf_on_axes
-from qp.utils import normalize_interp1d, interpolate_multi_x_y,\
-    interpolate_multi_x_multi_y, interpolate_x_multi_y,\
-    reshape_to_pdf_size
-from qp.test_data import XBINS, XARRAY, YARRAY, TEST_XVALS
+from qp.conversion_funcs import (extract_vals_at_x, extract_xy_sparse,
+                                 extract_xy_vals)
 from qp.factory import add_class
+from qp.pdf_gen import Pdf_rows_gen
+from qp.plotting import get_axes_and_xlims, plot_pdf_on_axes
+from qp.test_data import TEST_XVALS, XARRAY, XBINS, YARRAY
+from qp.utils import (interpolate_multi_x_multi_y, interpolate_multi_x_y,
+                      interpolate_x_multi_y, normalize_interp1d,
+                      reshape_to_pdf_size)
 
 
 class interp_gen(Pdf_rows_gen):
@@ -151,14 +151,16 @@ class interp_gen(Pdf_rows_gen):
 
     @classmethod
     def get_allocation_kwds(cls, npdf, **kwargs):
-        """
-        Return the keywords necessary to create an 'empty' hdf5 file with npdf entries
+        """Return the keywords necessary to create an 'empty' hdf5 file with npdf entries
         for iterative file writeout.  We only need to allocate the objdata columns, as
         the metadata can be written when we finalize the file.
+        
         Parameters
         ----------
-        npdf: (int) number of *total* PDFs that will be written out
-        kwargs: (dict) dictionary of kwargs needed to create the ensemble
+        npdf: int
+            number of *total* PDFs that will be written out
+        kwargs: dict
+            dictionary of kwargs needed to create the ensemble
         """
         if 'xvals' not in kwargs: #pragma: no cover
             raise ValueError("required argument xvals not included in kwargs")
@@ -307,14 +309,16 @@ class interp_irregular_gen(Pdf_rows_gen):
 
     @classmethod
     def get_allocation_kwds(cls, npdf, **kwargs):
-        """
-        Return the keywords necessary to create an 'empty' hdf5 file with npdf entries
+        """Return the keywords necessary to create an 'empty' hdf5 file with npdf entries
         for iterative file writeout.  We only need to allocate the objdata columns, as
         the metadata can be written when we finalize the file.
+
         Parameters
         ----------
-        npdf: (int) number of *total* PDFs that will be written out
-        kwargs: (dict) dictionary of kwargs needed to create the ensemble
+        npdf: int
+            number of *total* PDFs that will be written out
+        kwargs: dict
+            dictionary of kwargs needed to create the ensemble
         """
         if 'xvals' not in kwargs: #pragma: no cover
             raise ValueError("required argument xvals not included in kwargs")

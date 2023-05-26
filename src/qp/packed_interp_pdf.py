@@ -2,17 +2,15 @@
 """
 
 import numpy as np
-
 from scipy.stats import rv_continuous
 
-from qp.pdf_gen import Pdf_rows_gen
-from qp.plotting import get_axes_and_xlims, plot_pdf_on_axes
-from qp.utils import interpolate_multi_x_y,\
-    interpolate_x_multi_y, reshape_to_pdf_size
-from qp.test_data import XBINS, YARRAY, TEST_XVALS
 from qp.factory import add_class
 from qp.packing_utils import PackingType, pack_array, unpack_array
-
+from qp.pdf_gen import Pdf_rows_gen
+from qp.plotting import get_axes_and_xlims, plot_pdf_on_axes
+from qp.test_data import TEST_XVALS, XBINS, YARRAY
+from qp.utils import (interpolate_multi_x_y, interpolate_x_multi_y,
+                      reshape_to_pdf_size)
 
 
 def extract_and_pack_vals_at_x(in_dist, **kwargs):
@@ -205,14 +203,16 @@ class packed_interp_gen(Pdf_rows_gen):
 
     @classmethod
     def get_allocation_kwds(cls, npdf, **kwargs):
-        """
-        Return the keywords necessary to create an 'empty' hdf5 file with npdf entries
+        """Return the keywords necessary to create an 'empty' hdf5 file with npdf entries
         for iterative file writeout.  We only need to allocate the objdata columns, as
         the metadata can be written when we finalize the file.
+
         Parameters
         ----------
-        npdf: (int) number of *total* PDFs that will be written out
-        kwargs: (dict) dictionary of kwargs needed to create the ensemble
+        npdf: int
+            number of *total* PDFs that will be written out
+        kwargs: dict
+            dictionary of kwargs needed to create the ensemble
         """
         if 'xvals' not in kwargs: #pragma: no cover
             raise ValueError("required argument xvals not included in kwargs")

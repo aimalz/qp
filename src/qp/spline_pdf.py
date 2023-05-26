@@ -2,18 +2,17 @@
 """
 
 import numpy as np
-
-from scipy.stats import rv_continuous
-from scipy.special import errstate
-from scipy.interpolate import splev, splrep, splint
 from scipy.integrate import quad
+from scipy.interpolate import splev, splint, splrep
+from scipy.special import errstate
+from scipy.stats import rv_continuous
 
-from qp.pdf_gen import Pdf_rows_gen
-from qp.conversion_funcs import extract_xy_vals, extract_samples
-from qp.plotting import get_axes_and_xlims, plot_pdf_on_axes
-from qp.utils import build_kdes, evaluate_kdes, reshape_to_pdf_size
-from qp.test_data import SAMPLES, XARRAY, YARRAY, TEST_XVALS
+from qp.conversion_funcs import extract_samples, extract_xy_vals
 from qp.factory import add_class
+from qp.pdf_gen import Pdf_rows_gen
+from qp.plotting import get_axes_and_xlims, plot_pdf_on_axes
+from qp.test_data import SAMPLES, TEST_XVALS, XARRAY, YARRAY
+from qp.utils import build_kdes, evaluate_kdes, reshape_to_pdf_size
 
 
 def normalize_spline(xvals, yvals, limits, **kwargs):
@@ -275,10 +274,13 @@ class spline_gen(Pdf_rows_gen):
         Return the keywords necessary to create an 'empty' hdf5 file with npdf entries
         for iterative file writeout.  We only need to allocate the objdata columns, as
         the metadata can be written when we finalize the file.
+        
         Parameters
         ----------
-        npdf: (int) number of *total* PDFs that will be written out
-        kwargs: (dict) dictionary of kwargs needed to create the ensemble
+        npdf: int
+            number of *total* PDFs that will be written out
+        kwargs: dict
+            dictionary of kwargs needed to create the ensemble
         """
         if 'splx' not in kwargs: #pragma: no cover
             raise ValueError("required argument splx not included in kwargs")

@@ -1,15 +1,19 @@
 """Implemenation of an ensemble of distributions"""
 
 import os
+
 import numpy as np
+from tables_io import io
+
+from qp.dict_utils import (check_array_shapes, compare_dicts,
+                           concatenate_dicts, slice_dict)
+from qp.metrics import quick_moment
+
 # import psutil
 #import timeit
 
-from tables_io import io
 
-from qp.dict_utils import slice_dict, check_array_shapes, compare_dicts, concatenate_dicts
 
-from qp.metrics import quick_moment
 
 
 class Ensemble:
@@ -125,12 +129,13 @@ class Ensemble:
         ----------
         to_class :  `class`
             Class to convert to
+        **kwargs : 
+            keyword arguments are passed to the output class constructor
 
-        Keywords
-        --------
+        Other Parameters
+        ----------------
         method : `str`
             Optional argument to specify a non-default conversion algorithm
-        kwargs : keyword arguments are passed to the output class constructor
 
         Returns
         -------
@@ -288,6 +293,7 @@ class Ensemble:
 
     def mode(self, grid):
         """return the mode of each ensemble PDF, evaluated on grid
+
         Parameters
         ----------
         new_grid: array-like
@@ -297,7 +303,10 @@ class Ensemble:
         -------
         mode: array-like
             The modes of the PDFs evaluated on new_grid
-        Note: adding expand_dims to return an (N, 1) array to be
+
+        Notes
+        -----
+        Adding expand_dims to return an (N, 1) array to be
         consistent with mean, median, and other point estimates
         """
         new_grid, griddata = self.gridded(grid)
@@ -630,11 +639,15 @@ class Ensemble:
     def initializeHdf5Write(self, filename, npdf, comm=None):
         """set up the output write for an ensemble, but set size to npdf rather than
         the size of the ensemble, as the "initial chunk" will not contain the full data
+
         Parameters
         ----------
-        filename : `str` Name of the file to create
-        npdf : `int` Total number of pdfs that will contain the file, usually larger then the size of the current ensemble
-        comm : `MPI communicator` Optional MPI communicator to allow parallel writing
+        filename : `str` 
+            Name of the file to create
+        npdf : `int` 
+            Total number of pdfs that will contain the file, usually larger then the size of the current ensemble
+        comm : `MPI communicator` 
+            Optional MPI communicator to allow parallel writing
         """
         kwds = self._get_allocation_kwds(npdf)
         group, fout = io.initializeHdf5Write(filename, comm=comm, **kwds)
@@ -642,11 +655,15 @@ class Ensemble:
 
     def writeHdf5Chunk(self, fname, start, end):
         """write ensemble data chunk to file
+
         Parameters
         ----------
-        fname : h5py `File object` file or group
-        start : `int` starting index of h5py file
-        end : `int` ending index in h5py file
+        fname : h5py `File object` 
+            file or group
+        start : `int` 
+            starting index of h5py file
+        end : `int` 
+            ending index in h5py file
         """
         odict = self.build_tables().copy()
         odict.pop('meta')
@@ -654,9 +671,11 @@ class Ensemble:
 
     def finalizeHdf5Write(self, filename):
         """write ensemble metadata to the output file
+
         Parameters
         ----------
-        filename : h5py `File object` file or group
+        filename : h5py `File object` 
+            file or group
         """
         mdata = self.metadata()
         io.finalizeHdf5Write(filename, 'meta', **mdata)

@@ -117,7 +117,7 @@ Quantification Metrics
 Utility functions
 =================
 
-`qp.convertsion_funcs`
+`qp.conversion_funcs`
 ----------------------
        
 .. automodule:: qp.conversion_funcs

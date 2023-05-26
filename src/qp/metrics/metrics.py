@@ -2,13 +2,13 @@
 import logging
 from collections import namedtuple
 from functools import partial
-from deprecated import deprecated
 
 import numpy as np
+from deprecated import deprecated
 
 from qp.metrics import array_metrics
-from qp.metrics.goodness_of_fit import goodness_of_fit_metrics
 from qp.metrics.brier import Brier
+from qp.metrics.goodness_of_fit import goodness_of_fit_metrics
 from qp.utils import epsilon
 
 Grid = namedtuple('Grid', ['grid_values', 'cardinality', 'resolution', 'hist_bin_edges', 'limits'])
@@ -199,6 +199,7 @@ def calculate_rbpe(p, limits=(np.inf, np.inf)):
 
 def calculate_brier(p, truth, limits, dx=0.01):
     """This function will do the following:
+    
     1) Generate a Mx1 sized grid based on `limits` and `dx`.
     2) Produce an NxM array by evaluating the pdf for each of the N distribution objects in the Ensemble p on the grid. 
     3) Produce an NxM truth_array using the input truth and the generated grid. All values will be 0 or 1.
