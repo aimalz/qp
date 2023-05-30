@@ -26,7 +26,7 @@ def get_val_or_default(in_dict, key):
         in_dict[key] : i.e., the requested item.
     If that fails it will try
         in_dict[None] : i.e., the default for that dictionary.
-    If that failes it will return
+    If that fails it will return
         None
     """
     if key in in_dict:
@@ -56,11 +56,11 @@ def set_val_or_default(in_dict, key, val):
     Notes
     -----
     This will first try to return:
-        in_dict[key] : i.e., the requested item.
+      in_dict[key] : i.e., the requested item.
     If that fails it will try
-        in_dict[None] : i.e., the default for that dictionary.
-    If that failes it will return
-        None
+      in_dict[None] : i.e., the default for that dictionary.
+    If that fails it will return
+      None
     """
     if key in in_dict:
         return in_dict[key]

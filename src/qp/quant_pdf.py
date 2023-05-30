@@ -2,32 +2,28 @@
 """
 import logging
 import sys
-import numpy as np
 
+import numpy as np
 from scipy.stats import rv_continuous
 
-from qp.pdf_gen import Pdf_rows_gen
-
 from qp.conversion_funcs import extract_quantiles
-from qp.plotting import get_axes_and_xlims, plot_pdf_quantiles_on_axes
-from qp.utils import interpolate_multi_x_y, interpolate_x_multi_y, reshape_to_pdf_size
-from qp.test_data import QUANTS, QLOCS, TEST_XVALS
 from qp.factory import add_class
-
-from qp.quantile_pdf_constructors import \
-    AbstractQuantilePdfConstructor, \
-    CdfSplineDerivative, \
-    DualSplineAverage, \
-    PiecewiseConstant, \
-    PiecewiseLinear
-
+from qp.pdf_gen import Pdf_rows_gen
+from qp.plotting import get_axes_and_xlims, plot_pdf_quantiles_on_axes
+from qp.quantile_pdf_constructors import (AbstractQuantilePdfConstructor,
+                                          CdfSplineDerivative,
+                                          DualSplineAverage, PiecewiseConstant,
+                                          PiecewiseLinear)
+from qp.test_data import QLOCS, QUANTS, TEST_XVALS
+from qp.utils import (interpolate_multi_x_y, interpolate_x_multi_y,
+                      reshape_to_pdf_size)
 
 epsilon = sys.float_info.epsilon
 
 def pad_quantiles(quants, locs):
     """Pad the quantiles and locations used to build a quantile representation
 
-    Paramters
+    Parameters
     ---------
     quants : array_like
         The quantiles used to build the CDF

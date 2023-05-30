@@ -48,10 +48,8 @@ def make_figure_axes(xlim, **kwargs):
     ----------
     xlim : (float, float)
         The x-axis limits of the plot
-
-    Keywords
-    --------
-    **kwargs : passed directly to the `matplotlib` plot function
+    **kwargs
+        passed directly to the `matplotlib` plot function
 
     Return
     ------
@@ -100,10 +98,8 @@ def plot_pdf_on_axes(axes, pdf, xvals, **kwargs):
 
     xvals : `np.array`
         The locations we evaluate the PDF at for plotting
-
-    Keywods
-    -------
-    Keywords are passed to matplotlib
+    **kwargs
+        Keywords are passed to matplotlib
 
     Return
     ------
@@ -123,8 +119,8 @@ def plot_dist_pdf(pdf, **kwargs):
     pdf : `scipy.stats.rv_frozen`
         The distribution we want to plot
 
-    Keywords
-    --------
+    Other Parameters
+    ----------------
     axes : `matplotlib.axes`
         The axes to plot on
 
@@ -134,7 +130,8 @@ def plot_dist_pdf(pdf, **kwargs):
     npts : int
         The number of x-axis points
 
-    remaining kwargs : passed directly to the `plot_pdf_on_axes` plot function
+    remaining kwargs : 
+        passed directly to the `plot_pdf_on_axes` plot function
 
     Return
     ------
@@ -151,7 +148,7 @@ def plot_pdf_quantiles_on_axes(axes, xvals, yvals, quantiles, **kwargs):
     """
     Plot a PDF on a set of axes, by evaluating at the quantiles provided
 
-`    Parameters
+    Parameters
     ----------
     axes : The axes we want to plot the data on
 
@@ -163,13 +160,13 @@ def plot_pdf_quantiles_on_axes(axes, xvals, yvals, quantiles, **kwargs):
 
     quantiles : (`np.array`, `np.array`)
        The quantiles that define the distribution pdf
+    **kwargs : 
+        passed directly to the `matplotlib` plot function
 
-    Keywords
-    --------
+    Other Parameters
+    ----------------
     npoints : `int`
         Number of points to use in the plotting.  Evenly spaced along the axis provided.
-
-    **kwargs : passed directly to the `matplotlib` plot function
 
     Return
     ------
@@ -189,18 +186,20 @@ def plot_pdf_histogram_on_axes(axes, hist, **kwargs):
 
     Parameters
     ----------
-    axes : The axes we want to plot the data on
+    axes : 
+        The axes we want to plot the data on
+    **kwargs : 
+        passed directly to the `matplotlib` plot function
 
-    Keywords
-    --------
+    Other Parameters
+    ----------------
     npoints : `int`
         Number of points to use in the plotting.  Evenly spaced along the axis provided.
 
-    **kwargs : passed directly to the `matplotlib` plot function
-
     Return
     ------
-    axes : The axes the data are plotted on
+    axes : 
+        The axes the data are plotted on
     """
 
     kwargs.setdefault('color', COLORS['histogram'])
@@ -225,10 +224,8 @@ def plot_pdf_samples_on_axes(axes, pdf, samples, **kwargs):
 
     samples : `np.array`
         Points sampled from the PDF
-
-    Keywords
-    --------
-    **kwargs : passed directly to the `matplotlib` plot function
+    **kwargs : 
+        passed directly to the `matplotlib` plot function
 
     Return
     ------

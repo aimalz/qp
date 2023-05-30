@@ -2,16 +2,14 @@
 """
 
 import numpy as np
-
-from scipy.stats import rv_continuous
 from scipy import stats as sps
+from scipy.stats import rv_continuous
 
-
-from qp.pdf_gen import Pdf_rows_gen
 from qp.conversion_funcs import extract_mixmod_fit_samples
-from qp.test_data import WEIGHT_MIXMOD, MEAN_MIXMOD, STD_MIXMOD, TEST_XVALS
 from qp.factory import add_class
-from qp.utils import reshape_to_pdf_size, interpolate_multi_x_y, get_eval_case
+from qp.pdf_gen import Pdf_rows_gen
+from qp.test_data import MEAN_MIXMOD, STD_MIXMOD, TEST_XVALS, WEIGHT_MIXMOD
+from qp.utils import get_eval_case, interpolate_multi_x_y, reshape_to_pdf_size
 
 
 class mixmod_gen(Pdf_rows_gen):
@@ -65,7 +63,7 @@ class mixmod_gen(Pdf_rows_gen):
         self._addobjdata('means', self._means)
 
     def _scipy_version_warning(self):
-        import scipy #pylint: disable=import-outside-toplevel
+        import scipy  # pylint: disable=import-outside-toplevel
         scipy_version = scipy.__version__
         vtuple = scipy_version.split('.')
         if int(vtuple[0]) > 1 or int(vtuple[1]) > 7:
@@ -133,14 +131,16 @@ class mixmod_gen(Pdf_rows_gen):
 
     @classmethod
     def get_allocation_kwds(cls, npdf, **kwargs):
-        """
-        Return the keywords necessary to create an 'empty' hdf5 file with npdf entries
+        """Return the keywords necessary to create an 'empty' hdf5 file with npdf entries
         for iterative file writeout.  We only need to allocate the objdata columns, as
         the metadata can be written when we finalize the file.
+        
         Parameters
         ----------
-        npdf: (int) number of *total* PDFs that will be written out
-        kwargs: (dict) dictionary of kwargs needed to create the ensemble
+        npdf: int
+            number of *total* PDFs that will be written out
+        kwargs: dict
+            dictionary of kwargs needed to create the ensemble
         """
         if 'means' not in kwargs: #pragma: no cover
             raise ValueError("required argument means not included in kwargs")

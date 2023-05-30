@@ -1,8 +1,8 @@
 """Utility functions for the qp package"""
 
 import sys
-import numpy as np
 
+import numpy as np
 from scipy import stats as sps
 from scipy.interpolate import interp1d
 
@@ -787,7 +787,7 @@ def interpolate_multi_x_y(x, row, xvals, yvals, **kwargs):
 def profile(x_data, y_data, x_bins, std=True):
     """Make a 'profile' plot
 
-    Paramters
+    Parameters
     ---------
     x_data : array_like (n)
         The x-values
@@ -825,12 +825,14 @@ def profile(x_data, y_data, x_bins, std=True):
 
 def reshape_to_pdf_size(vals, split_dim):
     """Reshape an array to match the number of PDFs in a distribution
+
     Parameters
     ----------
     vals : array
         The input array
     split_dim : int
         The dimension at which to split between pdf indices and per_pdf indices
+    
     Returns
     -------
     out : array

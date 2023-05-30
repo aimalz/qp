@@ -1,9 +1,11 @@
 import logging
+
 import numpy as np
 from scipy import stats
+
 import qp
-from qp.metrics.metrics import calculate_outlier_rate
 from qp.metrics.array_metrics import quick_anderson_ksamp
+from qp.metrics.metrics import calculate_outlier_rate
 
 DEFAULT_QUANTS = np.linspace(0, 1, 100)
 
@@ -89,8 +91,8 @@ class PIT():
         return self._pit
 
     def calculate_pit_meta_metrics(self):
-        """Convenience method that will calculate all of the PIT meta metrics and return them 
-            as a dictionary.
+        """Convenience method that will calculate all of the PIT meta metrics and return 
+        them as a dictionary.
 
         Returns
         -------
@@ -124,9 +126,9 @@ class PIT():
 
         Returns
         -------
-        [Result objects]
+        array
             A array of objects with attributes `statistic`, `critical_values`, and `significance_level`.
-        For details see: https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.anderson_ksamp.html
+            For details see: https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.anderson_ksamp.html
         """
         # Removed the CDF values that are outside the min/max range
         trimmed_pit_values = self._trim_pit_values(pit_min, pit_max)
@@ -142,7 +144,7 @@ class PIT():
 
         Returns
         -------
-        [Result objects]
+        array
             A array of objects with attributes `statistic` and `pvalue`
             For details see: https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.cramervonmises.html
         """
@@ -154,7 +156,7 @@ class PIT():
 
         Returns
         -------
-        [Return Object]
+        array
             A array of objects with attributes `statistic` and `pvalue`.
             For details see: https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.kstest.html
         """
@@ -209,7 +211,7 @@ class PIT():
 
         Returns
         -------
-        [float]
+        clean: [float]
             The list of PIT values within the min/max range.
         """
         # Create truth mask for pit values between cdf_min and pit max

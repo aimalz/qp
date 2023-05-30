@@ -3,12 +3,13 @@ These functions should then be registered with the `qp.ConversionDict` using `qp
 That will allow the automated conversion mechanisms to work.
 """
 import numpy as np
-
 from scipy import integrate as sciint
 from scipy import interpolate as sciinterp
 
-from .sparse_rep import indices2shapes, build_sparse_representation, decode_sparse_indices
 from .lazy_modules import mixture
+from .sparse_rep import (build_sparse_representation, decode_sparse_indices,
+                         indices2shapes)
+
 
 def extract_vals_at_x(in_dist, **kwargs):
     """Convert using a set of x and y values.
@@ -18,8 +19,8 @@ def extract_vals_at_x(in_dist, **kwargs):
     in_dist : `qp.Ensemble`
         Input distributions
 
-    Keywords
-    --------
+    Other Parameters
+    ----------------
     xvals : `np.array`
         Locations at which the pdf is evaluated
 
@@ -43,8 +44,8 @@ def extract_xy_vals(in_dist, **kwargs):
     in_dist : `qp.Ensemble`
         Input distributions
 
-    Keywords
-    --------
+    Other Parameters
+    ----------------
     xvals : `np.array`
         Locations at which the pdf is evaluated
 
@@ -69,8 +70,8 @@ def extract_samples(in_dist, **kwargs):
     in_dist : `qp.Ensemble`
         Input distributions
 
-    Keywords
-    --------
+    Other Parameters
+    ----------------
     size : `int`
         Number of samples to generate
 
@@ -92,8 +93,8 @@ def extract_hist_values(in_dist, **kwargs):
     in_dist : `qp.Ensemble`
         Input distributions
 
-    Keywords
-    --------
+    Other Parameters
+    ----------------
     bins : `np.array`
         Histogram bin edges
 
@@ -117,8 +118,8 @@ def extract_hist_samples(in_dist, **kwargs):
     in_dist : `qp.Ensemble`
         Input distributions
 
-    Keywords
-    --------
+    Other Parameters
+    ----------------
     bins : `np.array`
         Histogram bin edges
     size : `int`
@@ -150,8 +151,8 @@ def extract_quantiles(in_dist, **kwargs):
     in_dist : `qp.Ensemble`
         Input distributions
 
-    Keywords
-    --------
+    Other Parameters
+    ----------------
     quantiles : `np.array`
         Quantile values to use
 
@@ -175,8 +176,8 @@ def extract_fit(in_dist, **kwargs): # pragma: no cover
     in_dist : `qp.Ensemble`
         Input distributions
 
-    Keywords
-    --------
+    Other Parameters
+    ----------------
     xvals : `np.array`
         Locations at which the pdf is evaluated
 
@@ -200,8 +201,8 @@ def extract_mixmod_fit_samples(in_dist, **kwargs):
     in_dist : `qp.Ensemble`
         Input distributions
 
-    Keywords
-    --------
+    Other Parameters
+    ----------------
     ncomps : `int`
         Number of components in mixture model to use
     nsamples : `int`
@@ -313,8 +314,8 @@ def extract_sparse_from_xy(in_dist, **kwargs): #pragma: no cover
     in_dist : `qp.Ensemble`
         Input distributions
 
-    Keywords
-    --------
+    Other Parameters
+    ----------------
     xvals : array-like
         Used to override the y-values
     xvals : array-like
@@ -359,8 +360,8 @@ def extract_xy_sparse(in_dist, **kwargs): #pragma: no cover
     in_dist : `qp.Ensemble`
         Input distributions
 
-    Keywords
-    --------
+    Other Parameters
+    ----------------
     xvals : array-like
         Used to override the y-values
     xvals : array-like
