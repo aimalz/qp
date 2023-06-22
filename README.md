@@ -2,8 +2,9 @@
 
 Quantile parametrization for probability distribution functions.
 
-[![Build Status](https://img.shields.io/github/workflow/status/LSSTDESC/qp/Python%20package?logo=Github)](https://github.com/LSSTDESC/qp/actions/workflows/python-package.yml)[![Documentation Status](https://img.shields.io/readthedocs/qp/main?logo=readthedocs&logoColor=white)](http://qp.readthedocs.io/en/latest/)
-
+![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/LSSTDESC/qp)
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/LSSTDESC/qp/python-package.yml)
+![Read the Docs](https://img.shields.io/readthedocs/qp)
 
 ## Motivation
 This repository exists for two reasons.
