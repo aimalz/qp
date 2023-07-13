@@ -81,9 +81,9 @@ def calculate_kld(p, q, limits, dx=0.01):
     Parameters
     ----------
     p: Ensemble object
-        probability distribution whose distance _from_ `q` will be calculated.
+        probability distribution closer to the truth
     q: Ensemble object
-        probability distribution whose distance _to_ `p` will be calculated.
+        probability distribution that approximates p
     limits: tuple of floats
         endpoints of integration interval in which to calculate KLD
     dx: float
@@ -264,7 +264,7 @@ def calculate_anderson_darling(p, scipy_distribution='norm', num_samples=100, _r
     -------
     logger.warning
     """
-    logging.warning("This function is deprecated, please use `calculate_goodness_of_fit`") # pragma: no cover
+    logging.warning("This function is deprecated, please use `calculate_goodness_of_fit` with `fit_metric='ad'`") # pragma: no cover
 
 @deprecated(
     reason="""
@@ -280,7 +280,7 @@ def calculate_cramer_von_mises(p, q, num_samples=100, _random_state=None, **kwar
     -------
     logger.warning
     """
-    logging.warning("This function is deprecated, please use `calculate_goodness_of_fit`") # pragma: no cover
+    logging.warning("This function is deprecated, please use `calculate_goodness_of_fit` with `fit_metric='cvm'`") # pragma: no cover
 
 @deprecated(
     reason="""
@@ -296,7 +296,7 @@ def calculate_kolmogorov_smirnov(p, q, num_samples=100, _random_state=None):  # 
     -------
     logger.warning
     """
-    logging.warning("This function is deprecated, please use `calculate_goodness_of_fit`") # pragma: no cover
+    logging.warning("This function is deprecated, please use `calculate_goodness_of_fit` with `fit_metric='ks'`") # pragma: no cover
 
 def calculate_outlier_rate(p, lower_limit=0.0001, upper_limit=0.9999):
     """Fraction of outliers in each distribution
@@ -306,9 +306,9 @@ def calculate_outlier_rate(p, lower_limit=0.0001, upper_limit=0.9999):
     p : qp.Ensemble
         A collection of N distributions. This implementation expects that Ensembles are not nested.
     lower_limit : float, optional
-        Lower bound for outliers, by default 0.0001
+        Lower bound CDF for outliers, by default 0.0001
     upper_limit : float, optional
-        Upper bound for outliers, by default 0.9999
+        Upper bound CDF for outliers, by default 0.9999
 
     Returns
     -------
@@ -325,7 +325,7 @@ def calculate_outlier_rate(p, lower_limit=0.0001, upper_limit=0.9999):
     outlier_rates = [(dist.cdf(lower_limit) + (1. - dist.cdf(upper_limit)))[0][0] for dist in p]
     return outlier_rates
 
-def calculate_goodness_of_fit(estimate, reference, fit_metric='ad', num_samples=100, _random_state=None):
+def calculate_goodness_of_fit(estimate, reference, fit_metric='ks', num_samples=100, _random_state=None):
     """This method calculates goodness of fit between the distributions in the
     `estimate` and `reference` Ensembles using the specified fit_metric.
 
@@ -338,7 +338,7 @@ def calculate_goodness_of_fit(estimate, reference, fit_metric='ad', num_samples=
         calculation.
     fit_metric : string, optional
         The goodness of fit metric to use. One of ['ad', 'cvm', 'ks']. For clarity,
-        'ad' = Anderson-Darling, 'cvm' = Cramer-von Mises, and 'ks' = Kolmogorov-Smirnov, by default 'ad'
+        'ad' = Anderson-Darling, 'cvm' = Cramer-von Mises, and 'ks' = Kolmogorov-Smirnov, by default 'ks'
     num_samples : int, optional
         Number of random variates to draw from each distribution in `estimate`, by default 100
     _random_state : _type_, optional
