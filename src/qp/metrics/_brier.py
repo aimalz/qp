@@ -8,11 +8,11 @@ class Brier:
     Parameters
     ----------
     prediction: NxM array, float
-        Predicted probability for N celestial objects to have a redshift in
+        Predicted probability for N distributions to have a true value in
         one of M bins. The sum of values along each row N should be 1.
     truth: NxM array, int
-        True redshift values for N celestial objects, where Mth bin for the
-        true redshift will have value 1, all other bins will have a value of
+        True values for N distributions, where Mth bin for the
+        true value will have value 1, all other bins will have a value of
         0.
     """
 
