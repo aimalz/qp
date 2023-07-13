@@ -1,7 +1,7 @@
 import unittest
 import logging
 import numpy as np
-from qp.metrics.brier import Brier
+from qp.metrics._brier import Brier
 
 LOGGER = logging.getLogger(__name__)
 
