@@ -7,7 +7,7 @@ import numpy as np
 from deprecated import deprecated
 
 from qp.metrics import array_metrics
-from qp.metrics._brier import Brier
+from qp.metrics.brier import Brier
 from qp.metrics.goodness_of_fit import goodness_of_fit_metrics
 from qp.utils import epsilon
 
