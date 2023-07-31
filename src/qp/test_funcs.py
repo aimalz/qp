@@ -6,7 +6,7 @@ import numpy as np
 from qp.ensemble import Ensemble
 from qp.plotting import plot_native, plot, plot_pdf_samples_on_axes
 from qp.test_data import NPDF
-from qp.factory import read, convert
+from qp.factory import read, read_metadata, convert
 
 
 def assert_all_close(arr, arr2, **kwds):
@@ -143,7 +143,15 @@ def persist_func_test(ensemble, test_data):
         except FileNotFoundError:
             pass
         ensemble.write_to(filename)
+        meta = read_metadata(filename)
         ens_r = read(filename)
+        meta2 = ens_r.metadata()
+        # check that reading metadata and main file get same metadata items
+        for k, v in meta.items():
+            # we can't actually do a better check than this because the build_tables
+            # method in the ensemble class may add extra metadata items and change their type
+            assert k in meta2
+
         diff = ensemble.pdf(test_data['test_xvals']) - ens_r.pdf(test_data['test_xvals'])
         assert_all_small(diff, atol=1e-5, test_name="persist")
         if ensemble.ancil is not None:

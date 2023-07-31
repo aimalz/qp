@@ -150,6 +150,16 @@ class Factory(OrderedDict):
             data = reader_convert(data)
         return Ensemble(ctor_func, data=data, ancil=ancil_table)
 
+    def read_metadata(self, filename):
+        """Read an ensemble's metadata from a file, without loading the full data.
+
+        Parameters
+        ----------
+        filename : `str`
+        """
+        tables = io.read(filename, NUMPY_DICT, keys=['meta'])
+        return tables["meta"]
+
     def read(self, filename):
         """Read this ensemble from a file
 
@@ -159,8 +169,6 @@ class Factory(OrderedDict):
 
         Notes
         -----
-        This will actually read two files, one for the metadata and one for the object data
-
         This will use information in the meta data to figure out how to construct the data
         need to build the ensemble.
         """
@@ -331,6 +339,7 @@ stats = _FACTORY
 add_class = _FACTORY.add_class
 create = _FACTORY.create
 read = _FACTORY.read
+read_metadata = _FACTORY.read_metadata
 iterator = _FACTORY.iterator
 convert = _FACTORY.convert
 concatenate = _FACTORY.concatenate
