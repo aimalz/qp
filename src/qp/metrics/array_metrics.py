@@ -32,9 +32,9 @@ def quick_kld(p_eval, q_eval, dx=0.01):
     Parameters
     ----------
     p_eval: numpy.ndarray, float
-        evaluations of probability distribution whose distance _from_ `q` will be calculated
+        evaluations of probability distribution closer to the truth
     q_eval: numpy.ndarray, float
-        evaluations of probability distribution whose distance _to_ `p` will be calculated.
+        evaluations of probability distribution that approximates p
     dx: float
         resolution of integration grid
 
