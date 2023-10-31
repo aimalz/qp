@@ -213,5 +213,13 @@ class EnsembleTestCase(unittest.TestCase):
             test_vals = ens_i.pdf(test_grid)
             assert np.allclose(check_vals, test_vals)
 
+    def test_mixmod_with_negative_weights(self):
+        """Verify that an exception is raised when setting up a mixture model with negative weights"""
+        means = np.array([0.5,1.1, 2.9])
+        sigmas = np.array([0.15,0.13,0.14])
+        weights = np.array([1,0.5,-0.25])
+        with self.assertRaises(ValueError):
+            _ = qp.mixmod(weights=weights, means=means, stds=sigmas)
+
 if __name__ == '__main__':
     unittest.main()
