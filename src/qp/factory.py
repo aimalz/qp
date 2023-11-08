@@ -158,6 +158,29 @@ class Factory(OrderedDict):
         tables = io.read(filename, NUMPY_DICT, keys=['meta'])
         return tables["meta"]
 
+    def is_qp_file(self, filename):
+        """Test if a file is a qp file
+
+        Parameters
+        ----------
+        filename : `str`
+            File to test
+
+        Returns
+        -------
+        value : bool
+            True if the file is a qp file
+        """
+        try:
+            # If this isn't a table-like file with a 'meta' table this will throw an exception
+            tables = io.readNative(filename, keys=['meta'])
+            # If the 'meta' tables doesn't have 'pdf_name' or it is empty this will throw an exception or fail
+            return len(tables['meta']['pdf_name']) > 0
+        except Exception as msg:
+            # Any exception means it isn't a qp file
+            print(f"This is not a qp file because {msg}")
+        return False
+
     def read(self, filename):
         """Read this ensemble from a file
 
@@ -343,3 +366,4 @@ convert = _FACTORY.convert
 concatenate = _FACTORY.concatenate
 data_length = _FACTORY.data_length
 from_tables = _FACTORY.from_tables
+is_qp_file = _FACTORY.is_qp_file
