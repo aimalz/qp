@@ -21,6 +21,7 @@ dependencies = [
     "scipy",
     "tables-io",
     "deprecated",
+    "pytdigest",
 ]
 
 # On a mac, install optional dependencies with `pip install '.[dev]'` (include the single quotes)
@@ -43,6 +44,7 @@ dev = [
     "pylint",
     "mpi4py",
     "coverage",
+    "ipyparallel",
 ]
 full = [
     "tables-io[full]",

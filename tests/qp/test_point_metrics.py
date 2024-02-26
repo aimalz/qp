@@ -1,3 +1,4 @@
+import unittest
 import numpy as np
 
 import qp
@@ -16,7 +17,6 @@ BIAS = -0.00001576
 OUTRATE = 0.0
 SIGMAD = 0.0046489
 
-
 def construct_test_ensemble():
     np.random.seed(87)
     nmax = 2.5
@@ -33,31 +33,79 @@ def construct_test_ensemble():
     return zgrid, true_zs, grid_ens, true_ez
 
 
-def test_point_metrics():
-    """Basic tests for the various point estimate metrics"""
-    zgrid, zspec, pdf_ens, true_ez = construct_test_ensemble()
-    zb = pdf_ens.mode(grid=zgrid).flatten()
-
-    ez = PointStatsEz().evaluate(zb, zspec)
-    assert np.allclose(ez, true_ez, atol=1.0e-2)
-    # grid limits ez vals to ~10^-2 tol
-
-    sig_iqr = PointSigmaIQR().evaluate(zb, zspec)
-    assert np.isclose(sig_iqr, SIGIQR)
-
-    bias = PointBias().evaluate(zb, zspec)
-    assert np.isclose(bias, BIAS)
-
-    out_rate = PointOutlierRate().evaluate(zb, zspec)
-    assert np.isclose(out_rate, OUTRATE)
-
-    sig_mad = PointSigmaMAD().evaluate(zb, zspec)
-    assert np.isclose(sig_mad, SIGMAD)
+#generator that yields chunks from estimate and reference
+def chunker(seq, size):
+    return (seq[pos:pos + size] for pos in range(0, len(seq), size))
 
 
-def test_cde_loss_metric():
-    """Basic test to ensure that the CDE Loss metric class is working."""
-    zgrid, zspec, pdf_ens, _ = construct_test_ensemble()
-    cde_loss_class = CDELossMetric(zgrid)
-    result = cde_loss_class.evaluate(pdf_ens, zspec)
-    assert np.isclose(result, CDEVAL)
+class test_point_metrics(unittest.TestCase):
+
+    def test_point_metrics(self):
+        """Basic tests for the various point estimate metrics"""
+        zgrid, zspec, pdf_ens, true_ez = construct_test_ensemble()
+        zb = pdf_ens.mode(grid=zgrid).flatten()
+
+        ez = PointStatsEz().evaluate(zb, zspec)
+        assert np.allclose(ez, true_ez, atol=1.0e-2)
+
+        # grid limits ez vals to ~10^-2 tol
+
+        sig_iqr = PointSigmaIQR().evaluate(zb, zspec)
+        assert np.isclose(sig_iqr, SIGIQR)
+
+        bias = PointBias().evaluate(zb, zspec)
+        assert np.isclose(bias, BIAS)
+
+        out_rate = PointOutlierRate().evaluate(zb, zspec)
+        assert np.isclose(out_rate, OUTRATE)
+
+        sig_mad = PointSigmaMAD().evaluate(zb, zspec)
+        assert np.isclose(sig_mad, SIGMAD)
+
+    def test_point_metrics_digest(self):
+        """Basic tests for the various point estimate metrics when using the
+        t-digest approximation."""
+
+        zgrid, zspec, pdf_ens, true_ez = construct_test_ensemble()
+        zb = pdf_ens.mode(grid=zgrid).flatten()
+
+        configuration = {'tdigest_compression': 5000}
+        point_sigma_iqr = PointSigmaIQR(**configuration)
+        centroids = point_sigma_iqr.accumulate(zb, zspec)
+        sig_iqr = point_sigma_iqr.finalize([centroids])
+        assert np.isclose(sig_iqr, SIGIQR, atol=1.0e-4)
+
+        zb_iter = chunker(zb, 100)
+        zspec_iter = chunker(zspec, 100)
+        
+        sig_iqr_v2 = point_sigma_iqr.eval_from_iterator(zb_iter, zspec_iter)
+
+        point_bias = PointBias(**configuration)
+        centroids = point_bias.accumulate(zb, zspec)
+        bias = point_bias.finalize([centroids])
+        assert np.isclose(bias, BIAS)
+
+        point_outlier_rate = PointOutlierRate(**configuration)
+        centroids = point_outlier_rate.accumulate(zb, zspec)
+        out_rate = point_outlier_rate.finalize([centroids])
+        assert np.isclose(out_rate, OUTRATE)
+
+        point_sigma_mad = PointSigmaMAD(**configuration)
+        centroids = point_sigma_mad.accumulate(zb, zspec)
+        sig_mad = point_sigma_mad.finalize([centroids])
+        assert np.isclose(sig_mad, SIGMAD, atol=1e-5)
+
+        configuration = {'tdigest_compression': 5000, 'num_bins': 1_000}
+        point_sigma_mad = PointSigmaMAD(**configuration)
+        centroids = point_sigma_mad.accumulate(zb, zspec)
+        sig_mad = point_sigma_mad.finalize([centroids])
+        assert np.isclose(sig_mad, SIGMAD, atol=1e-4)
+
+
+
+    def test_cde_loss_metric(self):
+        """Basic test to ensure that the CDE Loss metric class is working."""
+        zgrid, zspec, pdf_ens, _ = construct_test_ensemble()
+        cde_loss_class = CDELossMetric(zgrid)
+        result = cde_loss_class.evaluate(pdf_ens, zspec)
+        assert np.isclose(result, CDEVAL)
