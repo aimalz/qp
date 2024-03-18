@@ -124,14 +124,13 @@ class RBPEMetric(SingleEnsembleMetric):
         return calculate_rbpe(estimate, self._limits)
 
 
-#! Should this be implemented as `DistToPointMetric` or `DistToDistMetric` ???
 class BrierMetric(DistToPointMetricDigester):
     """Class wrapper around the calculate_brier function. (Which itself is a
     wrapper around the `Brier` metric evaluator class).
     """
 
     metric_name = "brier"
-    metric_output_type = MetricOutputType.one_value_per_distribution
+    metric_output_type = MetricOutputType.single_value
 
     def __init__(self, limits: tuple = (0.0, 3.0), dx: float = 0.01, **kwargs) -> None:
         kwargs.update({"limits": limits, "dx": dx})
